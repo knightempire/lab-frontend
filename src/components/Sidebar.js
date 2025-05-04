@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { Home, Box, FilePlus, Users, ClipboardCheck, User } from 'lucide-react';
+import { usePathname } from 'next/navigation'; // Use usePathname instead of useRouter
 
 export default function Sidebar({ isOpen }) {
+  const pathname = usePathname(); // Get the current pathname
   const navItems = [
     { name: 'Home', icon: <Home size={20} />, href: '/dashboard' },
     { name: 'Product', icon: <Box size={20} />, href: '/dashboard/product' },
@@ -15,11 +17,13 @@ export default function Sidebar({ isOpen }) {
   return (
     <aside 
       className={`bg-white shadow-lg transition-all duration-300 ease-in-out ${
-        isOpen ? 'w-64' : 'w-0 md:w-16'} h-full overflow-hidden`}>
+        isOpen ? 'w-52' : 'w-0 md:w-16'} h-full overflow-hidden`}>
       <div className="flex flex-col h-full p-4">
         <div className="flex items-center mb-8 mt-2">
           {isOpen ? (
-            <h2 className="text-xl font-bold text-blue-800">Dashboard</h2>
+            <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-500 border-2 border-transparent">
+              Dashboard
+            </h2>
           ) : (
             <div className="w-full flex justify-center">
               <User size={24} className="text-gray-700" />
@@ -33,7 +37,9 @@ export default function Sidebar({ isOpen }) {
               <li key={index} className="mb-2">
                 <Link 
                   href={item.href}
-                  className="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors"
+                  className={`flex items-center p-2 rounded-lg 
+                    ${pathname === item.href ? 'bg-sky-100 text-gray-900' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'} 
+                    transition-colors`}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {isOpen && <span>{item.name}</span>}

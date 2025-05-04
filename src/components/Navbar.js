@@ -16,7 +16,6 @@ export default function Navbar({ toggleSidebar }) {
         >
           <Menu size={20} />
         </button>
-        <span className="font-medium text-blue-800 ml-4">Dashboard</span>
       </div>
       
       <div className="flex items-center space-x-4">
