@@ -7,8 +7,8 @@ import { usePathname } from 'next/navigation'; // Use usePathname instead of use
 export default function Sidebar({ isOpen }) {
   const pathname = usePathname(); // Get the current pathname
   const navItems = [
-    { name: 'Home', icon: <Home size={20} />, href: '/dashboard' },
-    { name: 'Product', icon: <Box size={20} />, href: '/dashboard/product' },
+    { name: 'Home', icon: <Home size={20} />, href: '/admin/dashboard' },
+    { name: 'Product', icon: <Box size={20} />, href: '/product' },
     { name: 'Request', icon: <FilePlus size={20} />, href: '/dashboard/request' },
     { name: 'Users', icon: <Users size={20} />, href: '/dashboard/users' },
     { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '/dashboard/issued' },
