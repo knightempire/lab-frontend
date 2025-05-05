@@ -5,11 +5,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,21 +33,30 @@ export default function LoginPage() {
             placeholder="you@example.com"
             className="w-full"
           />
-          <TextField
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full"
-          />
+          <div className="relative">
+            <TextField
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-9 text-gray-500 hover:text-gray-800"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
               <input type="checkbox" className="h-4 w-4 text-indigo-500 rounded" />
               <span className="text-gray-700">Remember me</span>
             </label>
-            <Link href="#" className="text-indigo-500 hover:underline">
+            <Link href="/auth/forgetpassword" className="text-indigo-500 hover:underline">
               Forgot password?
             </Link>
           </div>
