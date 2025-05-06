@@ -10,7 +10,7 @@ export default function Sidebar({ isOpen }) {
     { name: 'Home', icon: <Home size={20} />, href: '/admin/dashboard' },
     { name: 'Product', icon: <Box size={20} />, href: '/admin/product' },
     { name: 'Request', icon: <FilePlus size={20} />, href: '#' },
-    { name: 'Users', icon: <Users size={20} />, href: '#' },
+    { name: 'Users', icon: <Users size={20} />, href: '/admin/users' },
     { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '#' },
   ];
   const usernavItems = [
