@@ -2,17 +2,23 @@
 
 import Link from 'next/link';
 import { Home, Box, FilePlus, Users, ClipboardCheck, User } from 'lucide-react';
-import { usePathname } from 'next/navigation'; // Use usePathname instead of useRouter
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar({ isOpen }) {
   const pathname = usePathname(); // Get the current pathname
-  const navItems = [
+  const adminnavItems = [
     { name: 'Home', icon: <Home size={20} />, href: '/admin/dashboard' },
-    { name: 'Product', icon: <Box size={20} />, href: '/product' },
-    { name: 'Request', icon: <FilePlus size={20} />, href: '/dashboard/request' },
-    { name: 'Users', icon: <Users size={20} />, href: '/dashboard/users' },
-    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '/dashboard/issued' },
+    { name: 'Product', icon: <Box size={20} />, href: '/admin/product' },
+    { name: 'Request', icon: <FilePlus size={20} />, href: '#' },
+    { name: 'Users', icon: <Users size={20} />, href: '#' },
+    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '#' },
   ];
+  const usernavItems = [
+    { name: 'Home', icon: <Home size={20} />, href: '/' },
+    { name: 'Product', icon: <Box size={20} />, href: '/user/product' },
+    { name: 'Request', icon: <FilePlus size={20} />, href: '#' },
+  ];
+  const navItems = pathname.startsWith('/admin') ? adminnavItems : usernavItems;
 
   return (
     <aside 

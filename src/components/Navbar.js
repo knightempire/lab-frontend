@@ -2,10 +2,12 @@
 
 import { Menu, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar({ toggleSidebar }) {
+  const pathname = usePathname(); 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-
+  const userName = pathname.startsWith('/admin') ? "Admin" : "User";
   return (
     <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
       <div className="flex items-center">
@@ -32,7 +34,7 @@ export default function Navbar({ toggleSidebar }) {
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
               <User size={16} />
             </div>
-            <span className="hidden md:inline-block">User</span>
+            <span className="hidden md:inline-block">{userName}</span>
             <ChevronDown size={16} />
           </button>
           
