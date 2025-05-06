@@ -90,6 +90,19 @@ export default function ProductPage() {
     console.log('Selected Products:', selected);
   };
 
+  // Dynamically modify columns to include 'Quantity' if any product is selected
+  const dynamicColumns = [
+    ...columns,
+    ...(products.some(p => p.selected) ? [{ key: 'quantity', label: 'Quantity' }] : []),
+  ];
+
+  // Swap columns: make 'quantity' appear before 'selected'
+  const reorderedColumns = [
+    ...columns.filter(col => col.key !== 'selected'),  // Remove 'selected' temporarily
+    ...(products.some(p => p.selected) ? [{ key: 'quantity', label: 'Quantity' }] : []),
+    ...columns.filter(col => col.key === 'selected'), // Add 'selected' at the end
+  ];
+
   return (
     <div className="relative">
       <div className="p-4 md:p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 relative z-10">
@@ -115,11 +128,50 @@ export default function ProductPage() {
         {filteredProducts.length > 0 ? (
           <>
             <Table
-              columns={columns}
+              columns={reorderedColumns} // Pass the reordered columns here
               rows={paginatedProducts}
               renderCell={(colKey, row, rowIndex) => {
                 const globalIndex = (currentPage - 1) * itemsPerPage + rowIndex;
-                if (colKey === 'selected') {
+                if (colKey === 'quantity') {
+                  return row.selected ? (
+                    <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
+                      {/* Minus Button */}
+                      <button
+                        className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
+                        onClick={() => updateQuantity(globalIndex, -1)}
+                      >
+                        −
+                      </button>
+                
+                      {/* Editable Quantity */}
+                      <input
+                        type="text"
+                        value={row.selectedQuantity}
+                        onChange={(e) => {
+                          const newQuantity = Math.max(0, Math.min(e.target.value, row.inStock));
+                          if (newQuantity === 0) {
+                            updateQuantity(globalIndex, -1);
+                          } else {
+                            row.selectedQuantity = newQuantity;
+                            setProducts([...products]);
+                          }
+                        }}
+                        className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
+                        min="0"
+                        max={row.inStock}
+                      />
+                
+                      {/* Plus Button */}
+                      <button
+                        className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
+                        onClick={() => updateQuantity(globalIndex, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : null;
+                } 
+                else if (colKey === 'selected') {
                   return (
                     <div className="flex justify-center items-center gap-2">
                       <input
@@ -127,39 +179,6 @@ export default function ProductPage() {
                         checked={row.selected}
                         onChange={() => toggleSelect(globalIndex)}
                       />
-                      {row.selected && (
-                        <div className="flex items-center gap-2 border border-gray-300 rounded-md px-2 py-1 bg-white shadow-sm">
-                            {/* Minus Button */}
-                            <button
-                            className="text-gray-600 hover:text-gray-900 px-2"
-                            onClick={() => updateQuantity(globalIndex, -1)}
-                            >−</button>
-
-                            {/* Editable Quantity */}
-                            <input
-                            type="text"
-                            value={row.selectedQuantity}
-                            onChange={(e) => {
-                                const newQuantity = Math.max(0, Math.min(e.target.value, row.inStock)); // Ensure quantity doesn't exceed inStock
-                                if (newQuantity === 0) {
-                                updateQuantity(globalIndex, -1); // Unselect when quantity is 0
-                                } else {
-                                row.selectedQuantity = newQuantity;
-                                setProducts([...products]);
-                                }
-                            }}
-                            className="font-medium w-12 text-center bg-transparent border-none focus:outline-none text-gray-700 appearance-none"
-                            min="0" // Prevents input below 0
-                            max={row.inStock} // Prevents input above inStock
-                            />
-
-                            {/* Plus Button */}
-                            <button
-                            className="text-gray-600 hover:text-gray-900 px-2"
-                            onClick={() => updateQuantity(globalIndex, 1)}
-                            >+</button>
-                        </div>
-                        )}
                     </div>
                   );
                 }
