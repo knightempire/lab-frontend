@@ -44,7 +44,7 @@ export default function Pagination({ currentPage, totalPages, setCurrentPage }) 
   };
 
   return (
-    <div className="flex justify-between items-center py-4 border-t text-sm text-gray-600">
+    <div className="flex justify-between items-center pt-3 text-sm text-gray-600">
       <div className="pl-4">
         Page {currentPage} of {totalPages}
       </div>

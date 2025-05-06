@@ -2,3 +2,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* globals.css or _app.tsx layout */
+body {
+    overflow-x: hidden;
+  }
+  

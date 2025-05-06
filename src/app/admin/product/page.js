@@ -32,13 +32,7 @@ const initialProducts = [
   { name: "Widget Y", quantity: 60, damagedQuantity: 2, inStock: 58 },
   { name: "Widget Z", quantity: 90, damagedQuantity: 5, inStock: 85 }
 ];
-const columns = [
-  { key: 'name', label: 'Product Name' },
-  { key: 'quantity', label: 'Total Quantity' },
-  { key: 'damagedQuantity', label: 'Damaged Quantity' },
-  { key: 'inStock', label: 'In Stock' },
-  { key: 'actions', label: 'Actions' }, 
-];
+
 export default function ProductPage() {
   const [products, setProducts] = useState(initialProducts);
   const [showForm, setShowForm] = useState(false);
@@ -106,19 +100,20 @@ export default function ProductPage() {
     setEditIndex(null);
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
+  
   const columns = [
     { key: 'name', label: 'Product Name' },
     { key: 'quantity', label: 'Total Quantity' },
     { key: 'damagedQuantity', label: 'Damaged Quantity' },
     { key: 'inStock', label: 'In Stock' },
-    { key: 'actions', label: 'Actions' }, // Add actions column
+    { key: 'actions', label: 'Actions' },
   ];
   
   const rows = paginatedProducts.map((item, idx) => ({
     ...item,
     actions: (
       <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
-        <button onClick={() => startEdit(item, idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
+        <button onClick={() => startEdit(item, (currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
           <Edit2 size={14} />
           <span>Edit</span>
         </button>
@@ -131,23 +126,23 @@ export default function ProductPage() {
   }));
   
   return (
-    <div className="relative">
+    <div className="bg-gray-50">
       {showForm && (
         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />
       )}
 
-      <div className="p-4 md:p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 relative z-10">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto bg-gray-50">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Product Management</h1>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search products..."
-                className="border border-gray-300 rounded-lg pl-30 pr-5 py-2 text-sm"
+                className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -164,17 +159,17 @@ export default function ProductPage() {
         </div>
 
         {filteredProducts.length > 0 ? (
-          <>
+          <div className="space-y-4">
             <Table
-            columns={columns}
-            rows={rows}
-          />
+              columns={columns}
+              rows={rows}
+            />
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               setCurrentPage={setCurrentPage}
             />
-          </>
+          </div>
         ) : (
           <div className="mt-4 bg-white rounded-lg shadow p-6 text-center">
             <Package size={48} className="mx-auto text-gray-300 mb-3" />
@@ -217,7 +212,7 @@ export default function ProductPage() {
               {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
                 <div key={field}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
+                    {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())}
                   </label>
                   <input
                     name={field}
