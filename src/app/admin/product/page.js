@@ -163,6 +163,8 @@ export default function ProductPage() {
             <Table
               columns={columns}
               rows={rows}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
             />
             <Pagination
               currentPage={currentPage}

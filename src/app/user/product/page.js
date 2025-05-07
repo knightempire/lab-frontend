@@ -90,10 +90,13 @@ export default function ProductPage() {
     console.log('Selected Products:', selected);
   };
 
+  // Check if any products are selected
+  const hasSelectedProducts = products.some(p => p.selected);
+
   // Reordered columns
   const reorderedColumns = [
     ...columns.filter(col => col.key !== 'selected'),
-    ...(products.some(p => p.selected) ? [{ key: 'quantity', label: 'Quantity' }] : []),
+    ...(hasSelectedProducts ? [{ key: 'quantity', label: 'Quantity' }] : []),
     ...columns.filter(col => col.key === 'selected'),
   ];
 
@@ -124,6 +127,8 @@ export default function ProductPage() {
             <Table
               columns={reorderedColumns}
               rows={paginatedProducts}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
               renderCell={(colKey, row, rowIndex) => {
                 const globalIndex = (currentPage - 1) * itemsPerPage + rowIndex;
                 if (colKey === 'quantity') {
@@ -180,22 +185,24 @@ export default function ProductPage() {
               }}
             />
             
-            {/* Proceed button now placed above pagination */}
-            <div className="w-full py-3 px-4 flex justify-end">
-                <button
-                  onClick={handleProceed}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full flex items-center justify-center shadow"
-                  aria-label="Proceed"
-                >
-                  <ArrowRight size={20} />
-                </button>
-              </div>
+            {/* Proceed button only shows when at least one product is selected */}
+            
             
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               setCurrentPage={setCurrentPage}
             />
+            {hasSelectedProducts && (
+              <div className="fixed bottom-6 right-6 justify-end flex">
+              <button
+                onClick={handleProceed}
+                className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
+              >
+                <ArrowRight size={20} />
+              </button>
+            </div>
+            )}
           </>
         ) : (
           <div className="mt-4 bg-white rounded-lg shadow p-6 text-center">
