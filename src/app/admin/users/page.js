@@ -34,6 +34,8 @@ const columns = [
   { key: 'isFaculty', label: 'Role' },
   { key: 'isActive', label: 'Status' },
   { key: 'borrowedComponents', label: 'Borrowed' },
+  { key: 'isFaculty', label: 'Faculty' },
+  { key: 'isActive', label: 'Active' },
   { key: 'actions', label: 'Actions' }
 ];
 
@@ -118,6 +120,18 @@ export default function UsersPage() {
 
   const rows = paginatedUsers.map((item, idx) => ({
     ...item,
+    name: (
+      <div className="flex flex-col items-center text-center">
+        <span className="font-medium">{item.name}</span>
+        <span className="text-gray-500 text-sm">{item.rollNo}</span>
+      </div>
+    ),
+    rollNo: (
+      <div className="flex flex-col items-center text-center">
+        <span className="font-medium">{item.email}</span>
+        <span className="text-gray-500 text-sm">{item.phoneNo}</span>
+      </div>
+    ),
     isFaculty: <FacultyorStudentStatus value={item.isFaculty} />,
     isActive: <ActiveStatus value={item.isActive} />,
     actions: (
@@ -133,7 +147,7 @@ export default function UsersPage() {
       </div>
     )
   }));
-
+  
   return (
     <div className="relative">
       {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
