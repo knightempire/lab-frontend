@@ -1,4 +1,5 @@
 'use client';
+
 export default function Table({ columns, rows, currentPage, itemsPerPage, renderCell }) {
   return (
     <div className="mt-4 overflow-x-auto bg-white shadow rounded-lg">
