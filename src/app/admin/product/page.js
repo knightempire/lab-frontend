@@ -127,12 +127,12 @@ export default function ProductPage() {
   }));
   
   return (
-    <div className="bg-gray-50">
+    <div className="h-full w-full">
       {showForm && (
         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />
       )}
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto bg-gray-50">
+      <div className="p-4 md:p-3 mx-auto bg-gray-50">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />

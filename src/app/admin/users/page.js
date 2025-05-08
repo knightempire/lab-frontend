@@ -117,11 +117,16 @@ export default function UsersPage() {
   const rows = paginatedUsers.map((item, idx) => ({
     ...item,
     nameAndRoll: (
-      <div className="flex flex-col items-center text-center">
-        <span className="font-medium">{item.name}</span>
-        <span className="text-gray-500 text-sm">{item.rollNo}</span>
-      </div>
-    ),
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 text-blue-700 font-semibold rounded-full w-8 h-8 flex items-center justify-center">
+            {item.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium">{item.name}</span>
+            <span className="text-gray-500 text-sm">{item.rollNo}</span>
+          </div>
+        </div>
+      ),
     emailAndPhone: (
       <div className="flex flex-col items-center text-center">
         <span className="font-medium">{item.email}</span>
@@ -150,10 +155,10 @@ export default function UsersPage() {
   }));
   
   return (
-    <div className="relative">
+    <div className="h-full w-full">
       {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
 
-      <div className="p-4 md:p-3 max-w-7xl mx-auto bg-gray-50 relative z-10">
+      <div className="p-4 md:p-3 mx-auto bg-gray-50">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Users size={28} className="text-blue-600" />
