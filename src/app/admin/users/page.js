@@ -27,15 +27,11 @@ const initialUsers = [
 ];
 
 const columns = [
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'rollNo', label: 'Roll No' },
-  { key: 'phoneNo', label: 'Phone No' },
+  { key: 'name', label: 'Name / Roll No' },
+  { key: 'rollNo', label: 'Email / Phone' },
   { key: 'isFaculty', label: 'Role' },
   { key: 'isActive', label: 'Status' },
   { key: 'borrowedComponents', label: 'Borrowed' },
-  { key: 'isFaculty', label: 'Faculty' },
-  { key: 'isActive', label: 'Active' },
   { key: 'actions', label: 'Actions' }
 ];
 
@@ -134,6 +130,11 @@ export default function UsersPage() {
     ),
     isFaculty: <FacultyorStudentStatus value={item.isFaculty} />,
     isActive: <ActiveStatus value={item.isActive} />,
+    borrowedComponents: (
+      <div className="text-center">
+        <span className="font-semibold">{item.borrowedComponents}</span>
+      </div>
+    ),
     actions: (
       <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
         <button onClick={() => startEdit(item, idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
