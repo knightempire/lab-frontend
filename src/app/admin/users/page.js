@@ -111,7 +111,7 @@ export default function UsersPage() {
     <div className="relative">
       {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
 
-      <div className="p-4 md:p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 relative z-10">
+      <div className="p-4 md:p-3 max-w-7xl mx-auto bg-gray-50 relative z-10">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Users size={28} className="text-blue-600" />
@@ -140,7 +140,11 @@ export default function UsersPage() {
 
         {filteredUsers.length > 0 ? (
           <>
-            <Table columns={columns} rows={rows} />
+            <Table 
+              columns={columns} 
+              rows={rows} 
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}/>
             <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
           </>
         ) : (

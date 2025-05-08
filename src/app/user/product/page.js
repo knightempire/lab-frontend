@@ -90,22 +90,19 @@ export default function ProductPage() {
     console.log('Selected Products:', selected);
   };
 
-  // Dynamically modify columns to include 'Quantity' if any product is selected
-  const dynamicColumns = [
-    ...columns,
-    ...(products.some(p => p.selected) ? [{ key: 'quantity', label: 'Quantity' }] : []),
-  ];
+  // Check if any products are selected
+  const hasSelectedProducts = products.some(p => p.selected);
 
-  // Swap columns: make 'quantity' appear before 'selected'
+  // Reordered columns
   const reorderedColumns = [
-    ...columns.filter(col => col.key !== 'selected'),  // Remove 'selected' temporarily
-    ...(products.some(p => p.selected) ? [{ key: 'quantity', label: 'Quantity' }] : []),
-    ...columns.filter(col => col.key === 'selected'), // Add 'selected' at the end
+    ...columns.filter(col => col.key !== 'selected'),
+    ...(hasSelectedProducts ? [{ key: 'quantity', label: 'Quantity' }] : []),
+    ...columns.filter(col => col.key === 'selected'),
   ];
 
   return (
-    <div className="relative">
-      <div className="p-4 md:p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 relative z-10">
+    <div className="h-full w-full">
+      <div className="p-4 md:p-3 mx-auto bg-gray-50">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
@@ -116,7 +113,7 @@ export default function ProductPage() {
               <input
                 type="text"
                 placeholder="Search products..."
-                className="border border-gray-300 rounded-lg pl-30 pr-5 py-2 text-sm"
+                className="border border-gray-300 rounded-lg pl-10 pr-5 py-2 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -128,8 +125,10 @@ export default function ProductPage() {
         {filteredProducts.length > 0 ? (
           <>
             <Table
-              columns={reorderedColumns} // Pass the reordered columns here
+              columns={reorderedColumns}
               rows={paginatedProducts}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
               renderCell={(colKey, row, rowIndex) => {
                 const globalIndex = (currentPage - 1) * itemsPerPage + rowIndex;
                 if (colKey === 'quantity') {
@@ -185,12 +184,17 @@ export default function ProductPage() {
                 return row[colKey];
               }}
             />
+            
+            {/* Proceed button only shows when at least one product is selected */}
+            
+            
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               setCurrentPage={setCurrentPage}
             />
-            <div className="fixed bottom-6 right-6">
+            {hasSelectedProducts && (
+              <div className="fixed bottom-6 right-6 justify-end flex">
               <button
                 onClick={handleProceed}
                 className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
@@ -198,6 +202,7 @@ export default function ProductPage() {
                 <ArrowRight size={20} />
               </button>
             </div>
+            )}
           </>
         ) : (
           <div className="mt-4 bg-white rounded-lg shadow p-6 text-center">
