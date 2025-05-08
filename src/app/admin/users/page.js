@@ -1,30 +1,39 @@
 'use client';
+
 import { useState } from 'react';
 import { Plus, X, Edit2, Trash2, Save, Users, Search } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
+import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
+import ActiveStatus from '../../../components/ui/ActiveStatus';
+import DropdownFilter from '../../../components/DropdownFilter';
 
 const initialUsers = [
-  { name: "John Doe", email: "johndoe@example.com", rollNo: "12345", phoneNo: "9876543210", isFaculty: false, isAdmin: false, isActive: true },
-  { name: "Jane Smith", email: "janesmith@example.com", rollNo: "23456", phoneNo: "8765432109", isFaculty: true, isAdmin: false, isActive: true },
-  { name: "Alice Johnson", email: "alicej@example.com", rollNo: "34567", phoneNo: "7654321098", isFaculty: false, isAdmin: false, isActive: false },
-  { name: "Bob Brown", email: "bobbrown@example.com", rollNo: "45678", phoneNo: "6543210987", isFaculty: true, isAdmin: false, isActive: true },
-  { name: "Charlie Davis", email: "charlied@example.com", rollNo: "56789", phoneNo: "5432109876", isFaculty: false, isAdmin: true, isActive: true },
-  { name: "Eva Green", email: "evagreen@example.com", rollNo: "67890", phoneNo: "4321098765", isFaculty: true, isAdmin: false, isActive: false },
-  { name: "Frank Harris", email: "frankh@example.com", rollNo: "78901", phoneNo: "3210987654", isFaculty: false, isAdmin: false, isActive: true },
-  { name: "Grace Lee", email: "gracelee@example.com", rollNo: "89012", phoneNo: "2109876543", isFaculty: true, isAdmin: true, isActive: true },
-  { name: "Henry Adams", email: "henrya@example.com", rollNo: "90123", phoneNo: "1098765432", isFaculty: false, isAdmin: false, isActive: false },
-  { name: "Ivy Clark", email: "ivyc@example.com", rollNo: "11223", phoneNo: "1987654321", isFaculty: false, isAdmin: false, isActive: true },
-  { name: "Jack White", email: "jackw@example.com", rollNo: "22334", phoneNo: "8765432190", isFaculty: true, isAdmin: true, isActive: true },
-  { name: "Kara Black", email: "karab@example.com", rollNo: "33445", phoneNo: "7654321980", isFaculty: false, isAdmin: false, isActive: true },
-  { name: "Leo King", email: "leok@example.com", rollNo: "44556", phoneNo: "6543219870", isFaculty: false, isAdmin: true, isActive: false },
-  { name: "Mia Scott", email: "mias@example.com", rollNo: "55667", phoneNo: "5432198760", isFaculty: true, isAdmin: false, isActive: true },
-  { name: "Nathan Young", email: "nathany@example.com", rollNo: "66778", phoneNo: "4321987650", isFaculty: true, isAdmin: false, isActive: false }
+  { name: "John Doe", email: "johndoe@example.com", rollNo: "12345", phoneNo: "9876543210", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 4 },
+  { name: "Jane Smith", email: "janesmith@example.com", rollNo: "23456", phoneNo: "8765432109", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 7 },
+  { name: "Alice Johnson", email: "alicej@example.com", rollNo: "34567", phoneNo: "7654321098", isFaculty: false, isAdmin: false, isActive: false, borrowedComponents: 0 },
+  { name: "Bob Brown", email: "bobbrown@example.com", rollNo: "45678", phoneNo: "6543210987", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 2 },
+  { name: "Charlie Davis", email: "charlied@example.com", rollNo: "56789", phoneNo: "5432109876", isFaculty: false, isAdmin: true, isActive: true, borrowedComponents: 6 },
+  { name: "Eva Green", email: "evagreen@example.com", rollNo: "67890", phoneNo: "4321098765", isFaculty: true, isAdmin: false, isActive: false, borrowedComponents: 0 },
+  { name: "Frank Harris", email: "frankh@example.com", rollNo: "78901", phoneNo: "3210987654", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 1 },
+  { name: "Grace Lee", email: "gracelee@example.com", rollNo: "89012", phoneNo: "2109876543", isFaculty: true, isAdmin: true, isActive: true, borrowedComponents: 5 },
+  { name: "Henry Adams", email: "henrya@example.com", rollNo: "90123", phoneNo: "1098765432", isFaculty: false, isAdmin: false, isActive: false, borrowedComponents: 0 },
+  { name: "Ivy Clark", email: "ivyc@example.com", rollNo: "11223", phoneNo: "1987654321", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 3 },
+  { name: "Jack White", email: "jackw@example.com", rollNo: "22334", phoneNo: "8765432190", isFaculty: true, isAdmin: true, isActive: true, borrowedComponents: 8 },
+  { name: "Kara Black", email: "karab@example.com", rollNo: "33445", phoneNo: "7654321980", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 2 },
+  { name: "Leo King", email: "leok@example.com", rollNo: "44556", phoneNo: "6543219870", isFaculty: false, isAdmin: true, isActive: false, borrowedComponents: 0 },
+  { name: "Mia Scott", email: "mias@example.com", rollNo: "55667", phoneNo: "5432198760", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 6 },
+  { name: "Nathan Young", email: "nathany@example.com", rollNo: "66778", phoneNo: "4321987650", isFaculty: true, isAdmin: false, isActive: false, borrowedComponents: 0 }
 ];
 
 const columns = [
-  { key: 'name', label: 'Name / Roll No' },
-  { key: 'rollNo', label: 'Email / Phone No' },
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'rollNo', label: 'Roll No' },
+  { key: 'phoneNo', label: 'Phone No' },
+  { key: 'isFaculty', label: 'Role' },
+  { key: 'isActive', label: 'Status' },
+  { key: 'borrowedComponents', label: 'Borrowed' },
   { key: 'isFaculty', label: 'Faculty' },
   { key: 'isActive', label: 'Active' },
   { key: 'actions', label: 'Actions' }
@@ -37,6 +46,10 @@ export default function UsersPage() {
   const [editIndex, setEditIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    isFaculty: '',
+    isActive: '',
+  });
   const itemsPerPage = 10;
 
   const handleChange = (e) => {
@@ -44,9 +57,27 @@ export default function UsersPage() {
     setNewUser({ ...newUser, [name]: type === 'checkbox' ? checked : value });
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getFilteredResults = (users, filters) => {
+    return users.filter((user) => {
+      const matchesFacultyFilter = filters.isFaculty === '' || (filters.isFaculty === 'Faculty' ? user.isFaculty : !user.isFaculty);
+      const matchesActiveFilter = filters.isActive === '' || (filters.isActive === 'Active' ? user.isActive : !user.isActive);
+      return matchesFacultyFilter && matchesActiveFilter;
+    });
+  };  
+  
+  const getSearchResults = (users, searchQuery) => {
+    return users.filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [key]: value,
+    }));
+  };
+
+  const filteredByDropdown = getFilteredResults(users, filters);
+  const filteredUsers = getSearchResults(filteredByDropdown, searchQuery);
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
@@ -101,8 +132,8 @@ export default function UsersPage() {
         <span className="text-gray-500 text-sm">{item.phoneNo}</span>
       </div>
     ),
-    isFaculty: item.isFaculty ? 'Yes' : 'No',
-    isActive: item.isActive ? 'Yes' : 'No',
+    isFaculty: <FacultyorStudentStatus value={item.isFaculty} />,
+    isActive: <ActiveStatus value={item.isActive} />,
     actions: (
       <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
         <button onClick={() => startEdit(item, idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
@@ -128,6 +159,18 @@ export default function UsersPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">User Management</h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-10">
+            <DropdownFilter
+              label="Role"
+              options={['', 'Faculty', 'Student']}
+              selectedValue={filters.isFaculty}
+              onSelect={(value) => handleFilterChange('isFaculty', value)}
+            />
+            <DropdownFilter
+              label="Active"
+              options={['', 'Active', 'Inactive']}
+              selectedValue={filters.isActive}
+              onSelect={(value) => handleFilterChange('isActive', value)}
+            />
             <div className="relative">
               <input
                 type="text"
@@ -195,18 +238,20 @@ export default function UsersPage() {
             </div>
 
             <div className="p-4 space-y-4">
-              {['name', 'email', 'rollNo', 'phoneNo'].map((field) => (
+              {['name', 'email', 'rollNo', 'phoneNo','borrowedComponents'].map((field) => (
                 <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{field}</label>
-                  <input
-                    name={field}
-                    type="text"
-                    placeholder={`Enter ${field}`}
-                    value={newUser[field]}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                  {field === 'borrowedComponents' ? 'Borrowed Components' : field}
+                </label>
+                <input
+                  name={field}
+                  type={field === 'borrowedComponents' ? 'number' : 'text'}
+                  placeholder={`Enter ${field}`}
+                  value={newUser[field] ?? ''}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
               ))}
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-sm">

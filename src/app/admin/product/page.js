@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { Plus, X, Edit2, Trash2, Save, Package, Search } from 'lucide-react';
 import Table from '../../../components/table';
