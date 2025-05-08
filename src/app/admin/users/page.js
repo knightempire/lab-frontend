@@ -27,8 +27,8 @@ const initialUsers = [
 ];
 
 const columns = [
-  { key: 'name', label: 'Name / Roll No' },
-  { key: 'rollNo', label: 'Email / Phone' },
+  { key: 'nameAndRoll', label: 'Name / Roll No' },
+  { key: 'emailAndPhone', label: 'Email / Phone' },
   { key: 'isFaculty', label: 'Role' },
   { key: 'isActive', label: 'Status' },
   { key: 'borrowedComponents', label: 'Borrowed' },
@@ -116,13 +116,13 @@ export default function UsersPage() {
 
   const rows = paginatedUsers.map((item, idx) => ({
     ...item,
-    name: (
+    nameAndRoll: (
       <div className="flex flex-col items-center text-center">
         <span className="font-medium">{item.name}</span>
         <span className="text-gray-500 text-sm">{item.rollNo}</span>
       </div>
     ),
-    rollNo: (
+    emailAndPhone: (
       <div className="flex flex-col items-center text-center">
         <span className="font-medium">{item.email}</span>
         <span className="text-gray-500 text-sm">{item.phoneNo}</span>
