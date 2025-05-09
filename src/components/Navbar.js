@@ -40,13 +40,13 @@ export default function Navbar({ toggleSidebar }) {
           
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-60">
-            <a href="/404" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+            <a href="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                 Your Profile
               </a>
-              <a href="/404" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+              <a href="/settings" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                 Settings
               </a>
-              <a href="/404" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+              <a href="/signout" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                 Sign out
               </a>
             </div>
