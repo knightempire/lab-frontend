@@ -116,7 +116,7 @@ export default function RequestsPage() {
         <div className="flex gap-2 justify-center">
           <button className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
             <Eye size={14} />
-            View
+            View Request
           </button>
         </div>
       )
@@ -128,7 +128,12 @@ export default function RequestsPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Users size={28} className="text-blue-600" />
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Request Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+            Request Management
+            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+              Request Received: {requests.length}
+            </span>
+          </h1>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <DropdownFilter

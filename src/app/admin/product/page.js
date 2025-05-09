@@ -122,10 +122,6 @@ export default function ProductPage() {
           <Edit2 size={14} />
           <span>Edit</span>
         </button>
-        <button onClick={() => deleteProduct((currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm">
-          <Trash2 size={14} />
-          <span>Delete</span>
-        </button>
       </div>
     )
   }));
@@ -140,7 +136,12 @@ export default function ProductPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Product Management</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+              Product Management
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+                Total Products: {products.length}
+              </span>
+            </h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="relative">
