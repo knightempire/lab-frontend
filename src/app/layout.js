@@ -6,6 +6,15 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import './globals.css';
 
+const validPaths = [
+  '/',
+  '/admin/dashboard',
+  '/admin/product',
+  '/admin/request',
+  '/admin/users',
+  '/user/product',
+];
+
 export default function RootLayout({ children }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -14,13 +23,13 @@ export default function RootLayout({ children }) {
     setSidebarOpen((prev) => !prev);
   };
 
-  // Check if current route is an auth route
   const isAuthRoute = pathname.startsWith('/auth') || pathname.endsWith('/404');
-  
+  const isValidRoute = validPaths.includes(pathname);
+
   return (
     <html lang="en" className="h-full">
-      <body className={isAuthRoute ? '' : 'flex h-full bg-gray-50 overflow-hidden'}>
-        {isAuthRoute ? (
+      <body className={isAuthRoute || !isValidRoute ? '' : 'flex h-full bg-gray-50 overflow-hidden'}>
+        {isAuthRoute || !isValidRoute ? (
           children
         ) : (
           <>
