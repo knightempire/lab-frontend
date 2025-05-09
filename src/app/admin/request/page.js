@@ -114,10 +114,11 @@ export default function RequestsPage() {
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
       requestedDate: (
-        <div className="flex items-center gap-2 text-gray-700 text-sm">
+        <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
           <CalendarDays size={14} />
           {item.requestedDate}
         </div>
+
       ),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
