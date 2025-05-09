@@ -1,10 +1,11 @@
 'use client';
+
 import { useState,useEffect } from 'react';
 import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
-import DropdownFilter from '../../../components/DropdownFilter';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
+import FiltersPanel from '../../../components/FiltersPanel';
 
 const requests = [
   { name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", status: "pending" },
@@ -31,6 +32,13 @@ export default function RequestsPage() {
 
   const itemsPerPage = 10;
 
+  const handleReset = () => {
+    setFilters({
+      role: '',
+      status: '',
+    });
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filters]);
@@ -55,6 +63,11 @@ export default function RequestsPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const filterList = [
+    { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
+    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+  ];
 
   const rows = paginatedRequests.map((item) => {
     let statusIcon, statusText, bgColor, textColor;
@@ -128,37 +141,33 @@ export default function RequestsPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Users size={28} className="text-blue-600" />
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
             Request Management
-            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
               Request Received: {requests.length}
             </span>
           </h1>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <DropdownFilter
-            label="Role"
-            options={['', 'Faculty', 'Student']}
-            selectedValue={filters.role}
-            onSelect={(val) => handleFilterChange('role', val)}
-          />
-          <DropdownFilter
-            label="Status"
-            options={['', 'Pending', 'Accepted', 'Rejected']}
-            selectedValue={filters.status}
-            onSelect={(val) => handleFilterChange('status', val)}
-          />
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search requests..."
-              className="border border-gray-300 rounded-lg pl-8 pr-5 py-2 text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search size={16} className="absolute left-2.5 top-2.5 text-gray-400" />
-          </div>
-        </div>
+      </div>
+
+      <div className="mb-4 mt-6">
+        <FiltersPanel
+          filters={filterList}
+          onChange={handleFilterChange}
+          onReset={handleReset}
+          Text="All requests"
+        />
+      </div>
+
+      <div className="mb-6 w-full relative bg-white">
+        <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search requests..."
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {filteredRequests.length > 0 ? (
