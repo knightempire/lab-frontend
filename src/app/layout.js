@@ -15,8 +15,8 @@ export default function RootLayout({ children }) {
   };
 
   // Check if current route is an auth route
-  const isAuthRoute = pathname.startsWith('/auth');
-
+  const isAuthRoute = pathname.startsWith('/auth') || pathname.endsWith('/404');
+  
   return (
     <html lang="en" className="h-full">
       <body className={isAuthRoute ? '' : 'flex h-full bg-gray-50 overflow-hidden'}>
