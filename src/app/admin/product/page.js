@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, Save, Package, Search } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -42,6 +42,10 @@ export default function ProductPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
@@ -118,37 +122,28 @@ export default function ProductPage() {
           <Edit2 size={14} />
           <span>Edit</span>
         </button>
-        <button onClick={() => deleteProduct((currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm">
-          <Trash2 size={14} />
-          <span>Delete</span>
-        </button>
       </div>
     )
   }));
   
   return (
-    <div className="bg-gray-50">
+    <div className="h-full w-full">
       {showForm && (
         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />
       )}
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto bg-gray-50">
+      <div className="p-4 md:p-3 mx-auto bg-gray-50">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Product Management</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
+              Product Management
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
+                Total Products: {products.length}
+              </span>
+            </h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm w-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search size={16} className="absolute left-2.5 top-2.5 text-gray-400" />
-            </div>
             <button
               onClick={() => setShowForm(true)}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
@@ -157,6 +152,17 @@ export default function ProductPage() {
               <span className="hidden sm:inline">Add Product</span>
             </button>
           </div>
+        </div>
+
+        <div className="mb-6 w-full relative bg-white">
+          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products..."
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         {filteredProducts.length > 0 ? (

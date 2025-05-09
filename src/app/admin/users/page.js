@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, X, Edit2, Trash2, Save, Users, Search } from 'lucide-react';
+import { useState , useEffect } from 'react';
+import { Plus, X, Edit2, Save, Users, Search, Eye } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import ActiveStatus from '../../../components/ui/ActiveStatus';
-import DropdownFilter from '../../../components/DropdownFilter';
+import FiltersPanel from '../../../components/FiltersPanel';
 
 const initialUsers = [
   { name: "John Doe", email: "johndoe@example.com", rollNo: "12345", phoneNo: "9876543210", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 4 },
@@ -48,6 +48,17 @@ export default function UsersPage() {
   });
   const itemsPerPage = 10;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+
+   const handleReset = () => {
+    setFilters({
+      isFaculty: '',
+      isActive: '',
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setNewUser({ ...newUser, [name]: type === 'checkbox' ? checked : value });
@@ -75,6 +86,11 @@ export default function UsersPage() {
   const filteredByDropdown = getFilteredResults(users, filters);
   const filteredUsers = getSearchResults(filteredByDropdown, searchQuery);
 
+  const filterList = [
+    { label: 'Role', key: 'isFaculty', options: ['', 'Faculty', 'Student'], value: filters.isFaculty },
+    { label: 'Status', key: 'isActive', options: ['', 'Active', 'Inactive'], value: filters.isActive },
+  ];
+
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * itemsPerPage,
@@ -85,25 +101,6 @@ export default function UsersPage() {
     if (!newUser.name || !newUser.email) return;
     setUsers([...users, newUser]);
     resetForm();
-  };
-
-  const updateUser = (index) => {
-    const updated = [...users];
-    updated[index] = newUser;
-    setUsers(updated);
-    resetForm();
-  };
-
-  const startEdit = (user, index) => {
-    setEditIndex(index);
-    setNewUser(user);
-    setShowForm(true);
-  };
-
-  const deleteUser = (index) => {
-    const updated = [...users];
-    updated.splice(index, 1);
-    setUsers(updated);
   };
 
   const cancelForm = () => resetForm();
@@ -117,11 +114,16 @@ export default function UsersPage() {
   const rows = paginatedUsers.map((item, idx) => ({
     ...item,
     nameAndRoll: (
-      <div className="flex flex-col items-center text-center">
-        <span className="font-medium">{item.name}</span>
-        <span className="text-gray-500 text-sm">{item.rollNo}</span>
-      </div>
-    ),
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 text-blue-700 font-semibold rounded-full w-8 h-8 flex items-center justify-center">
+            {item.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium">{item.name}</span>
+            <span className="text-gray-500 text-sm">{item.rollNo}</span>
+          </div>
+        </div>
+      ),
     emailAndPhone: (
       <div className="flex flex-col items-center text-center">
         <span className="font-medium">{item.email}</span>
@@ -136,61 +138,64 @@ export default function UsersPage() {
       </div>
     ),
     actions: (
-      <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
-        <button onClick={() => startEdit(item, idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
-          <Edit2 size={14} />
-          <span>Edit</span>
-        </button>
-        <button onClick={() => deleteUser((currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm">
-          <Trash2 size={14} />
-          <span>Delete</span>
+      <div className="flex justify-center pt-2 border-t border-gray-100">
+        <button
+          onClick={() => viewProfile(item)}
+          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+        >
+          <Eye size={14} />
+          <span>View Profile</span>
         </button>
       </div>
-    )
+    )    
   }));
   
   return (
-    <div className="relative">
-      {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
+    <div className="h-full w-full">
+    {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
 
-      <div className="p-4 md:p-3 max-w-7xl mx-auto bg-gray-50 relative z-10">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Users size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">User Management</h1>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-10">
-            <DropdownFilter
-              label="Role"
-              options={['', 'Faculty', 'Student']}
-              selectedValue={filters.isFaculty}
-              onSelect={(value) => handleFilterChange('isFaculty', value)}
-            />
-            <DropdownFilter
-              label="Active"
-              options={['', 'Active', 'Inactive']}
-              selectedValue={filters.isActive}
-              onSelect={(value) => handleFilterChange('isActive', value)}
-            />
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="border border-gray-300 rounded-lg pl-30 pr-5 py-2 text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search size={16} className="absolute left-2.5 top-2.5 text-gray-400" />
-            </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Add User</span>
-            </button>
-          </div>
+    <div className="p-4 md:p-3 mx-auto bg-gray-50">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Users size={28} className="text-blue-600" />
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
+            User Management
+            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
+              Total Users: {initialUsers.length}
+            </span>
+          </h1>
         </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Add User</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <FiltersPanel
+          filters={filterList}
+          onChange={handleFilterChange}
+          onReset={handleReset}
+          Text="All users"
+        />
+      </div>
+
+      <div className="mb-6 w-full relative bg-white">
+        <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search users..."
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
         {filteredUsers.length > 0 ? (
           <>
@@ -293,7 +298,7 @@ export default function UsersPage() {
                 Cancel
               </button>
               <button
-                onClick={editIndex !== null ? () => updateUser(editIndex) : addUser}
+                onClick={addUser}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
               >
                 <Save size={16} />

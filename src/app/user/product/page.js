@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState ,useEffect } from 'react';
 import { Package, Search, ArrowRight } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -44,6 +44,10 @@ export default function ProductPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const toggleSelect = (index) => {
     const updated = [...products];
@@ -106,7 +110,12 @@ export default function ProductPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Product Management</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+              Products Available
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+                Total Products: {initialProducts.length}
+              </span>
+            </h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-10">
             <div className="relative">
