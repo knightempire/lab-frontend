@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -31,6 +31,10 @@ export default function RequestsPage() {
 
   const itemsPerPage = 10;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
+  
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };

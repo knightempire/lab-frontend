@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, Save, Users, Search } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -47,6 +47,10 @@ export default function UsersPage() {
     isActive: '',
   });
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
