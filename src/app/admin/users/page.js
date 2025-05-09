@@ -1,7 +1,7 @@
 'use client';
 
 import { useState , useEffect } from 'react';
-import { Plus, X, Edit2, Trash2, Save, Users, Search } from 'lucide-react';
+import { Plus, X, Edit2, Trash2, Save, Users, Search, Eye } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -91,25 +91,6 @@ export default function UsersPage() {
     resetForm();
   };
 
-  const updateUser = (index) => {
-    const updated = [...users];
-    updated[index] = newUser;
-    setUsers(updated);
-    resetForm();
-  };
-
-  const startEdit = (user, index) => {
-    setEditIndex(index);
-    setNewUser(user);
-    setShowForm(true);
-  };
-
-  const deleteUser = (index) => {
-    const updated = [...users];
-    updated.splice(index, 1);
-    setUsers(updated);
-  };
-
   const cancelForm = () => resetForm();
 
   const resetForm = () => {
@@ -145,17 +126,16 @@ export default function UsersPage() {
       </div>
     ),
     actions: (
-      <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
-        <button onClick={() => startEdit(item, idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
-          <Edit2 size={14} />
-          <span>Edit</span>
-        </button>
-        <button onClick={() => deleteUser((currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-red-500 hover:text-red-700 text-sm">
-          <Trash2 size={14} />
-          <span>Delete</span>
+      <div className="flex justify-center pt-2 border-t border-gray-100">
+        <button
+          onClick={() => viewProfile(item)}
+          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+        >
+          <Eye size={14} />
+          <span>View Profile</span>
         </button>
       </div>
-    )
+    )    
   }));
   
   return (
@@ -166,7 +146,12 @@ export default function UsersPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Users size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">User Management</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+              User Management
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+                Total Users: {initialUsers.length}
+              </span>
+            </h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-10">
             <DropdownFilter
@@ -302,7 +287,7 @@ export default function UsersPage() {
                 Cancel
               </button>
               <button
-                onClick={editIndex !== null ? () => updateUser(editIndex) : addUser}
+                onClick={addUser}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
               >
                 <Save size={16} />
