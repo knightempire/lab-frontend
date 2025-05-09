@@ -13,24 +13,19 @@ const Custom404 = () => {
   
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col">
-      {/* Top section with 404 */}
       <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-16">
-        {/* Background decorative elements */}
         <div className="absolute top-20 right-20 w-60 h-60 bg-blue-50 rounded-full opacity-40 blur-xl"></div>
         <div className="absolute bottom-20 left-20 w-80 h-80 bg-indigo-50 rounded-full opacity-40 blur-xl"></div>
-        
-        {/* 404 Number with improved styling */}
+       
         <div className="relative mb-1 mt-4">
           <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-700">404</h1>
         </div>
-        
-        {/* Error message with improved wording */}
+
         <h2 className="text-3xl font-semibold text-gray-800 mt-6">Page Not Found</h2>
         <p className="text-gray-600 mt-4 max-w-md mx-auto text-lg">
-          We couldn't find the page you're looking for. It might have been moved, deleted, or never existed.
+          We couldn&apos;t find the page you&apos;re looking for. It might have been moved, deleted, or never existed.
         </p>
         
-        {/* Buttons with improved styling */}
         <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={navigateBack}
@@ -52,7 +47,6 @@ const Custom404 = () => {
         </div>
       </div>
       
-      {/* Footer */}
       <div className="py-6 text-center border-t border-gray-200">
         <p className="text-sm text-gray-500">
           &copy; {new Date().getFullYear()} Amuda. All rights reserved.
