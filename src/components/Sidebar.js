@@ -27,13 +27,13 @@ export default function Sidebar({ isOpen }) {
       <div className="flex flex-col h-full p-4">
         <div className="flex items-center mb-8 mt-2">
           {isOpen ? (
-            <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-500 border-2 border-transparent">
-              Dashboard
-            </h2>
+            <div>
+              <img src="/images/logo.png" alt="Amuda" className="w-full h-auto max-w-xs" />
+            </div>
           ) : (
             <div className="w-full flex justify-center">
-              <User size={24} className="text-gray-700" />
-            </div>
+                <img src="/images/icon.png" alt="Amuda" className="w-10 h-10 rounded-full flex justify-center items-center" />
+              </div>
           )}
         </div>
         
