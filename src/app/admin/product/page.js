@@ -90,11 +90,11 @@ export default function ProductPage() {
     setShowForm(true);
   };
 
-  const deleteProduct = (index) => {
-    const updated = [...products];
-    updated.splice(index, 1);
-    setProducts(updated);
-  };
+  // const deleteProduct = (index) => {
+  //   const updated = [...products];
+  //   updated.splice(index, 1);
+  //   setProducts(updated);
+  // };
 
   const cancelForm = () => {
     resetForm();
