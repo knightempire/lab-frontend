@@ -110,25 +110,26 @@ export default function ProductPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
               Products Available
-              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
                 Total Products: {initialProducts.length}
               </span>
             </h1>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-10">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="border border-gray-300 rounded-lg pl-10 pr-5 py-2 text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search size={16} className="absolute left-2.5 top-2.5 text-gray-400" />
-            </div>
           </div>
+        </div>
+
+        <div className="mb-6 w-full relative bg-white">
+          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products..."
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         {filteredProducts.length > 0 ? (
