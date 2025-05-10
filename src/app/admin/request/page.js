@@ -53,7 +53,8 @@ export default function RequestsPage() {
       const matchesStatus = filters.status === '' || req.status === filters.status.toLowerCase();
       return matchesRole && matchesStatus;
     }).filter(req =>
-      req.name.toLowerCase().includes(searchQuery.toLowerCase())
+      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 

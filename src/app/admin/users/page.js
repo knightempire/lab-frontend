@@ -73,8 +73,13 @@ export default function UsersPage() {
   };  
   
   const getSearchResults = (users, searchQuery) => {
-    return users.filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  };
+    const lowerQuery = searchQuery.toLowerCase();
+    return users.filter(
+      (user) =>
+        user.name.toLowerCase().includes(lowerQuery) ||
+        user.rollNo.toLowerCase().includes(lowerQuery)
+    );
+  };  
 
   const handleFilterChange = (key, value) => {
     setFilters((prevFilters) => ({
@@ -140,7 +145,6 @@ export default function UsersPage() {
     actions: (
       <div className="flex justify-center pt-2 border-t border-gray-100">
         <button
-          onClick={() => viewProfile(item)}
           className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
         >
           <Eye size={14} />
