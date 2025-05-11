@@ -15,14 +15,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   const validateEmail = (email) =>
-    /^[^\s@]+@amrita\.edu$/.test(email);
+     /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!validateEmail(email)) {
-      setError('Only @amrita.edu email addresses are allowed.');
+      setError('Only University email addresses are allowed.');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@amrita.edu"
+            placeholder="Enter your University email"
             className="w-full"
           />
           <div className="relative">

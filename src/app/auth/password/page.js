@@ -47,7 +47,7 @@ export default function PasswordPage({ userName = 'User' }) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
             <TextField
-              label="New Password"
+              label="Enter Password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
