@@ -1,29 +1,28 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle } from 'lucide-react';
+import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Table from '../../../components/table';
 
-// Mock data for reference staff
 const referenceStaffOptions = [
-  { id: 1, name: 'John Smith' },
-  { id: 2, name: 'Sarah Johnson' },
-  { id: 3, name: 'Michael Brown' },
-  { id: 4, name: 'Emily Davis' },
-  { id: 5, name: 'David Wilson' },
-  { id: 6, name: 'Jennifer Taylor' },
-  { id: 7, name: 'Robert Martinez' },
-  { id: 8, name: 'Lisa Anderson' },
-  { id: 9, name: 'William Thomas' },
-  { id: 10, name: 'Patricia Jackson' },
+  { id: 1, name: 'Prof 1' },
+  { id: 2, name: 'Prof 2' },
+  { id: 3, name: 'Prof 3' },
+  { id: 4, name: 'Prof 4' },
+  { id: 5, name: 'Prof 5' },
+  { id: 6, name: 'Prof 6' },
+  { id: 7, name: 'Prof 7' },
+  { id: 8, name: 'Prof 8' },
+  { id: 9, name: 'Prof 9' },
+  { id: 10, name: 'Prof 10' },
 ];
 
 export default function CheckoutPage() {
   const router = useRouter();
   
-  // Assuming products are passed via router query or localStorage in a real app
-  // For demo purposes, let's use dummy selected products
+  // State for selected products
   const [selectedProducts, setSelectedProducts] = useState([]);
-
+  
   // Retrieve selected products from localStorage when component mounts
   useEffect(() => {
     const storedProducts = localStorage.getItem('selectedProducts');
@@ -41,8 +40,6 @@ export default function CheckoutPage() {
   const [purpose, setPurpose] = useState('');
   const [returnDays, setReturnDays] = useState(7);
   const [acknowledged, setAcknowledged] = useState(false);
-  
-  // Reference staff state
   const [referenceStaff, setReferenceStaff] = useState('');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
@@ -51,11 +48,21 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-
+  
+  // Confirmation popup state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
+  // Pagination (if needed)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   // Filter staff options based on search query
   const filteredStaffOptions = referenceStaffOptions.filter(staff => 
     staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase())
   );
+
+  // Calculate total items
+  const totalItems = selectedProducts.reduce((acc, product) => acc + product.selectedQuantity, 0);
 
   // Handle quantity change
   const updateQuantity = (index, newQuantity) => {
@@ -73,14 +80,11 @@ export default function CheckoutPage() {
   const removeProduct = (index) => {
     const updated = selectedProducts.filter((_, i) => i !== index);
     setSelectedProducts(updated);
+    localStorage.setItem('selectedProducts', JSON.stringify(updated));
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-    
-    // Validate form
+  // Validate form data
+  const validateForm = () => {
     const validationErrors = {};
     
     if (!purpose.trim()) {
@@ -103,340 +107,479 @@ export default function CheckoutPage() {
       validationErrors.products = 'At least one product must be selected';
     }
     
+    return validationErrors;
+  };
+
+  // Initial form submission handler
+  const handleSubmitRequest = () => {
+    setSubmitted(true);
+    
+    // Validate form
+    const validationErrors = validateForm();
     setErrors(validationErrors);
     
-    // If no errors, proceed with submission
+    // If no errors, show confirmation dialog
     if (Object.keys(validationErrors).length === 0) {
-      console.log('Form submitted successfully', {
-        selectedProducts,
-        purpose,
-        referenceStaff,
-        returnDays,
-        acknowledged
-      });
-      
-      // Show success message
-      setSubmitSuccess(true);
-      
-      // In a real app, you would submit the form data to an API
-      // After successful submission, redirect to a confirmation page
-      setTimeout(() => {
-        // router.push('/confirmation');
-        // For demo, we'll just reset the form
-        setSubmitSuccess(false);
-        setSubmitted(false);
-      }, 3000);
+      setShowConfirmDialog(true);
     }
+  };
+  
+  // Final form submission after confirmation
+  const handleConfirmSubmit = () => {
+    // Hide the confirmation dialog
+    setShowConfirmDialog(false);
+    
+    console.log('Form submitted successfully', {
+      selectedProducts,
+      purpose,
+      referenceStaff,
+      returnDays,
+      acknowledged
+    });
+    
+    // Show success message
+    setSubmitSuccess(true);
+    
+    setTimeout(() => {
+      localStorage.removeItem('selectedProducts');
+      router.push('/'); // Redirect to home page
+    }, 1500);
+  };
+  
+  // Cancel confirmation dialog
+  const handleCancelSubmit = () => {
+    setShowConfirmDialog(false);
   };
 
   // Handle back button
   const handleBack = () => {
     // Store the current state of selected products back to localStorage
-    // This ensures the product page can restore the same selections
     localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts));
     
     // Navigate back to product page
     router.push('/user/product');
   };
 
-  return (
-    <div className="h-full w-full bg-gray-50">
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-6">
-          <button 
-            onClick={handleBack}
-            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={24} className="text-gray-700" />
-          </button>
-          <Package size={28} className="text-blue-600" />
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            Checkout
-          </h1>
-        </div>
-
-        {submitSuccess ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center mb-6">
-            <CheckCircle size={24} className="text-green-500 mr-3" />
-            <div>
-              <h3 className="font-medium text-green-800">Success!</h3>
-              <p className="text-green-700">Your request has been submitted successfully.</p>
+  // Close success alert
+  const closeSuccessAlert = () => {
+    setSubmitSuccess(false);
+  };
+  
+  // Table column definitions for selected products
+  const columns = [
+    { key: 'name', label: 'Component' },
+    { key: 'selectedQuantity', label: 'Quantity' },
+    { key: 'inStock', label: 'Stock' },
+    { key: 'action', label: 'Action' },
+  ];
+  
+  // Custom cell renderer for the table
+  const renderCell = (key, product, index) => {
+    switch (key) {
+      case 'name':
+        return <div className="font-medium text-gray-900">{product.name}</div>;
+      
+      case 'selectedQuantity':
+        return (
+          <div className="flex items-center justify-center">
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden w-28">
+              <button
+                type="button"
+                className="h-8 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600"
+                onClick={() => updateQuantity(index, product.selectedQuantity - 1)}
+                disabled={product.selectedQuantity <= 1}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                value={product.selectedQuantity}
+                onChange={(e) => updateQuantity(index, e.target.value)}
+                className="h-8 w-12 text-center border-x border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                min="1"
+                max={product.inStock}
+              />
+              <button
+                type="button"
+                className="h-8 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600"
+                onClick={() => updateQuantity(index, product.selectedQuantity + 1)}
+                disabled={product.selectedQuantity >= product.inStock}
+              >
+                +
+              </button>
             </div>
           </div>
-        ) : null}
+        );
+      
+      case 'inStock':
+        return (
+          <span className={`inline-flex text-sm ${product.inStock < 5 ? 'text-amber-600' : 'text-gray-600'}`}>
+            {product.inStock} available
+          </span>
+        );
+      
+      case 'action':
+        return (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => removeProduct(index)}
+              className="text-gray-500 hover:text-red-600 transition-colors"
+              aria-label="Remove item"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        );
+        
+      default:
+        return product[key];
+    }
+  };
 
-        <form onSubmit={handleSubmit}>
-          {/* Selected Products Section */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">Selected Products</h2>
+  return (
+    <div className="bg-gray-50">
+      <div className="mx-auto px-4 py-3">
+        {/* Header */}
+        <header className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleBack}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Go back"
+              >
+                <ArrowLeft size={20} className="text-gray-700" />
+              </button>
+              <div className="flex items-center">
+                <Package className="text-blue-600 h-6 w-6 mr-2" />
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Checkout
+                </h1>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              {totalItems} {totalItems === 1 ? 'item' : 'items'}
+            </div>
+          </div>
+        </header>
+
+        {/* Success notification */}
+        {submitSuccess && (
+          <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-green-100 p-3 rounded-full">
+                  <CheckCircle size={30} className="text-green-500" />
+                </div>
+              </div>
+              <h3 className="text-xl font-medium text-center text-gray-900 mb-2">Request Submitted Successfully!</h3>
+              <p className="text-gray-600 text-center mb-5">
+                Your component request has been sent for processing. Redirecting to home page...
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Main Form */}
+          <div className="md:w-2/3 space-y-4">
+            {/* Selected Products Section */}
+            <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-2 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-800">Selected Components</h2>
+                {selectedProducts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    + Add more
+                  </button>
+                )}
+              </div>
+              
+              {selectedProducts.length > 0 ? (
+                <div className={`${selectedProducts.length > 3 ? 'max-h-66 overflow-y-auto' : ''} overflow-x-auto`}>
+                  {/* Using the Table component */}
+                  <Table 
+                    columns={columns} 
+                    rows={selectedProducts} 
+                    currentPage={currentPage} 
+                    itemsPerPage={itemsPerPage} 
+                    renderCell={renderCell} 
+                  />
+                </div>
+              ) : (
+                <div className="px-6 py-12 text-center">
+                  <Package size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500 mb-4">No components selected yet</p>
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    Browse components
+                  </button>
+                </div>
+              )}
+              
+              {submitted && errors.products && (
+                <div className="p-3 bg-red-50 text-red-700 text-sm flex items-center border-t border-red-100">
+                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                  {errors.products}
+                </div>
+              )}
+            </section>
+
+            {/* Request Details Section */}
+            <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-2 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-800">Request Details</h2>
+              </div>
+              <div className="px-6 py-4 space-y-5">
+                {/* Purpose Field */}
+                <div>
+                  <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-1">
+                    Purpose <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="purpose"
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    className={`w-full px-4 py-2 border ${
+                      submitted && errors.purpose ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                    rows="3"
+                    placeholder="Please describe why you need these components..."
+                  ></textarea>
+                  {submitted && errors.purpose && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle size={14} className="mr-1" />
+                      {errors.purpose}
+                    </p>
+                  )}
+                </div>
+
+                {/* Reference Staff Dropdown */}
+                <div>
+                  <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
+                    Reference Staff <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div 
+                      className={`w-full px-4 py-2 border ${
+                        submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between`}
+                      onClick={() => setShowStaffDropdown(!showStaffDropdown)}
+                    >
+                      <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
+                        {referenceStaff || 'Select reference staff...'}
+                      </span>
+                      <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    
+                    {showStaffDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                        <div className="p-2 border-b border-gray-200">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Search staff..."
+                              value={staffSearchQuery}
+                              onChange={(e) => setStaffSearchQuery(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoComplete="off"
+                            />
+                            <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
+                          </div>
+                        </div>
+                        
+                        <ul className="py-1">
+                          {filteredStaffOptions.length > 0 ? (
+                            filteredStaffOptions.map((staff) => (
+                              <li 
+                                key={staff.id}
+                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors"
+                                onClick={() => {
+                                  setReferenceStaff(staff.name);
+                                  setShowStaffDropdown(false);
+                                }}
+                              >
+                                {staff.name}
+                              </li>
+                            ))
+                          ) : (
+                            <li className="px-4 py-2 text-sm text-gray-500">No staff found</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  {submitted && errors.referenceStaff && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle size={14} className="mr-1" />
+                      {errors.referenceStaff}
+                    </p>
+                  )}
+                </div>
+
+                {/* Return Days Field */}
+                <div>
+                  <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
+                    Return Days <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative max-w-xs">
+                    <input
+                      type="number"
+                      id="returnDays"
+                      value={returnDays}
+                      onChange={(e) => setReturnDays(parseInt(e.target.value) || '')}
+                      min="1"
+                      max="30"
+                      className={`w-full px-4 py-2 border ${
+                        submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors pr-16`}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <span className="text-gray-500 text-sm">days</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center mt-1">
+                    <Info size={14} className="text-gray-400 mr-1" />
+                    <p className="text-xs text-gray-500">Maximum 30 days</p>
+                  </div>
+                  {submitted && errors.returnDays && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle size={14} className="mr-1" />
+                      {errors.returnDays}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <div className="md:w-1/3 space-y-6">
+            {/* Summary Card */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-800">Summary</h2>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Items:</span>
+                    <span className="font-medium">{totalItems}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Component Types:</span>
+                    <span className="font-medium">{selectedProducts.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Return Period:</span>
+                    <span className="font-medium">{returnDays} days</span>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {selectedProducts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Stock</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {selectedProducts.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
-                            {/* Minus Button */}
-                            <button
-                              type="button"
-                              className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
-                              onClick={() => updateQuantity(index, product.selectedQuantity - 1)}
-                            >
-                              −
-                            </button>
-                      
-                            {/* Editable Quantity */}
-                            <input
-                              type="number"
-                              value={product.selectedQuantity}
-                              onChange={(e) => updateQuantity(index, e.target.value)}
-                              className="w-12 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
-                              min="1"
-                              max={product.inStock}
-                            />
-                      
-                            {/* Plus Button */}
-                            <button
-                              type="button"
-                              className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
-                              onClick={() => updateQuantity(index, product.selectedQuantity + 1)}
-                            >
-                              +
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{product.inStock} available</div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <button
-                            type="button"
-                            onClick={() => removeProduct(index)}
-                            className="text-red-600 hover:text-red-800 p-2"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Confirmation Dialog */}
+            {showConfirmDialog && (
+              <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Submission</h3>
+                  <p className="text-gray-500 mb-5">
+                    Are you sure you want to submit this request? Once submitted, you will be responsible for all the components listed.
+                  </p>
+                  <div className="flex space-x-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={handleCancelSubmit}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmSubmit}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="p-8 text-center">
-                <Package size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500 mb-2">No products selected.</p>
+            )}
+
+            {/* Terms & Conditions Card */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-800">Terms & Conditions</h2>
+              </div>
+              <div className="p-6 space-y-4">
+                {/* Important Note */}
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
+                  <div className="flex items-start">
+                    <Info size={20} className="text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <p className="text-sm text-blue-700">
+                      The request for components is valid for a maximum of 30 days. To request for more, you should get re-issued. For more details, contact lab in-charge.
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Acknowledgement Checkbox */}
+                <div className="flex items-start pt-2">
+                  <div className="flex items-center h-5 mt-0.5">
+                    <input
+                      id="acknowledgement"
+                      type="checkbox"
+                      checked={acknowledged}
+                      onChange={() => setAcknowledged(!acknowledged)}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 rounded ${
+                        submitted && errors.acknowledged ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="acknowledgement" className={`font-medium ${
+                      submitted && errors.acknowledged ? 'text-red-600' : 'text-gray-700'
+                    }`}>
+                      I acknowledge that the components are completely my responsibility after issuance; I will take care of any damage that occurs.
+                    </label>
+                    {submitted && errors.acknowledged && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={14} className="mr-1" />
+                        {errors.acknowledged}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Submit Button */}
+                <button
+                  type="button"
+                  onClick={handleSubmitRequest}
+                  className="w-full px-6 py-3 mt-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors font-medium"
+                >
+                  Submit Request
+                </button>
+                
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="w-full mt-2 px-6 py-2 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  Return to product selection
+                  Back to Browse
                 </button>
               </div>
-            )}
-            
-            {submitted && errors.products && (
-              <div className="p-3 bg-red-50 text-red-700 text-sm flex items-center">
-                <AlertCircle size={16} className="mr-2" />
-                {errors.products}
-              </div>
-            )}
-          </div>
-
-          {/* Form Fields Section */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">Request Details</h2>
-            </div>
-            <div className="p-4 space-y-4">
-              {/* Purpose Field */}
-              <div>
-                <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-1">
-                  Purpose <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="purpose"
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value)}
-                  className={`w-full px-3 py-2 border ${
-                    submitted && errors.purpose ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  rows="3"
-                  placeholder="Please describe why you need these components..."
-                ></textarea>
-                {submitted && errors.purpose && (
-                  <p className="mt-1 text-sm text-red-600">{errors.purpose}</p>
-                )}
-              </div>
-
-              {/* Reference Staff Dropdown */}
-              <div>
-                <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
-                  Reference Staff <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div 
-                    className={`w-full px-3 py-2 border ${
-                      submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 cursor-pointer flex items-center justify-between`}
-                    onClick={() => setShowStaffDropdown(!showStaffDropdown)}
-                  >
-                    <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
-                      {referenceStaff || 'Select reference staff...'}
-                    </span>
-                    <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  
-                  {showStaffDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                      <div className="p-2 border-b border-gray-200">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Search staff..."
-                            value={staffSearchQuery}
-                            onChange={(e) => setStaffSearchQuery(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
-                        </div>
-                      </div>
-                      
-                      <ul className="py-1">
-                        {filteredStaffOptions.length > 0 ? (
-                          filteredStaffOptions.map((staff) => (
-                            <li 
-                              key={staff.id}
-                              className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer"
-                              onClick={() => {
-                                setReferenceStaff(staff.name);
-                                setShowStaffDropdown(false);
-                              }}
-                            >
-                              {staff.name}
-                            </li>
-                          ))
-                        ) : (
-                          <li className="px-4 py-2 text-sm text-gray-500">No staff found</li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-                {submitted && errors.referenceStaff && (
-                  <p className="mt-1 text-sm text-red-600">{errors.referenceStaff}</p>
-                )}
-              </div>
-
-              {/* Return Days Field */}
-              <div>
-                <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
-                  Return Days <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    id="returnDays"
-                    value={returnDays}
-                    onChange={(e) => setReturnDays(parseInt(e.target.value) || '')}
-                    min="1"
-                    max="30"
-                    className={`w-full px-3 py-2 border ${
-                      submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <span className="text-gray-500 text-sm">days</span>
-                  </div>
-                </div>
-                {submitted && errors.returnDays ? (
-                  <p className="mt-1 text-sm text-red-600">{errors.returnDays}</p>
-                ) : (
-                  <p className="mt-1 text-xs text-gray-500">Maximum 30 days</p>
-                )}
-              </div>
             </div>
           </div>
-
-          {/* Notes and Acknowledgement Section */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">Terms & Conditions</h2>
-            </div>
-            <div className="p-4">
-              {/* Additional Note */}
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                <p className="text-sm text-blue-700">
-                  The request for components is valid for a maximum of 30 days. To request for more, you should get re-issued. For more details, contact lab in-charge.
-                </p>
-              </div>
-              
-              {/* Acknowledgement Checkbox */}
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="acknowledgement"
-                    type="checkbox"
-                    checked={acknowledged}
-                    onChange={() => setAcknowledged(!acknowledged)}
-                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
-                      submitted && errors.acknowledged ? 'border-red-300' : ''
-                    }`}
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="acknowledgement" className={`font-medium ${
-                    submitted && errors.acknowledged ? 'text-red-700' : 'text-gray-700'
-                  }`}>
-                    I acknowledge that the components are completely my responsibility after issuance; I will take care of any damage that occurs.
-                  </label>
-                  {submitted && errors.acknowledged && (
-                    <p className="mt-1 text-sm text-red-600">{errors.acknowledged}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-between items-center">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Back to Products
-            </button>
-            
-            <button
-              type="submit"
-              className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Submit Request
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
