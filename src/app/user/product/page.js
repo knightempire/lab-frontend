@@ -1,8 +1,9 @@
 'use client';
-import { useState ,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, Search, ArrowRight } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
+import { useRouter } from 'next/navigation';
 
 const initialProducts = [
     { name: "Widget A", inStock: 90 },
@@ -40,10 +41,46 @@ const columns = [
 ];
 
 export default function ProductPage() {
-  const [products, setProducts] = useState(initialProducts.map(p => ({ ...p, selected: false, selectedQuantity: 0 })));
+  const router = useRouter();
+  const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Initialize products and restore selections from localStorage
+  useEffect(() => {
+    // First initialize with default state (all products, none selected)
+    let initializedProducts = initialProducts.map(p => ({ 
+      ...p, 
+      selected: false, 
+      selectedQuantity: 0 
+    }));
+    
+    // Try to restore selections from localStorage
+    try {
+      const storedProducts = localStorage.getItem('selectedProducts');
+      if (storedProducts) {
+        const selectedItems = JSON.parse(storedProducts);
+        
+        // Update the products with stored selection state
+        initializedProducts = initializedProducts.map(product => {
+          const selectedItem = selectedItems.find(item => item.name === product.name);
+          if (selectedItem) {
+            return {
+              ...product,
+              selected: true,
+              selectedQuantity: selectedItem.selectedQuantity
+            };
+          }
+          return product;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to restore product selections:', error);
+    }
+    
+    setProducts(initializedProducts);
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -86,12 +123,19 @@ export default function ProductPage() {
   );
 
   const getSelectedProducts = () => {
-    return products.filter(p => p.selected).map(p => ({ name: p.name, selectedQuantity: p.selectedQuantity }));
+    return products.filter(p => p.selected).map(p => ({ 
+      name: p.name, 
+      inStock: p.inStock, 
+      selectedQuantity: p.selectedQuantity 
+    }));
   };
 
   const handleProceed = () => {
     const selected = getSelectedProducts();
-    console.log('Selected Products:', selected);
+    // Store selected products in localStorage
+    localStorage.setItem('selectedProducts', JSON.stringify(selected));
+    // Navigate to checkout page
+    router.push('/user/checkout');
   };
 
   // Check if any products are selected
@@ -160,8 +204,9 @@ export default function ProductPage() {
                           if (newQuantity === 0) {
                             updateQuantity(globalIndex, -1);
                           } else {
-                            row.selectedQuantity = newQuantity;
-                            setProducts([...products]);
+                            const updated = [...products];
+                            updated[globalIndex].selectedQuantity = parseInt(newQuantity);
+                            setProducts(updated);
                           }
                         }}
                         className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
@@ -194,9 +239,6 @@ export default function ProductPage() {
               }}
             />
             
-            {/* Proceed button only shows when at least one product is selected */}
-            
-            
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -204,13 +246,13 @@ export default function ProductPage() {
             />
             {hasSelectedProducts && (
               <div className="fixed bottom-6 right-6 justify-end flex">
-              <button
-                onClick={handleProceed}
-                className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
-              >
-                <ArrowRight size={20} />
-              </button>
-            </div>
+                <button
+                  onClick={handleProceed}
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
+                >
+                  <ArrowRight size={20} />
+                </button>
+              </div>
             )}
           </>
         ) : (
