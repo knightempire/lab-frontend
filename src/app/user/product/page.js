@@ -1,8 +1,9 @@
 'use client';
-import { useState ,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, Search, ArrowRight } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
+import { useRouter } from 'next/navigation';
 
 const initialProducts = [
     { name: "Widget A", inStock: 90 },
@@ -40,10 +41,46 @@ const columns = [
 ];
 
 export default function ProductPage() {
-  const [products, setProducts] = useState(initialProducts.map(p => ({ ...p, selected: false, selectedQuantity: 0 })));
+  const router = useRouter();
+  const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Initialize products and restore selections from localStorage
+  useEffect(() => {
+    // First initialize with default state (all products, none selected)
+    let initializedProducts = initialProducts.map(p => ({ 
+      ...p, 
+      selected: false, 
+      selectedQuantity: 0 
+    }));
+    
+    // Try to restore selections from localStorage
+    try {
+      const storedProducts = localStorage.getItem('selectedProducts');
+      if (storedProducts) {
+        const selectedItems = JSON.parse(storedProducts);
+        
+        // Update the products with stored selection state
+        initializedProducts = initializedProducts.map(product => {
+          const selectedItem = selectedItems.find(item => item.name === product.name);
+          if (selectedItem) {
+            return {
+              ...product,
+              selected: true,
+              selectedQuantity: selectedItem.selectedQuantity
+            };
+          }
+          return product;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to restore product selections:', error);
+    }
+    
+    setProducts(initializedProducts);
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -65,7 +102,11 @@ export default function ProductPage() {
 
     const newQty = product.selectedQuantity + delta;
 
-    if (newQty <= 0) {
+    // Check if the new quantity exceeds available stock
+    if (delta > 0 && newQty > product.inStock) {
+      // If trying to exceed inStock, cap at max available
+      product.selectedQuantity = product.inStock;
+    } else if (newQty <= 0) {
       product.selected = false;
       product.selectedQuantity = 0;
     } else {
@@ -86,12 +127,19 @@ export default function ProductPage() {
   );
 
   const getSelectedProducts = () => {
-    return products.filter(p => p.selected).map(p => ({ name: p.name, selectedQuantity: p.selectedQuantity }));
+    return products.filter(p => p.selected).map(p => ({ 
+      name: p.name, 
+      inStock: p.inStock, 
+      selectedQuantity: p.selectedQuantity 
+    }));
   };
 
   const handleProceed = () => {
     const selected = getSelectedProducts();
-    console.log('Selected Products:', selected);
+    // Store selected products in localStorage
+    localStorage.setItem('selectedProducts', JSON.stringify(selected));
+    // Navigate to checkout page
+    router.push('/user/checkout');
   };
 
   // Check if any products are selected
@@ -157,13 +205,19 @@ export default function ProductPage() {
                         type="text"
                         value={row.selectedQuantity}
                         onChange={(e) => {
-                          const newQuantity = Math.max(0, Math.min(e.target.value, row.inStock));
+                          // Parse as integer and ensure it's a valid number
+                          const value = parseInt(e.target.value) || 0;
+                          // Make sure it doesn't exceed stock and is not negative
+                          const newQuantity = Math.max(0, Math.min(value, row.inStock));
+                          
+                          const updated = [...products];
                           if (newQuantity === 0) {
-                            updateQuantity(globalIndex, -1);
+                            updated[globalIndex].selected = false;
+                            updated[globalIndex].selectedQuantity = 0;
                           } else {
-                            row.selectedQuantity = newQuantity;
-                            setProducts([...products]);
+                            updated[globalIndex].selectedQuantity = newQuantity;
                           }
+                          setProducts(updated);
                         }}
                         className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
                         min="0"
@@ -174,6 +228,8 @@ export default function ProductPage() {
                       <button
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
                         onClick={() => updateQuantity(globalIndex, 1)}
+                        // Disable button if at max stock
+                        disabled={row.selectedQuantity >= row.inStock}
                       >
                         +
                       </button>
@@ -195,9 +251,6 @@ export default function ProductPage() {
               }}
             />
             
-            {/* Proceed button only shows when at least one product is selected */}
-            
-            
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -205,13 +258,13 @@ export default function ProductPage() {
             />
             {hasSelectedProducts && (
               <div className="fixed bottom-6 right-6 justify-end flex">
-              <button
-                onClick={handleProceed}
-                className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
-              >
-                <ArrowRight size={20} />
-              </button>
-            </div>
+                <button
+                  onClick={handleProceed}
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
+                >
+                  <ArrowRight size={20} />
+                </button>
+              </div>
             )}
           </>
         ) : (
