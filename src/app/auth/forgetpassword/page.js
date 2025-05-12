@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
 
   const validateEmail = (email) =>
-    /^[^\s@]+@amrita\.edu$/.test(email);
+    /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
     }
 
     if (!validateEmail(email)) {
-      setError('Only @amrita.edu email addresses are allowed.');
+      setError('Only University email addresses are allowed.');
       return;
     }
 
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@amrita.edu"
+            placeholder="Enter your University email"
             className="w-full"
           />
           {error && <p className="text-red-600 text-sm text-center">{error}</p>}
