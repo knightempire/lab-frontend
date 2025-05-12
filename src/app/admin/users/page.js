@@ -1,6 +1,8 @@
 'use client';
 
 import { useState , useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Plus, X, Edit2, Save, Users, Search, Eye } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -36,6 +38,7 @@ const columns = [
 ];
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState(initialUsers);
   const [showForm, setShowForm] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', rollNo: '', phoneNo: '', isFaculty: false, isActive: true });
@@ -143,13 +146,14 @@ export default function UsersPage() {
       </div>
     ),
     actions: (
-      <div className="flex justify-center pt-2 border-t border-gray-100">
-        <button
+        <div className="flex justify-center pt-2 border-t border-gray-100 mb-2">
+        <Link
+          href={`/admin/profile?rollNo=${item.rollNo}`}
           className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
         >
           <Eye size={14} />
           <span>View Profile</span>
-        </button>
+        </Link>
       </div>
     )    
   }));

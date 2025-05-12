@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -111,11 +112,11 @@ export default function CheckoutPage() {
     }
     
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/;
     if (!emailRegex.test(customFacultyEmail)) {
       setErrors({
         ...errors,
-        customFaculty: 'Please enter a valid email address'
+        customFaculty: 'Please enter a valid University email address'
       });
       return;
     }
