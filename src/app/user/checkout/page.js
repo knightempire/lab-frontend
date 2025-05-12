@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X } from 'lucide-react';
+import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 
@@ -44,6 +44,11 @@ export default function CheckoutPage() {
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
   
+  // Custom faculty state
+  const [showCustomFacultyForm, setShowCustomFacultyForm] = useState(false);
+  const [customFacultyName, setCustomFacultyName] = useState('');
+  const [customFacultyEmail, setCustomFacultyEmail] = useState('');
+  
   // Validation state
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -81,6 +86,52 @@ export default function CheckoutPage() {
     const updated = selectedProducts.filter((_, i) => i !== index);
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
+  };
+
+  // Handle return days change with max limit of 30
+  const handleReturnDaysChange = (value) => {
+    const days = parseInt(value) || 0;
+    if (days > 30) {
+      setReturnDays(30);
+    } else {
+      setReturnDays(days);
+    }
+  };
+
+  // Handle custom faculty submission
+  const handleCustomFacultySubmit = (e) => {
+    e.preventDefault();
+    
+    if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
+      setErrors({
+        ...errors,
+        customFaculty: 'Both name and email are required'
+      });
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customFacultyEmail)) {
+      setErrors({
+        ...errors,
+        customFaculty: 'Please enter a valid email address'
+      });
+      return;
+    }
+    
+    // Set the reference staff with the custom entry
+    setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
+    
+    // Close the custom faculty form and the dropdown
+    setShowCustomFacultyForm(false);
+    setShowStaffDropdown(false);
+    
+    // Clear any previous errors
+    const updatedErrors = {...errors};
+    delete updatedErrors.customFaculty;
+    delete updatedErrors.referenceStaff;
+    setErrors(updatedErrors);
   };
 
   // Validate form data
@@ -192,7 +243,7 @@ export default function CheckoutPage() {
                 −
               </button>
               <input
-                type="number"
+                type="text"
                 value={product.selectedQuantity}
                 onChange={(e) => updateQuantity(index, e.target.value)}
                 className="h-8 w-12 text-center border-x border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -257,9 +308,6 @@ export default function CheckoutPage() {
                   Checkout
                 </h1>
               </div>
-            </div>
-            <div className="text-sm text-gray-500">
-              {totalItems} {totalItems === 1 ? 'item' : 'items'}
             </div>
           </div>
         </header>
@@ -382,8 +430,8 @@ export default function CheckoutPage() {
                     </div>
                     
                     {showStaffDropdown && (
-                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                        <div className="p-2 border-b border-gray-200">
+                      <div className="absolute z-10 bottom-full mb-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                        <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
                           <div className="relative">
                             <input
                               type="text"
@@ -393,6 +441,7 @@ export default function CheckoutPage() {
                               onChange={(e) => setStaffSearchQuery(e.target.value)}
                               onClick={(e) => e.stopPropagation()}
                               autoComplete="off"
+                              autoFocus
                             />
                             <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
                           </div>
@@ -403,19 +452,118 @@ export default function CheckoutPage() {
                             filteredStaffOptions.map((staff) => (
                               <li 
                                 key={staff.id}
-                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors"
+                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
                                 onClick={() => {
                                   setReferenceStaff(staff.name);
                                   setShowStaffDropdown(false);
                                 }}
                               >
+                                <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
+                                  {staff.name.charAt(0)}
+                                </div>
                                 {staff.name}
                               </li>
                             ))
                           ) : (
-                            <li className="px-4 py-2 text-sm text-gray-500">No staff found</li>
+                            <li className="px-4 py-2 text-sm text-gray-500 italic">
+                              No matching staff found
+                            </li>
                           )}
                         </ul>
+                        
+                        <div className="p-2 border-t border-gray-200 bg-gray-50">
+                          <button
+                            type="button"
+                            className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
+                            onClick={() => {
+                              setShowCustomFacultyForm(true);
+                              setStaffSearchQuery('');
+                            }}
+                          >
+                            <UserPlus size={16} className="mr-2" />
+                            Add new faculty member
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Custom Faculty Form Modal remains unchanged */}
+                    {showCustomFacultyForm && (
+                      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden animate-fade-in">
+                          <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
+                            <h4 className="text-lg font-medium text-black flex items-center">
+                              <UserPlus size={20} className="mr-2" />
+                              Add New Faculty Member
+                            </h4>
+                            <button 
+                              type="button" 
+                              className="text-white/80 hover:text-white transition-colors" 
+                              onClick={() => setShowCustomFacultyForm(false)}
+                            >
+                              <X size={20} />
+                            </button>
+                          </div>
+                          
+                          <form onSubmit={handleCustomFacultySubmit} className="p-6">
+                            <div className="space-y-4">
+                              <div>
+                                <label htmlFor="facultyName" className="block text-sm font-medium text-gray-700 mb-1">
+                                  Full Name <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  id="facultyName"
+                                  value={customFacultyName}
+                                  onChange={(e) => setCustomFacultyName(e.target.value)}
+                                  className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="e.g. Prof. John Doe"
+                                  autoFocus
+                                  required
+                                />
+                              </div>
+                              
+                              <div>
+                                <label htmlFor="facultyEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                                  Email Address <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  type="email"
+                                  id="facultyEmail"
+                                  value={customFacultyEmail}
+                                  onChange={(e) => setCustomFacultyEmail(e.target.value)}
+                                  className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="e.g. john.doe@university.edu"
+                                  required
+                                />
+                              </div>
+                              
+                              {errors.customFaculty && (
+                                <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700 flex items-center">
+                                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                                  {errors.customFaculty}
+                                </div>
+                              )}
+                              
+                              <div className="pt-4 flex justify-end space-x-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCustomFacultyForm(false)}
+                                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center"
+                                >
+                                  <UserPlus size={16} className="mr-2" />
+                                  Add Faculty
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -426,7 +574,6 @@ export default function CheckoutPage() {
                     </p>
                   )}
                 </div>
-
                 {/* Return Days Field */}
                 <div>
                   <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
@@ -437,7 +584,7 @@ export default function CheckoutPage() {
                       type="number"
                       id="returnDays"
                       value={returnDays}
-                      onChange={(e) => setReturnDays(parseInt(e.target.value) || '')}
+                      onChange={(e) => handleReturnDaysChange(e.target.value)}
                       min="1"
                       max="30"
                       className={`w-full px-4 py-2 border ${
@@ -567,15 +714,7 @@ export default function CheckoutPage() {
                   className="w-full px-6 py-3 mt-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors font-medium"
                 >
                   Submit Request
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="w-full mt-2 px-6 py-2 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  Back to Browse
-                </button>
+                </button> 
               </div>
             </div>
           </div>

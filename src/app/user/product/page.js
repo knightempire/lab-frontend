@@ -102,7 +102,11 @@ export default function ProductPage() {
 
     const newQty = product.selectedQuantity + delta;
 
-    if (newQty <= 0) {
+    // Check if the new quantity exceeds available stock
+    if (delta > 0 && newQty > product.inStock) {
+      // If trying to exceed inStock, cap at max available
+      product.selectedQuantity = product.inStock;
+    } else if (newQty <= 0) {
       product.selected = false;
       product.selectedQuantity = 0;
     } else {
@@ -201,14 +205,19 @@ export default function ProductPage() {
                         type="text"
                         value={row.selectedQuantity}
                         onChange={(e) => {
-                          const newQuantity = Math.max(0, Math.min(e.target.value, row.inStock));
+                          // Parse as integer and ensure it's a valid number
+                          const value = parseInt(e.target.value) || 0;
+                          // Make sure it doesn't exceed stock and is not negative
+                          const newQuantity = Math.max(0, Math.min(value, row.inStock));
+                          
+                          const updated = [...products];
                           if (newQuantity === 0) {
-                            updateQuantity(globalIndex, -1);
+                            updated[globalIndex].selected = false;
+                            updated[globalIndex].selectedQuantity = 0;
                           } else {
-                            const updated = [...products];
-                            updated[globalIndex].selectedQuantity = parseInt(newQuantity);
-                            setProducts(updated);
+                            updated[globalIndex].selectedQuantity = newQuantity;
                           }
+                          setProducts(updated);
                         }}
                         className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
                         min="0"
@@ -219,6 +228,8 @@ export default function ProductPage() {
                       <button
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
                         onClick={() => updateQuantity(globalIndex, 1)}
+                        // Disable button if at max stock
+                        disabled={row.selectedQuantity >= row.inStock}
                       >
                         +
                       </button>
