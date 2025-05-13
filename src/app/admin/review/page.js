@@ -63,7 +63,8 @@ const AdminRequestView = () => {
       if (component.id === id) {
         // Find the corresponding product in simplifiedProducts to get inStock value
         const product = simplifiedProducts.find(p => p.name === component.name);
-        const maxStock = product ? product.inStock : Infinity;
+        // Set a default max stock (e.g., 0) when no matching product is found
+        const maxStock = product ? product.inStock : 0;
         
         // Ensure quantity is between 0 and maxStock
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
@@ -80,7 +81,8 @@ const AdminRequestView = () => {
       if (component.id === id) {
         // Find the corresponding product in simplifiedProducts to get inStock value
         const product = simplifiedProducts.find(p => p.name === component.name);
-        const maxStock = product ? product.inStock : Infinity;
+        // Set a default max stock (e.g., 0) when no matching product is found
+        const maxStock = product ? product.inStock : 0;
         
         // Ensure quantity doesn't exceed maxStock
         const newQuantity = Math.min(component.quantity + 1, maxStock);
@@ -90,7 +92,6 @@ const AdminRequestView = () => {
       return component;
     }));
   };
-
   const handleDecrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
@@ -107,8 +108,12 @@ const AdminRequestView = () => {
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        // Reset quantity when product changes
-        return {...component, name: newName, quantity: 1};
+        // Find the corresponding product to get its stock
+        const product = simplifiedProducts.find(p => p.name === newName);
+        // Set initial quantity to 1 or 0 depending on availability
+        const initialQty = product && product.inStock > 0 ? 1 : 0;
+        
+        return {...component, name: newName, quantity: initialQty};
       }
       return component;
     }));
@@ -138,7 +143,7 @@ const AdminRequestView = () => {
     const newId = Math.max(0, ...adminIssueComponents.map(c => c.id)) + 1;
     setAdminIssueComponents([
       ...adminIssueComponents,
-      { id: newId, name: '', quantity: 1, description: '' }
+      { id: newId, name: '', quantity: 0, description: '' } // Set initial quantity to 0
     ]);
   };
 
@@ -311,7 +316,8 @@ const AdminRequestView = () => {
   const adminComponentsRows = adminIssueComponents.map(component => {
     // Find the product in the simplifiedProducts array to get the inStock value
     const product = simplifiedProducts.find(p => p.name === component.name);
-    const maxStock = product ? product.inStock : Infinity;
+    // Set a default max stock (e.g., 0 or "N/A") when no matching product is found
+    const maxStock = product ? product.inStock : 0;
     
     return {
       ...component,
@@ -326,7 +332,7 @@ const AdminRequestView = () => {
           <button 
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleDecrementQuantity(component.id)}
-            disabled={component.quantity <= 0}
+            disabled={component.quantity <= 0 || !component.name}
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -338,17 +344,20 @@ const AdminRequestView = () => {
             max={maxStock}
             value={component.quantity}
             onChange={(e) => handleQuantityChange(component.id, e.target.value)}
+            disabled={!component.name} // Disable input if no component name is selected
           />
           
           <button 
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleIncrementQuantity(component.id)}
-            disabled={component.quantity >= maxStock}
+            disabled={component.quantity >= maxStock || !component.name}
           >
             <Plus className="w-4 h-4" />
           </button>
           
-          <span className="text-xs text-gray-500 ml-1">Max: {maxStock}</span>
+          <span className="text-xs text-gray-500 ml-1">
+            Max: {component.name ? maxStock : 'N/A'}
+          </span>
         </div>
       ),
       actions: (
@@ -361,7 +370,7 @@ const AdminRequestView = () => {
         </button>
       )
     };
-  });
+  })
 
   return (
     <div className="bg-gray-50">
