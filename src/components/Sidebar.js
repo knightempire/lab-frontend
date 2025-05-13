@@ -28,11 +28,11 @@ export default function Sidebar({ isOpen }) {
         <div className="flex items-center mb-8 mt-2">
           {isOpen ? (
             <div>
-              <img src="/images/logo.png" alt="Amuda" className="w-full h-auto max-w-xs" />
+              <image src="/images/logo.png" alt="Amuda" className="w-full h-auto max-w-xs" />
             </div>
           ) : (
             <div className="w-full flex justify-center">
-                <img src="/images/icon.png" alt="Amuda" className="w-10 h-10 rounded-full flex justify-center items-center" />
+                <image src="/images/icon.png" alt="Amuda" className="w-10 h-10 rounded-full flex justify-center items-center" />
               </div>
           )}
         </div>
