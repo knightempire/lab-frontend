@@ -554,7 +554,7 @@ const AdminRequestView = () => {
               />
               {adminIssueComponents.length === 0 && (
                 <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
-                  <p className="text-gray-500">No components added. Click "Add Component" to add one.</p>
+                  <p className="text-gray-500">No components added. Click `&rdquo` Add Component `&rdquo` to add one.</p>
                 </div>
               )}
             </div>

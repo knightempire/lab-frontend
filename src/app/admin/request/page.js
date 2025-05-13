@@ -46,8 +46,8 @@ const requests = [
     },
     description: "For embedded project, For circuit prototyping",
     components: [
-      { id: 1, name: 'Widget F', quantity: 1 },
-      { id: 2, name: 'Widget D', quantity: 2 }
+      { id: 1, name: 'Widget C', quantity: 1 },
+      { id: 2, name: 'Widget Z', quantity: 2 }
     ]
   },
   {
@@ -66,7 +66,7 @@ const requests = [
     },
     description: "For robotics project",
     components: [
-      { id: 1, name: 'Widget E', quantity: 5 }
+      { id: 1, name: 'Widget D', quantity: 5 }
     ]
   }
 ];
