@@ -1,13 +1,13 @@
 'use client';
 
-import { useState , useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Edit2, Trash2, Save, Package, Search } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 
 const initialProducts = [
   { name: "Widget A", quantity: 100, damagedQuantity: 5, inStock: 90 },
-  { name: "Widget B", quantity: 50, damagedQuantity: 2, inStock: 50 },
+  { name: "Widget B", quantity: 50, damagedQuantity: 2, inStock: 45 },
   { name: "Widget C", quantity: 70, damagedQuantity: 3, inStock: 65 },
   { name: "Widget D", quantity: 80, damagedQuantity: 4, inStock: 75 },
   { name: "Widget E", quantity: 60, damagedQuantity: 1, inStock: 59 },
@@ -63,22 +63,30 @@ export default function ProductPage() {
 
   const addProduct = () => {
     if (!newProduct.name) return;
+    const quantity = parseInt(newProduct.quantity) || 0;
+    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
+    const inStock = parseInt(newProduct.inStock) || 0;
+
     setProducts([...products, {
       name: newProduct.name,
-      quantity: parseInt(newProduct.quantity) || 0,
-      damagedQuantity: parseInt(newProduct.damagedQuantity) || 0,
-      inStock: parseInt(newProduct.inStock) || 0
+      quantity,
+      damagedQuantity,
+      inStock
     }]);
     resetForm();
   };
 
   const updateProduct = (index) => {
+    const quantity = parseInt(newProduct.quantity) || 0;
+    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
+    const inStock = parseInt(newProduct.inStock) || 0;
+
     const updated = [...products];
     updated[index] = {
       name: newProduct.name,
-      quantity: parseInt(newProduct.quantity) || 0,
-      damagedQuantity: parseInt(newProduct.damagedQuantity) || 0,
-      inStock: parseInt(newProduct.inStock) || 0
+      quantity,
+      damagedQuantity,
+      inStock
     };
     setProducts(updated);
     resetForm();
@@ -90,12 +98,6 @@ export default function ProductPage() {
     setShowForm(true);
   };
 
-  const deleteProduct = (index) => {
-    const updated = [...products];
-    updated.splice(index, 1);
-    setProducts(updated);
-  };
-
   const cancelForm = () => {
     resetForm();
   };
@@ -105,27 +107,32 @@ export default function ProductPage() {
     setEditIndex(null);
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
-  
+
   const columns = [
     { key: 'name', label: 'Product Name' },
     { key: 'quantity', label: 'Total Quantity' },
+    { key: 'issued', label: 'Issued Quantity' },
     { key: 'damagedQuantity', label: 'Damaged Quantity' },
     { key: 'inStock', label: 'In Stock' },
     { key: 'actions', label: 'Actions' },
   ];
-  
+
   const rows = paginatedProducts.map((item, idx) => ({
     ...item,
+    issued: item.quantity - item.damagedQuantity - item.inStock,
     actions: (
       <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
-        <button onClick={() => startEdit(item, (currentPage - 1) * itemsPerPage + idx)} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
+        <button
+          onClick={() => startEdit(item, (currentPage - 1) * itemsPerPage + idx)}
+          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+        >
           <Edit2 size={14} />
           <span>Edit</span>
         </button>
       </div>
     )
   }));
-  
+
   return (
     <div className="h-full w-full">
       {showForm && (
@@ -199,7 +206,8 @@ export default function ProductPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={cancelForm}>
           <div
             className="bg-white rounded-xl shadow-2xl w-full max-w-sm animate-fadeIn"
-            onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center p-4 border-b">
               <div className="flex items-center gap-2">
                 <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
@@ -221,7 +229,9 @@ export default function ProductPage() {
               {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
                 <div key={field}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())}
+                    {field === 'name'
+                      ? 'Product Name *'
+                      : field.replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())}
                   </label>
                   <input
                     name={field}

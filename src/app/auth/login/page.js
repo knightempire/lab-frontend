@@ -12,11 +12,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  const validateEmail = (email) =>
+     /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Logging in:', email, password);
-    router.push('/dashboard');
+    setError('');
+
+    if (!validateEmail(email)) {
+      setError('Only University email addresses are allowed.');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Password cannot be empty.');
+      return;
+    }
+
+    router.push('/user/dashboard');
   };
 
   return (
@@ -30,7 +45,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="Enter your University email"
             className="w-full"
           />
           <div className="relative">
@@ -50,6 +65,8 @@ export default function LoginPage() {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">

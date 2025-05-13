@@ -5,17 +5,41 @@ import { useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [userType, setUserType] = useState('Student');
+  const [error, setError] = useState('');
+
+  const validateEmail = (email) =>
+    /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
+
+  const validatePhone = (phone) =>
+    /^\d{10}$/.test(phone);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    console.log('Registering:', email, password);
+    setError('');
+
+    if (!name.trim()) {
+      setError('Name is required.');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Only University email addresses are allowed.');
+      return;
+    }
+
+    if (!validatePhone(phone)) {
+      setError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+
     router.push('/auth/login');
   };
 
@@ -26,30 +50,44 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister} className="space-y-4">
           <TextField
-            label="Your email"
+            label="Name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your full name"
+          />
+          <TextField
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="Enter your university email"
           />
-          <div className="relative">
-            <TextField
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
-              className="w-full pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-9 text-gray-500 hover:text-gray-800"
+          <TextField
+            label="Phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="10-digit number"
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              User Type
+            </label>
+            <select
+              value={userType}
+              onChange={(e) => setUserType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+              <option value="Student">Student</option>
+              <option value="Faculty">Faculty</option>
+            </select>
           </div>
-          <PrimaryButton text="Sign up" />
+
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+
+          <PrimaryButton text="Sign up" className="w-full py-3 mt-2" />
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
