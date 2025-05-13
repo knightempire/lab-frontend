@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Users, Edit, CheckCircle, Eye, XCircle, Save, X, UserCircle2, GraduationCap , History} from 'lucide-react';
+import { Search, Users, Edit, CheckCircle, Eye, XCircle, Clock, Save, X, GraduationCap , History, ArrowLeft, FileX} from 'lucide-react';
 import DropdownFilter from '../../../components/DropdownFilter';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -16,20 +16,28 @@ const initialUserDetails = {
   status: "active",
   isFaculty: false,
   totalHistoryCount: 15,
+  damageCount: 2,
   requests: [
-    { requestId: "REQ123", totalComplaints: 3, status: "pending" },
-    { requestId: "REQ124", totalComplaints: 1, status: "accepted" },
-    { requestId: "REQ125", totalComplaints: 0, status: "rejected" },
-    { requestId: "REQ126", totalComplaints: 2, status: "pending" },
-    { requestId: "REQ127", totalComplaints: 1, status: "accepted" },
-    { requestId: "REQ128", totalComplaints: 0, status: "rejected" }
+    { requestId: "REQ123", totalComponents: 3, status: "pending", isReturned: false },
+    { requestId: "REQ124", totalComponents: 1, status: "accepted", isReturned: true },
+    { requestId: "REQ125", totalComponents: 0, status: "rejected", isReturned: false },
+    { requestId: "REQ126", totalComponents: 2, status: "pending", isReturned: null },
+    { requestId: "REQ127", totalComponents: 1, status: "accepted", isReturned: null },
+    { requestId: "REQ128", totalComponents: 0, status: "rejected", isReturned: true },
+    { requestId: "REQ126", totalComponents: 2, status: "pending", isReturned: null },
+    { requestId: "REQ127", totalComponents: 1, status: "accepted", isReturned: null },
+    { requestId: "REQ128", totalComponents: 0, status: "rejected", isReturned: true },
+    { requestId: "REQ126", totalComponents: 2, status: "pending", isReturned: true },
+    { requestId: "REQ127", totalComponents: 1, status: "accepted", isReturned: null },
+    { requestId: "REQ128", totalComponents: 0, status: "rejected", isReturned: true }
   ]
 };
 
 const columns = [
   { key: 'requestId', label: 'Request ID' },
-  { key: 'totalComplaints', label: 'Total Complaints' },
+  { key: 'totalComponents', label: 'Total Components' },
   { key: 'status', label: 'Status' },
+  { key: 'isReturned', label: 'Returned Status' },
   { key: 'viewMore', label: 'View More' }
 ];
 
@@ -42,7 +50,8 @@ export default function UserProfilePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState('');
-  const itemsPerPage = 5;
+  const [returnedStatusFilter, setReturnedStatusFilter] = useState('');
+  const itemsPerPage = 7;
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -78,15 +87,22 @@ export default function UserProfilePage() {
       item.status.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatusFilter =
       statusFilter === '' || item.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesReturnedStatusFilter =
+      returnedStatusFilter === '' ||
+      (returnedStatusFilter === 'returned' && item.isReturned) ||
+      (returnedStatusFilter === 'not returned' && !item.isReturned);
 
-    return matchesSearchQuery && matchesStatusFilter;
+    return matchesSearchQuery && matchesStatusFilter && matchesReturnedStatusFilter;
   });
+
+  const hasRequests = filteredRequests.length > 0;
+  const showEmptyState = !hasRequests;
 
   const paginatedRows = filteredRequests
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
     .map((item) => ({
       requestId: item.requestId,
-      totalComplaints: item.totalComplaints,
+      totalComponents: item.totalComponents,
       status: (
         <div
           className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
@@ -103,6 +119,26 @@ export default function UserProfilePage() {
           {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         </div>
       ),
+      isReturned: (
+        <div
+          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
+            item.isReturned === true
+              ? 'bg-green-100 text-green-700'
+              : item.isReturned === false
+              ? 'bg-red-100 text-red-700'
+              : 'bg-gray-100 text-gray-700'
+          }`}
+        >
+          {item.isReturned === true && <CheckCircle size={16} />}
+          {item.isReturned === false && <XCircle size={16} />}
+          {item.isReturned === null && <Clock size={16} />}
+          {item.isReturned === true
+            ? 'Returned'
+            : item.isReturned === false
+            ? 'Not Returned'
+            : 'Null'}
+        </div>
+      ),
       viewMore: (
         <Link
             href={`/request-details/${item.requestId}`}
@@ -115,29 +151,41 @@ export default function UserProfilePage() {
 
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">
-      <div className="flex items-center gap-2 mb-6">
-        <Users size={28} className="text-blue-600" />
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">User Profile</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()} // Replace with your `handleBack` function if needed
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={20} className="text-gray-700" />
+          </button>
+
+          {/* Header Title */}
+          <div className="flex items-center">
+            <Users className="text-blue-600 h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-800">User Profile</h1>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Section: User Details */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 relative">
-        <div className="absolute top-4 right-4">
-            <button
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 xl:col-span-1 relative">
+          <button
             onClick={handleEditProfile}
-            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors"
-            >
+            className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors"
+          >
             <Edit size={16} />
-            </button>
-        </div>
-        
+          </button>
         <div className="flex flex-col items-center mb-6">
-            <div className="relative">
-            <UserCircle2 size={120} className="text-gray-300 mb-4 border-4 border-blue-50 rounded-full" />
-            <div className="absolute bottom-4 right-2 bg-blue-500 text-white rounded-full p-1">
-                {userDetails.isFaculty ? <GraduationCap size={16} /> : <Users size={16} />}
-            </div>
+            <div className="flex items-center justify-center w-24 h-24 bg-blue-500 text-white text-3xl font-bold rounded-full mb-4">
+              {userDetails.name
+                .split(' ')
+                .map((word) => word[0])
+                .join('')
+                .toUpperCase()}
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-1">{userDetails.name}</h3>
             <p className="text-gray-500 text-sm">{userDetails.rollNo}</p>
@@ -158,32 +206,37 @@ export default function UserProfilePage() {
 
             {/* Status Section */}
             <div className="border-t border-gray-100 pt-4">
-            <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-3">
-                <div className="bg-green-50 p-2 rounded-full">
-                    <CheckCircle size={20} className="text-green-600" />
-                </div>
-                <span className="text-gray-700 font-medium">Account Status</span>
+                  <div className={`p-2 rounded-full ${userStatus === 'active' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <CheckCircle size={20} className={userStatus === 'active' ? 'text-green-600' : 'text-red-600'} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-700 font-medium">Account Status</span>
+                    <span className={`text-sm font-medium ${userStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                      {userStatus === 'active' ? 'Active' : 'Deactivated'}
+                    </span>
+                  </div>
                 </div>
                 <button
-                onClick={handleStatusToggle}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                style={{ backgroundColor: userStatus === 'active' ? '#10B981' : '#6B7280' }}
+                  onClick={handleStatusToggle}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  style={{ backgroundColor: userStatus === 'active' ? '#10B981' : '#6B7280' }}
                 >
-                <span
+                  <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    userStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
+                      userStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
                     }`}
-                />
+                  />
                 </button>
-            </div>
+              </div>
 
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-3">
                 <div className="bg-purple-50 p-2 rounded-full">
                     <GraduationCap size={20} className="text-purple-600" />
                 </div>
-                <span className="text-gray-700 font-medium">Faculty Status</span>
+                <span className="text-gray-700 font-medium">Role</span>
                 </div>
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
                 {userDetails.isFaculty ? 'Staff' : 'Student'}
@@ -198,19 +251,32 @@ export default function UserProfilePage() {
                 <span className="text-gray-700 font-medium">Total History</span>
                 </div>
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                {userDetails.totalHistoryCount} actions
+                {userDetails.totalHistoryCount}
                 </span>
             </div>
             </div>
+
+            <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="bg-red-50 p-2 rounded-full">
+                <XCircle size={20} className="text-red-600" />
+              </div>
+              <span className="text-gray-700 font-medium">Damage Count</span>
+            </div>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+              {userDetails.damageCount ?? 0} 
+            </span>
+          </div>
         </div>
         </div>
 
         {/* Right Section: User Requests Table */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 xl:col-span-2">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">User Requests</h2>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        
+            <div className="flex sm:flex-row gap-4 mb-4">
             {/* Search Bar */}
-            <div className="relative w-full sm:w-2/3">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
@@ -221,87 +287,116 @@ export default function UserProfilePage() {
               />
             </div>
 
-            {/* Dropdown Filter for Status */}
+            {/* Status Filter */}
             <div className="w-full sm:w-1/3">
               <DropdownFilter
                 label="Status"
                 options={['', 'Accepted', 'Pending', 'Rejected']}
                 selectedValue={statusFilter}
-                onSelect={(value) => setStatusFilter(value)}
+                onSelect={(value) => setStatusFilter(value.toLowerCase())}
+              />
+            </div>
+
+            {/* Returned Status Filter */}
+            <div className="w-full sm:w-1/3">
+              <DropdownFilter
+                label="Returned Status"
+                options={['', 'Returned', 'Not Returned']}
+                selectedValue={returnedStatusFilter}
+                onSelect={(value) => setReturnedStatusFilter(value.toLowerCase())}
               />
             </div>
           </div>
-          <Table
-            columns={columns}
-            rows={paginatedRows}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
-          {/* Pagination Component */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            setCurrentPage={setCurrentPage}
-          />
+          {showEmptyState ? (
+             <div className="flex flex-col items-center justify-center py-12">
+              <div className="bg-gray-50 p-4 rounded-full">
+                <FileX className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No requests found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchQuery || statusFilter || returnedStatusFilter
+                  ? "Try adjusting your filters or search term"
+                  : "This user hasn't made any requests yet"}
+              </p>
+            </div>
+          ) : (
+            <>
+              <Table
+                columns={columns}
+                rows={paginatedRows}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+              />
+              {/* Pagination Component */}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  setCurrentPage={setCurrentPage}
+                />
+              )}
+            </>
+          )}
         </div>
       </div>
 
       {/* Edit Profile Modal */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={handleCancelEdit}>
+        <div
+          className="bg-white rounded-xl shadow-2xl w-full max-w-sm animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center p-4 border-b">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
+                <Edit size={18} />
+              </div>
               <h2 className="text-lg font-semibold text-gray-800">Edit Profile</h2>
-              <button
-                onClick={handleCancelEdit}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
             </div>
-            <div className="space-y-4">
-              {[
-                { key: 'name', label: 'Name' },
-                { key: 'phoneNo', label: 'Phone Number' },
-                { key: 'rollNo', label: 'Roll Number' },
-                { key: 'email', label: 'Email' },
-                { key: 'totalHistoryCount', label: 'Total History' }
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {label}
-                  </label>
-                  <input
-                    name={key}
-                    type="text"
-                    value={editProfileData[key]}
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={handleCancelEdit}
-                className="px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveProfile}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
-              >
-                <Save size={16} />
-                Save
-              </button>
-            </div>
+            <button
+              onClick={handleCancelEdit}
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {['name', 'email', 'rollNo', 'phoneNo', 'totalHistoryCount'].map((field) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                  {field === 'totalHistoryCount' ? 'Total History' : field}
+                </label>
+                <input
+                  name={field}
+                  type={field === 'totalHistoryCount' ? 'number' : 'text'}
+                  placeholder={`Enter ${field}`}
+                  value={editProfileData[field] ?? ''}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
+            <button
+              onClick={handleCancelEdit}
+              className="px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveProfile}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+            >
+              <Save size={16} />
+              Save
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 }
