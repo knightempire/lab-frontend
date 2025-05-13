@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
 import { Home, Box, FilePlus, Users, ClipboardCheck, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -28,12 +28,12 @@ export default function Sidebar({ isOpen }) {
         <div className="flex items-center mb-8 mt-2">
           {isOpen ? (
             <div>
-              <image src="/images/logo.png" alt="Amuda" className="w-full h-auto max-w-xs" />
+            <Image src="/images/logo.png" alt="Amuda" width={180} height={60} />
             </div>
           ) : (
             <div className="w-full flex justify-center">
-                <image src="/images/icon.png" alt="Amuda" className="w-10 h-10 rounded-full flex justify-center items-center" />
-              </div>
+          <Image src="/images/icon.png" alt="Amuda" width={180} height={50} />
+          </div>
           )}
         </div>
         
