@@ -233,9 +233,17 @@ const AdminRequestView = () => {
 
   // Dropdown component renderer
   const ComponentDropdown = ({ id, selectedValue }) => {
-    const filteredProducts = simplifiedProducts.filter(product => 
-      product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
-    );
+    // Get names of components already in the table
+    const existingComponentNames = adminIssueComponents
+      .filter(component => component.id !== id && component.name) // Exclude current component and empty names
+      .map(component => component.name);
+    
+    // Filter products that are not already in the table and match search term
+    const filteredProducts = simplifiedProducts
+      .filter(product => 
+        !existingComponentNames.includes(product.name) && // Exclude products already in the table
+        product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
+      );
     
     return (
       <div className="relative">
@@ -277,7 +285,9 @@ const AdminRequestView = () => {
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-2 text-gray-500 text-sm">No matching components</div>
+                <div className="px-4 py-2 text-gray-500 text-sm">
+                  {searchTerm[id] ? 'No matching components' : 'All components already added'}
+                </div>
               )}
             </div>
           </div>
@@ -356,7 +366,7 @@ const AdminRequestView = () => {
           </button>
           
           <span className="text-xs text-gray-500 ml-1">
-            Max: {component.name ? maxStock : 'N/A'}
+            Available: {component.name ? maxStock : 'N/A'}
           </span>
         </div>
       ),
@@ -418,7 +428,7 @@ const AdminRequestView = () => {
                 Requester Information
               </h3>
               <div className="space-y-3">
-              <div className="flex items-center justify-start">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <span className="text-gray-500 w-32">Name:</span>
                   <span className="font-medium">{requestData.name}</span>
