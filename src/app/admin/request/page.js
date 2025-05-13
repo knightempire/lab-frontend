@@ -1,28 +1,79 @@
 'use client';
 
-import { useState,useEffect } from 'react';
+// app/admin/requests/page.jsx
+import { useState, useEffect } from 'react';
 import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
-
+import { useRouter } from 'next/navigation';
 const requests = [
-  { name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", status: "pending" },
-  { name: "Rahul Mehta", rollNo: "2023456", phoneNo: "9123456789", email: "rahul@example.com", isFaculty: false, requestedDate: "2025-05-06", status: "accepted" },
-  { name: "Priya Sen", rollNo: "2023789", phoneNo: "9876501234", email: "priya@example.com", isFaculty: true, requestedDate: "2025-05-07", status: "rejected" }
+  {
+    id: "REQ-2025-0513",
+    name: "John Doe",
+    rollNo: "CS21B054",
+    phoneNo: "9876543210",
+    email: "john.doe@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-10",
+    requestedDays: 5,
+    status: "pending",
+    referenceStaff: {
+      name: 'Dr. Sarah Johnson',
+      email: 'sarah.johnson@university.edu'
+    },
+    description: "For IoT project, Display indicators",
+    components: [
+      { id: 1, name: 'Widget A', quantity: 2 },
+      { id: 2, name: 'Widget B', quantity: 10 },
+      { id: 3, name: 'Widget C', quantity: 20 }
+    ]
+  },
+  {
+    id: "REQ-2025-0514",
+    name: "Alice Kumar",
+    rollNo: "2023123",
+    phoneNo: "9876543210",
+    email: "alice@example.com",
+    isFaculty: false,
+    requestedDate: "2025-05-05",
+    requestedDays: 3,
+    status: "pending",
+    referenceStaff: {
+      name: 'Prof. Michael Johnson',
+      email: 'michael.johnson@university.edu'
+    },
+    description: "For embedded project, For circuit prototyping",
+    components: [
+      { id: 1, name: 'Widget F', quantity: 1 },
+      { id: 2, name: 'Widget D', quantity: 2 }
+    ]
+  },
+  {
+    id: "REQ-2025-0515",
+    name: "Rahul Mehta",
+    rollNo: "2023456",
+    phoneNo: "9123456789",
+    email: "rahul@example.com",
+    isFaculty: false,
+    requestedDate: "2025-05-06",
+    requestedDays: 7,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. Lisa Chen',
+      email: 'lisa.chen@university.edu'
+    },
+    description: "For robotics project",
+    components: [
+      { id: 1, name: 'Widget E', quantity: 5 }
+    ]
+  }
 ];
 
-const columns = [
-  { key: 'nameAndRoll', label: 'Name / Roll No' },
-  { key: 'emailAndPhone', label: 'Email / Phone No' },
-  { key: 'role', label: 'Role' },
-  { key: 'requestedDate', label: 'Requested Date' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Actions' }
-];
 
 export default function RequestsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -50,12 +101,24 @@ export default function RequestsPage() {
   const getFilteredResults = () => {
     return requests.filter(req => {
       const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesStatus = filters.status === '' || req.status === filters.status.toLowerCase();
+      const matchesStatus = filters.status === '' || req.status.toLowerCase() === filters.status.toLowerCase();
       return matchesRole && matchesStatus;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
     );
+  };
+
+  const handleViewRequest = (request) => {
+    // Encode request data as URL parameters
+    const params = new URLSearchParams();
+    params.append('requestId', request.id);
+    
+    // Navigate to the request view page with the request ID
+    router.push(`/admin/review?${params.toString()}`);
+    
+    // Store the request data in sessionStorage for retrieval
+    sessionStorage.setItem('requestData', JSON.stringify(request));
   };
 
   const filteredRequests = getFilteredResults();
@@ -68,6 +131,15 @@ export default function RequestsPage() {
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
     { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+  ];
+
+  const columns = [
+    { key: 'nameAndRoll', label: 'Name / Roll No' },
+    { key: 'emailAndPhone', label: 'Email / Phone No' },
+    { key: 'role', label: 'Role' },
+    { key: 'requestedDate', label: 'Requested Date' },
+    { key: 'status', label: 'Status' },
+    { key: 'actions', label: 'Actions' }
   ];
 
   const rows = paginatedRequests.map((item) => {
@@ -119,7 +191,6 @@ export default function RequestsPage() {
           <CalendarDays size={14} />
           {item.requestedDate}
         </div>
-
       ),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
@@ -129,7 +200,10 @@ export default function RequestsPage() {
       ),
       actions: (
         <div className="flex gap-2 justify-center">
-          <button className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+          <button 
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+            onClick={() => handleViewRequest(item)}
+          >
             <Eye size={14} />
             View Request
           </button>
