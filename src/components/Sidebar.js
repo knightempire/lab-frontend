@@ -11,12 +11,12 @@ export default function Sidebar({ isOpen }) {
     { name: 'Product', icon: <Box size={20} />, href: '/admin/product' },
     { name: 'Request', icon: <FilePlus size={20} />, href: '/admin/request' },
     { name: 'Users', icon: <Users size={20} />, href: '/admin/users' },
-    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: 'admin/issued' },
+    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '/admin/issued' },
   ];
   const usernavItems = [
-    { name: 'Home', icon: <Home size={20} />, href: 'user/dashboard' },
+    { name: 'Home', icon: <Home size={20} />, href: '/user/dashboard' },
     { name: 'Product', icon: <Box size={20} />, href: '/user/product' },
-    { name: 'Request', icon: <FilePlus size={20} />, href: 'user/request' },
+    { name: 'Request', icon: <FilePlus size={20} />, href: '/user/request' },
   ];
   const navItems = pathname.startsWith('/admin') ? adminnavItems : usernavItems;
 
