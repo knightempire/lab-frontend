@@ -53,7 +53,7 @@ const requests = [
   {
     id: "REQ-2025-0515",
     name: "Rahul Mehta",
-    rollNo: "2023456",
+    rollNo: "12345",
     phoneNo: "9123456789",
     email: "rahul@example.com",
     isFaculty: false,
@@ -115,7 +115,7 @@ export default function RequestsPage() {
     params.append('requestId', request.id);
     
     // Navigate to the request view page with the request ID
-    router.push(`/admin/review?${params.toString()}`);
+    router.push(`/admin/return?${params.toString()}`);
     
     // Store the request data in sessionStorage for retrieval
     sessionStorage.setItem('requestData', JSON.stringify(request));

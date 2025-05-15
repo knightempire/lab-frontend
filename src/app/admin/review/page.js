@@ -435,6 +435,7 @@ const AdminRequestView = () => {
                 </div>
                 <button
                   className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"                  
+                  onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
                 >
                   View Profile
                 </button>
