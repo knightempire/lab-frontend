@@ -8,13 +8,14 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import FiltersPanel from '../../../components/FiltersPanel';
 
 const requests = [
-  { name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", isExtended: false },
-  { name: "Rahul Mehta", rollNo: "2023456", phoneNo: "9123456789", email: "rahul@example.com", isFaculty: false, requestedDate: "2025-05-06", isExtended: true },
-  { name: "Priya Sen", rollNo: "2023789", phoneNo: "9876501234", email: "priya@example.com", isFaculty: true, requestedDate: "2025-05-07", isExtended: false }
+  { requestId: "REQ001", name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", isExtended: false },
+  { requestId: "REQ002", name: "Rahul Mehta", rollNo: "2023456", phoneNo: "9123456789", email: "rahul@example.com", isFaculty: false, requestedDate: "2025-05-06", isExtended: true },
+  { requestId: "REQ003", name: "Priya Sen", rollNo: "2023789", phoneNo: "9876501234", email: "priya@example.com", isFaculty: true, requestedDate: "2025-05-07", isExtended: false }
 ];
 
 const columns = [
   { key: 'nameAndRoll', label: 'Name / Roll No' },
+  { key: 'requestId', label: 'Request ID' },
   { key: 'emailAndPhone', label: 'Email / Phone No' },
   { key: 'role', label: 'Role' },
   { key: 'requestedDate', label: 'Requested Date' },
@@ -54,7 +55,8 @@ export default function RequestsPage() {
       return matchesRole && matchesRequestType;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) 
     );
   };
 
