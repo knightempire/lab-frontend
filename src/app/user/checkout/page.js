@@ -697,8 +697,8 @@ export default function CheckoutPage() {
                     <label htmlFor="acknowledgement" className={`font-medium ${
                       submitted && errors.acknowledged ? 'text-red-600' : 'text-gray-700'
                     }`}>
-                      I acknowledge that the components are completely my responsibility after issuance; I will take care of any damage that occurs.
-                    </label>
+                  I acknowledge receipt of the issued components and accept full responsibility for their care. I understand that I will be liable for any damage, loss, or misuse, and agree to pay any applicable penalties if required.
+                  </label>
                     {submitted && errors.acknowledged && (
                       <p className="mt-1 text-sm text-red-600 flex items-center">
                         <AlertCircle size={14} className="mr-1" />
