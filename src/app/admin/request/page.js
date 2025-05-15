@@ -1,16 +1,16 @@
 'use client';
 
 import { useState,useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays ,Repeat } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 
 const requests = [
-  { name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", status: "pending" },
-  { name: "Rahul Mehta", rollNo: "2023456", phoneNo: "9123456789", email: "rahul@example.com", isFaculty: false, requestedDate: "2025-05-06", status: "accepted" },
-  { name: "Priya Sen", rollNo: "2023789", phoneNo: "9876501234", email: "priya@example.com", isFaculty: true, requestedDate: "2025-05-07", status: "rejected" }
+  { name: "Alice Kumar", rollNo: "2023123", phoneNo: "9876543210", email: "alice@example.com", isFaculty: false, requestedDate: "2025-05-05", isExtended: false },
+  { name: "Rahul Mehta", rollNo: "2023456", phoneNo: "9123456789", email: "rahul@example.com", isFaculty: false, requestedDate: "2025-05-06", isExtended: true },
+  { name: "Priya Sen", rollNo: "2023789", phoneNo: "9876501234", email: "priya@example.com", isFaculty: true, requestedDate: "2025-05-07", isExtended: false }
 ];
 
 const columns = [
@@ -18,7 +18,7 @@ const columns = [
   { key: 'emailAndPhone', label: 'Email / Phone No' },
   { key: 'role', label: 'Role' },
   { key: 'requestedDate', label: 'Requested Date' },
-  { key: 'status', label: 'Status' },
+  { key: 'requestType', label: 'Request Type' },
   { key: 'actions', label: 'Actions' }
 ];
 
@@ -27,7 +27,7 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    status: ''
+    requestType: ''
   });
 
   const itemsPerPage = 10;
@@ -35,7 +35,7 @@ export default function RequestsPage() {
   const handleReset = () => {
     setFilters({
       role: '',
-      status: '',
+      requestType: '',
     });
   };
 
@@ -50,8 +50,8 @@ export default function RequestsPage() {
   const getFilteredResults = () => {
     return requests.filter(req => {
       const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesStatus = filters.status === '' || req.status === filters.status.toLowerCase();
-      return matchesRole && matchesStatus;
+      const matchesRequestType = filters.requestType === '' || (filters.requestType === 'Extension' && req.isExtended) || (filters.requestType === 'New' && !req.isExtended);
+      return matchesRole && matchesRequestType;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
@@ -67,7 +67,7 @@ export default function RequestsPage() {
 
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { label: 'Request Type', key: 'requestType', options: ['', 'New', 'Extension'], value: filters.requestType },
   ];
 
   const rows = paginatedRequests.map((item) => {
@@ -121,10 +121,21 @@ export default function RequestsPage() {
         </div>
 
       ),
-      status: (
-        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
-          {statusIcon}
-          {statusText}
+      requestType: (
+        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
+          item.isExtended ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'
+        }`}>
+          {item.isExtended ? (
+            <>
+              <Repeat size={16} className="text-indigo-700" />
+              Extension
+            </>
+          ) : (
+            <>
+              <CheckCircle size={16} className="text-cyan-700" />
+              New
+            </>
+          )}
         </div>
       ),
       actions: (
