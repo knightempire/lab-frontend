@@ -3,11 +3,15 @@
 import { Menu, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Navbar({ toggleSidebar }) {
-  const pathname = usePathname(); 
+  const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const userName = pathname.startsWith('/admin') ? "Admin" : "User";
+
+  const isAdmin = pathname.startsWith('/admin');
+  const userName = isAdmin ? "Admin" : "User";
+
   return (
     <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
       <div className="flex items-center">
@@ -40,15 +44,24 @@ export default function Navbar({ toggleSidebar }) {
           
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-60">
-            <a href="/profile" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+              <Link
+                href={isAdmin ? "" : "/user/profile"}
+                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
                 Your Profile
-              </a>
-              <a href="/settings" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+              </Link>
+              <Link 
+                href={isAdmin ? "/admin/settings" : "/user/settings"}
+                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
                 Settings
-              </a>
-              <a href="/signout" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+              </Link>
+              <Link 
+                href={isAdmin ? "/auth/login" : "/auth/login"}
+                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
                 Sign out
-              </a>
+              </Link>
             </div>
           )}
         </div>

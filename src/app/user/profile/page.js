@@ -1,16 +1,15 @@
 'use client';
 
 import { useState } from "react";
-import { Edit, Save, X, History, User, Package, AlertTriangle, BarChart2 } from "lucide-react";
+import { Edit, Save, X, CheckCircle, History, AlertTriangle, BarChart2, GraduationCap, ArrowLeft, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import Table from '../../../components/table'; // Import your Table component
-import Pagination from '../../../components/pagination'; // Import your Pagination component
+import { useRouter } from "next/navigation";
 
 const UserProfile = () => {
   const [userDetails, setUserDetails] = useState({
     name: "Akshay KS",
     rollNo: "CB.SC.U4CSE23104",
-    email: "akshay@gamil.com.com",
+    email: "akshay@gmail.com",
     phoneNo: "9876543210",
     isFaculty: false,
     damageCount: 3,
@@ -24,11 +23,10 @@ const UserProfile = () => {
       { requestId: "REQ127", totalComponents: 4, status: "accepted", isReturned: true },
     ]
   });
+  const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ name: userDetails.name, phoneNo: userDetails.phoneNo });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; 
 
   const handleEdit = () => setIsEditing(true);
   const handleCancel = () => setIsEditing(false);
@@ -42,23 +40,11 @@ const UserProfile = () => {
     setIsEditing(false);
   };
 
-  // Calculate pagination data
-  const totalPages = Math.ceil(userDetails.requests.length / itemsPerPage);
-  const paginatedRequests = userDetails.requests.slice(
-    (currentPage - 1) * itemsPerPage, 
-    currentPage * itemsPerPage
-  );
-
   // Prepare data for charts
   const requestStatusData = [
     { name: 'Pending', value: userDetails.requests.filter(r => r.status === 'pending').length },
     { name: 'Accepted', value: userDetails.requests.filter(r => r.status === 'accepted').length },
     { name: 'Rejected', value: userDetails.requests.filter(r => r.status === 'rejected').length },
-  ];
-
-  const returnStatusData = [
-    { name: 'Returned', value: userDetails.requests.filter(r => r.isReturned).length },
-    { name: 'Not Returned', value: userDetails.requests.filter(r => !r.isReturned).length },
   ];
 
   const componentBarData = userDetails.requests.map(req => ({
@@ -69,163 +55,126 @@ const UserProfile = () => {
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FF8042', '#FFBB28'];
 
-  // Define table columns and data for your Table component
-  const tableColumns = [
-    { key: 'requestId', label: 'Request ID' },
-    { key: 'totalComponents', label: 'Components' },
-    { key: 'status', label: 'Status' },
-    { key: 'isReturned', label: 'Returned' }
-  ];
-
-  // Custom cell renderer for the Table component
-  const renderTableCell = (key, row) => {
-    if (key === 'status') {
-      const statusClasses = {
-        pending: 'bg-amber-100 text-amber-700',
-        accepted: 'bg-green-100 text-green-700',
-        rejected: 'bg-red-100 text-red-700',
-      };
-      return (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[row.status]}`}>
-          {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-        </span>
-      );
-    }
-    if (key === 'isReturned') {
-      return (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.isReturned ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-        }`}>
-          {row.isReturned ? "Yes" : "No"}
-        </span>
-      );
-    }
-    return row[key];
-  };
-
   return (
-    <div className="max-w-6xl mx-auto mt-10 space-y-6">
-      {/* Header with profile image and basic info */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+    <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          {/* Back Button */}
           <button
-            onClick={handleEdit}
-            className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
+            onClick={() => router.back()}
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+            aria-label="Go back"
           >
-            <Edit size={16} />
+            <ArrowLeft size={20} className="text-gray-700" />
           </button>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center justify-center w-20 h-20 bg-white text-blue-600 text-2xl font-bold rounded-full ring-4 ring-white/20 shadow-lg">
-              {userDetails.name
-                .split(" ")
-                .map((word) => word[0])
-                .join("")
-                .toUpperCase()}
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold">{userDetails.name}</h3>
-              <p className="text-blue-100">{userDetails.rollNo}</p>
-              <span className={`inline-flex items-center px-2.5 py-0.5 mt-2 rounded-full text-xs font-medium ${userDetails.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                {userDetails.status === "active" ? "Active" : "Deactivated"}
-              </span>
-            </div>
+          {/* Header Title */}
+          <div className="flex items-center">
+            <Users className="text-blue-600 h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-800">User Profile</h1>
           </div>
         </div>
+      </div>
 
-        {/* User Details Section */}
-        <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">Account Details</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="space-y-1 p-4 bg-gray-50 rounded-lg border border-gray-100">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 bg-gray-50 min-h-screen">
+      {/* Left Section: User Details */}
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 xl:col-span-1 relative">
+        {/* Edit Button */}
+        <button
+          onClick={handleEdit}
+          className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors"
+        >
+          <Edit size={16} />
+        </button>
+
+        {/* Avatar and Name */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="flex items-center justify-center w-24 h-24 bg-blue-500 text-white text-3xl font-bold rounded-full mb-4">
+            {userDetails.name
+              .split(' ')
+              .map((word) => word[0])
+              .join('')
+              .toUpperCase()}
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-1">{userDetails.name}</h3>
+          <p className="text-gray-500 text-sm">{userDetails.rollNo}</p>
+        </div>
+
+        {/* Basic Info */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="space-y-2">
               <p className="text-sm text-gray-500">Email</p>
               <p className="font-medium">{userDetails.email}</p>
             </div>
-            <div className="space-y-1 p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <div className="space-y-2">
               <p className="text-sm text-gray-500">Phone Number</p>
               <p className="font-medium">{userDetails.phoneNo}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col items-center">
-              <div className="bg-blue-100 p-2 rounded-full mb-2">
-                <User size={20} className="text-blue-600" />
+          {/* Status Section */}
+          <div className="border-t border-gray-100 pt-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${userDetails.status === 'active' ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <CheckCircle size={20} className={userDetails.status === 'active' ? 'text-green-600' : 'text-red-600'} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-700 font-medium">Account Status</span>
+                  <span className={`text-sm font-medium ${userDetails.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                    {userDetails.status === 'active' ? 'Active' : 'Deactivated'}
+                  </span>
+                </div>
               </div>
-              <p className="text-gray-500 text-sm">Role</p>
-              <p className="font-medium text-blue-700">{userDetails.isFaculty ? "Staff" : "Student"}</p>
             </div>
-            
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
-              <div className="bg-gray-100 p-2 rounded-full mb-2">
-                <History size={20} className="text-gray-600" />
-              </div>
-              <p className="text-gray-500 text-sm">Total History</p>
-              <p className="font-medium text-gray-700">{userDetails.totalHistoryCount}</p>
-            </div>
-            
-            <div className="p-4 bg-red-50 rounded-lg border border-red-100 flex flex-col items-center">
-              <div className="bg-red-100 p-2 rounded-full mb-2">
-                <AlertTriangle size={20} className="text-red-600" />
-              </div>
-              <p className="text-gray-500 text-sm">Damage Count</p>
-              <p className="font-medium text-red-700">{userDetails.damageCount}</p>
-            </div>
-            
-            <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex flex-col items-center">
-              <div className="bg-green-100 p-2 rounded-full mb-2">
-                <Package size={20} className="text-green-600" />
-              </div>
-              <p className="text-gray-500 text-sm">Total Requests</p>
-              <p className="font-medium text-green-700">{userDetails.requests.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Requests and Analytics Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h3 className="text-lg font-medium text-gray-800">Request History</h3>
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-50 p-2 rounded-full">
-              <BarChart2 size={18} className="text-blue-600" />
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-50 p-2 rounded-full">
+                  <GraduationCap size={20} className="text-purple-600" />
+                </div>
+                <span className="text-gray-700 font-medium">Role</span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
+                {userDetails.isFaculty ? 'Staff' : 'Student'}
+              </span>
             </div>
-            <span className="text-sm text-gray-500">Total Requests: {userDetails.requests.length}</span>
+
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-50 p-2 rounded-full">
+                  <History size={20} className="text-blue-600" />
+                </div>
+                <span className="text-gray-700 font-medium">Total History</span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                {userDetails.totalHistoryCount}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-red-50 p-2 rounded-full">
+                  <AlertTriangle size={20} className="text-red-600" />
+                </div>
+                <span className="text-gray-700 font-medium">Damage Count</span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                {userDetails.damageCount ?? 0}
+              </span>
+            </div>
           </div>
-        </div>
-        
-        <div className="p-6">
-          {/* Use your Table component */}
-          <Table 
-            columns={tableColumns}
-            rows={paginatedRequests}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            renderCell={renderTableCell}
-          />
-          
-          {/* Add the Pagination component */}
-          {userDetails.requests.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              setCurrentPage={setCurrentPage}
-            />
-          )}
         </div>
       </div>
 
       {/* Analytics Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-6">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h3 className="text-lg font-medium text-gray-800">Request Analytics</h3>
           <div className="bg-blue-50 p-2 rounded-full">
             <BarChart2 size={18} className="text-blue-600" />
           </div>
         </div>
-        
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="border rounded-lg p-4 bg-white shadow-sm">
@@ -253,7 +202,6 @@ const UserProfile = () => {
                 </ResponsiveContainer>
               </div>
             </div>
-            
             <div className="border rounded-lg p-4 bg-white shadow-sm">
               <h4 className="text-sm font-medium text-gray-500 mb-4">Components Per Request</h4>
               <div className="h-64">
@@ -270,6 +218,7 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Edit Modal */}
       {isEditing && (
@@ -292,7 +241,6 @@ const UserProfile = () => {
                 <X size={20} />
               </button>
             </div>
-
             <div className="p-4 space-y-4">
               {["name", "phoneNo"].map((field) => (
                 <div key={field}>

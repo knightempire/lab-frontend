@@ -73,29 +73,6 @@ export default function RequestsPage() {
   ];
 
   const rows = paginatedRequests.map((item) => {
-    let statusIcon, statusText, bgColor, textColor;
-
-    switch (item.status) {
-      case 'accepted':
-        statusIcon = <CheckCircle size={16} className="text-green-700" />;
-        bgColor = 'bg-green-100';
-        textColor = 'text-green-700';
-        statusText = 'Accepted';
-        break;
-      case 'pending':
-        statusIcon = <Clock size={16} className="text-yellow-700" />;
-        bgColor = 'bg-yellow-100';
-        textColor = 'text-yellow-700';
-        statusText = 'Pending';
-        break;
-      case 'rejected':
-        statusIcon = <XCircle size={16} className="text-red-700" />;
-        bgColor = 'bg-red-100';
-        textColor = 'text-red-700';
-        statusText = 'Rejected';
-        break;
-    }
-
     return {
       ...item,
       nameAndRoll: (
