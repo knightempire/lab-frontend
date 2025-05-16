@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Package, Search, ArrowRight } from 'lucide-react';
 import Table from '../../../components/table';

@@ -1,8 +1,7 @@
 'use client';
 
-// app/admin/requests/page.jsx
-import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
+import { useState,useEffect } from 'react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays ,Repeat } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -71,14 +70,13 @@ const requests = [
   }
 ];
 
-
 export default function RequestsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    status: ''
+    requestType: ''
   });
 
   const itemsPerPage = 10;
@@ -86,7 +84,7 @@ export default function RequestsPage() {
   const handleReset = () => {
     setFilters({
       role: '',
-      status: '',
+      requestType: '',
     });
   };
 
@@ -101,11 +99,12 @@ export default function RequestsPage() {
   const getFilteredResults = () => {
     return requests.filter(req => {
       const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesStatus = filters.status === '' || req.status.toLowerCase() === filters.status.toLowerCase();
-      return matchesRole && matchesStatus;
+      const matchesRequestType = filters.requestType === '' || (filters.requestType === 'Extension' && req.isExtended) || (filters.requestType === 'New' && !req.isExtended);
+      return matchesRole && matchesRequestType;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) 
     );
   };
 
@@ -130,7 +129,7 @@ export default function RequestsPage() {
 
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { label: 'Request Type', key: 'requestType', options: ['', 'New', 'Extension'], value: filters.requestType },
   ];
 
   const columns = [
@@ -143,29 +142,6 @@ export default function RequestsPage() {
   ];
 
   const rows = paginatedRequests.map((item) => {
-    let statusIcon, statusText, bgColor, textColor;
-
-    switch (item.status) {
-      case 'accepted':
-        statusIcon = <CheckCircle size={16} className="text-green-700" />;
-        bgColor = 'bg-green-100';
-        textColor = 'text-green-700';
-        statusText = 'Accepted';
-        break;
-      case 'pending':
-        statusIcon = <Clock size={16} className="text-yellow-700" />;
-        bgColor = 'bg-yellow-100';
-        textColor = 'text-yellow-700';
-        statusText = 'Pending';
-        break;
-      case 'rejected':
-        statusIcon = <XCircle size={16} className="text-red-700" />;
-        bgColor = 'bg-red-100';
-        textColor = 'text-red-700';
-        statusText = 'Rejected';
-        break;
-    }
-
     return {
       ...item,
       nameAndRoll: (
@@ -192,10 +168,21 @@ export default function RequestsPage() {
           {item.requestedDate}
         </div>
       ),
-      status: (
-        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
-          {statusIcon}
-          {statusText}
+      requestType: (
+        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
+          item.isExtended ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'
+        }`}>
+          {item.isExtended ? (
+            <>
+              <Repeat size={16} className="text-indigo-700" />
+              Extension
+            </>
+          ) : (
+            <>
+              <CheckCircle size={16} className="text-cyan-700" />
+              New
+            </>
+          )}
         </div>
       ),
       actions: (

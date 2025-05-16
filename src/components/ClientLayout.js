@@ -12,6 +12,7 @@ const validPaths = [
   '/admin/request',
   '/admin/users',
   '/user/product',
+  '/user/request'
 ];
 
 export default function ClientLayout({ children }) {
