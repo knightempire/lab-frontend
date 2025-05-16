@@ -129,7 +129,7 @@ export default function UserRequestsPage() {
       ) : (
         <div className="text-center py-12 bg-white rounded-lg shadow-inner">
           <Users size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">You haven't submitted any matching requests.</p>
+          <p className="text-gray-500">You haven&apos;t submitted any matching requests.</p>
         </div>
       )}
     </div>
