@@ -327,7 +327,12 @@ const AdminRequestView = () => {
             setDamageAction('return');
             setShowDamageModal(true);
           }}
-          className="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-600 text-white"
+          disabled={component.returned <= 0}
+          className={`px-3 py-1 rounded-md ${
+            component.returned > 0 
+              ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+          }`}
         >
           Report Damage
         </button>
@@ -420,8 +425,8 @@ const AdminRequestView = () => {
               <Flag size={20} />
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                 requestStatus === 'Done' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-blue-100 text-blue-800'
+                  ? 'bg-green-600 text-black-800' 
+                  : 'bg-red-500 text-white-800'
               }`}>
                 {requestStatus}
               </div>
