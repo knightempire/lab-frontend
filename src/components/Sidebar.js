@@ -1,7 +1,7 @@
 'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
-import { Home, Box, FilePlus, Users, ClipboardCheck, User } from 'lucide-react';
+import { Home, Box, FilePlus, Users, ClipboardCheck} from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar({ isOpen }) {
@@ -11,12 +11,12 @@ export default function Sidebar({ isOpen }) {
     { name: 'Product', icon: <Box size={20} />, href: '/admin/product' },
     { name: 'Request', icon: <FilePlus size={20} />, href: '/admin/request' },
     { name: 'Users', icon: <Users size={20} />, href: '/admin/users' },
-    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: 'admin/issued' },
+    { name: 'Issued', icon: <ClipboardCheck size={20} />, href: '/admin/issued' },
   ];
   const usernavItems = [
-    { name: 'Home', icon: <Home size={20} />, href: 'user/dashboard' },
+    { name: 'Home', icon: <Home size={20} />, href: '/user/dashboard' },
     { name: 'Product', icon: <Box size={20} />, href: '/user/product' },
-    { name: 'Request', icon: <FilePlus size={20} />, href: 'user/request' },
+    { name: 'Request', icon: <FilePlus size={20} />, href: '/user/request' },
   ];
   const navItems = pathname.startsWith('/admin') ? adminnavItems : usernavItems;
 
@@ -28,12 +28,12 @@ export default function Sidebar({ isOpen }) {
         <div className="flex items-center mb-8 mt-2">
           {isOpen ? (
             <div>
-              <image src="/images/logo.png" alt="Amuda" className="w-full h-auto max-w-xs" />
+            <Image src="/images/logo.png" alt="Amuda" width={180} height={60} />
             </div>
           ) : (
             <div className="w-full flex justify-center">
-                <image src="/images/icon.png" alt="Amuda" className="w-10 h-10 rounded-full flex justify-center items-center" />
-              </div>
+          <Image src="/images/icon.png" alt="Amuda" width={180} height={50} />
+          </div>
           )}
         </div>
         

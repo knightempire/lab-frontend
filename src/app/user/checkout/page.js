@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -111,11 +112,11 @@ export default function CheckoutPage() {
     }
     
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/;
     if (!emailRegex.test(customFacultyEmail)) {
       setErrors({
         ...errors,
-        customFaculty: 'Please enter a valid email address'
+        customFaculty: 'Please enter a valid University email address'
       });
       return;
     }
@@ -696,8 +697,8 @@ export default function CheckoutPage() {
                     <label htmlFor="acknowledgement" className={`font-medium ${
                       submitted && errors.acknowledged ? 'text-red-600' : 'text-gray-700'
                     }`}>
-                      I acknowledge that the components are completely my responsibility after issuance; I will take care of any damage that occurs.
-                    </label>
+                  I acknowledge receipt of the issued components and accept full responsibility for their care. I understand that I will be liable for any damage, loss, or misuse, and agree to pay any applicable penalties if required.
+                  </label>
                     {submitted && errors.acknowledged && (
                       <p className="mt-1 text-sm text-red-600 flex items-center">
                         <AlertCircle size={14} className="mr-1" />
