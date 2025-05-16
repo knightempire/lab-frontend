@@ -1,15 +1,16 @@
 'use client';
 
-import { useState,useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays ,Repeat } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Search, Eye, CheckCircle, CalendarDays, Repeat } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+
 const requests = [
   {
-    id: "REQ-2025-0513",
+    requestId: "REQ-2025-0513",
     name: "John Doe",
     rollNo: "CS21B054",
     phoneNo: "9876543210",
@@ -18,6 +19,7 @@ const requests = [
     requestedDate: "2025-05-10",
     requestedDays: 5,
     status: "pending",
+    isExtended: false,
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@university.edu'
@@ -30,7 +32,7 @@ const requests = [
     ]
   },
   {
-    id: "REQ-2025-0514",
+    requestId: "REQ-2025-0514",
     name: "Alice Kumar",
     rollNo: "2023123",
     phoneNo: "9876543210",
@@ -39,6 +41,7 @@ const requests = [
     requestedDate: "2025-05-05",
     requestedDays: 3,
     status: "pending",
+    isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
       email: 'michael.johnson@university.edu'
@@ -50,7 +53,7 @@ const requests = [
     ]
   },
   {
-    id: "REQ-2025-0515",
+    requestId: "REQ-2025-0515",
     name: "Rahul Mehta",
     rollNo: "2023456",
     phoneNo: "9123456789",
@@ -59,6 +62,7 @@ const requests = [
     requestedDate: "2025-05-06",
     requestedDays: 7,
     status: "accepted",
+    isExtended: false,
     referenceStaff: {
       name: 'Dr. Lisa Chen',
       email: 'lisa.chen@university.edu'
@@ -91,7 +95,7 @@ export default function RequestsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filters]);
-  
+
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -99,24 +103,22 @@ export default function RequestsPage() {
   const getFilteredResults = () => {
     return requests.filter(req => {
       const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesRequestType = filters.requestType === '' || (filters.requestType === 'Extension' && req.isExtended) || (filters.requestType === 'New' && !req.isExtended);
+      const matchesRequestType =
+        filters.requestType === '' ||
+        (filters.requestType === 'Extension' && req.isExtended) ||
+        (filters.requestType === 'New' && !req.isExtended);
       return matchesRole && matchesRequestType;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) 
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
   const handleViewRequest = (request) => {
-    // Encode request data as URL parameters
     const params = new URLSearchParams();
-    params.append('requestId', request.id);
-    
-    // Navigate to the request view page with the request ID
+    params.append('requestId', request.requestId);
     router.push(`/admin/review?${params.toString()}`);
-    
-    // Store the request data in sessionStorage for retrieval
     sessionStorage.setItem('requestData', JSON.stringify(request));
   };
 
@@ -134,10 +136,11 @@ export default function RequestsPage() {
 
   const columns = [
     { key: 'nameAndRoll', label: 'Name / Roll No' },
+    { key: 'requestId', label: 'Request ID' },
     { key: 'emailAndPhone', label: 'Email / Phone No' },
     { key: 'role', label: 'Role' },
     { key: 'requestedDate', label: 'Requested Date' },
-    { key: 'status', label: 'Status' },
+    { key: 'requestType', label: 'Request Type' },
     { key: 'actions', label: 'Actions' }
   ];
 
@@ -154,6 +157,9 @@ export default function RequestsPage() {
             <span className="text-gray-500 text-sm">{item.rollNo}</span>
           </div>
         </div>
+      ),
+      requestId: (
+        <span className="text-xs text-gray-700">{item.requestId}</span>
       ),
       emailAndPhone: (
         <div className="flex flex-col items-center text-center">
@@ -207,7 +213,7 @@ export default function RequestsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
             Request Management
             <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-              Request Received: {requests.length}
+              Requests: {requests.length}
             </span>
           </h1>
         </div>
