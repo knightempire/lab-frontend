@@ -425,7 +425,7 @@ const AdminRequestView = () => {
               <Flag size={20} />
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                 requestStatus === 'Done' 
-                  ? 'bg-green-600 text-black-800' 
+                  ? 'bg-green-600 text-b-800' 
                   : 'bg-red-500 text-white-800'
               }`}>
                 {requestStatus}
@@ -454,7 +454,6 @@ const AdminRequestView = () => {
               </div>
             </div>
           </div>
-          
           {/* User and Reference Information */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gray-50 p-5 rounded-lg">
@@ -505,32 +504,16 @@ const AdminRequestView = () => {
                 <p className="text-gray-600">{requestData.description || "No description provided."}</p>
               </div>
 
-              <div className="mb-2">
-                <div className="flex gap-4">
-                  <div className="flex items-center">
-                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-gray-700">Requested Days</h4>
-                  </div>
-                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{requestData.requestedDays || "N/A"} Days</span>
-                  </div>
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <h4 className="font-medium text-gray-700">Admin Description</h4>
                 </div>
+                <p className="text-gray-600">{requestData.description || "No description provided."}</p>
               </div>
-              
-              {/* Issuable Days Section with Controls */}
-              <div className="mb-2">
-                <div className="flex gap-4">
-                  <div className="flex items-center">
-                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-gray-700">Issued Duration</h4>
-                  </div>
-                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{requestData.requestedDays || "N/A"} Days</span>
-                  </div>
-                </div>
-              </div>
+
             </div>
             <div className="bg-gray-50 p-5 rounded-lg">
               <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
@@ -550,29 +533,7 @@ const AdminRequestView = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <h4 className="font-medium text-gray-700">Admin Description</h4>
-                </div>
-                <p className="text-gray-600">{requestData.description || "No description provided."}</p>
-              </div>
-              <div className="mb-2">
-                <div className="flex gap-4">
-                  <div className="flex items-center">
-                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-gray-700">Issued Date</h4>
-                  </div>
-                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4 mr-1" />
-                <p className="text-gray-600">{formatDate(requestData.requestedDate)}</p>
-                  </div>
-                </div>
-              </div>
-              </div>
+            
           </div>
           
           {/* Components Tables Section */}
@@ -581,12 +542,26 @@ const AdminRequestView = () => {
               {/* Requested Components Table */}
               <div className="bg-white shadow rounded-lg">
                 <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                    Requested Components
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      Requested Components
+                    </h2>
+                    <div className="mb-2">
+                    <div className="flex gap-4">
+                      <div className="flex items-center">
+                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                        <h4 className="font-medium text-gray-700">Requested Days</h4>
+                      </div>
+                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span>{requestData.requestedDays || "N/A"} Days</span>
+                      </div>
+                    </div>
+                </div>
+                  </div>
                   <Table 
                     columns={requestedComponentsColumns} 
                     rows={requestedComponentsRows} 
@@ -595,7 +570,6 @@ const AdminRequestView = () => {
                   />
                 </div>
               </div>
-              
               
               {/* Admin Issue Components Table */}
               <div className="bg-white shadow rounded-lg">
@@ -607,6 +581,18 @@ const AdminRequestView = () => {
                       </svg>
                       Admin Issued Components
                     </h2>
+                    <div className="mb-2">
+                    <div className="flex gap-4">
+                      <div className="flex items-center">
+                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                        <h4 className="font-medium text-gray-700">Issued Days</h4>
+                      </div>
+                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span>{requestData.requestedDays || "N/A"} Days</span>
+                      </div>
+                    </div>
+                </div>
                   </div>
                   <Table 
                     columns={adminComponentsColumns} 
@@ -617,7 +603,6 @@ const AdminRequestView = () => {
                 </div>
               </div>
             </div>
-            
             {/* Return Tracking Table */}
             <div className="bg-white shadow rounded-lg mb-8">
               <div className="p-6 border-b border-gray-200">
