@@ -87,12 +87,25 @@ export default function ProductPage() {
     setCurrentPage(1);
   }, [searchQuery]);
 
+  // Helper function to save current selections to localStorage
+  const saveSelectionsToLocalStorage = (updatedProducts) => {
+    const selected = updatedProducts.filter(p => p.selected).map(p => ({ 
+      name: p.name, 
+      inStock: p.inStock, 
+      selectedQuantity: p.selectedQuantity 
+    }));
+    localStorage.setItem('selectedProducts', JSON.stringify(selected));
+  };
+
   const toggleSelect = (index) => {
     const updated = [...products];
     const product = updated[index];
     product.selected = !product.selected;
     product.selectedQuantity = product.selected ? 1 : 0;
     setProducts(updated);
+    
+    // Save selections immediately when toggling
+    saveSelectionsToLocalStorage(updated);
   };
 
   const updateQuantity = (index, delta) => {
@@ -115,6 +128,9 @@ export default function ProductPage() {
     }
 
     setProducts(updated);
+    
+    // Save selections immediately when updating quantity
+    saveSelectionsToLocalStorage(updated);
   };
 
   const filteredProducts = products.filter(product =>
@@ -136,10 +152,8 @@ export default function ProductPage() {
   };
 
   const handleProceed = () => {
-    const selected = getSelectedProducts();
-    // Store selected products in localStorage
-    localStorage.setItem('selectedProducts', JSON.stringify(selected));
-    // Navigate to checkout page
+    // Navigate to checkout page - no need to save to localStorage again
+    // as we're already saving on every selection change
     router.push('/user/checkout');
   };
 
@@ -219,6 +233,9 @@ export default function ProductPage() {
                             updated[globalIndex].selectedQuantity = newQuantity;
                           }
                           setProducts(updated);
+                          
+                          // Save selections immediately when manually editing quantity
+                          saveSelectionsToLocalStorage(updated);
                         }}
                         className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
                         min="0"
