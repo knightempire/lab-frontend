@@ -1,4 +1,4 @@
-// ✅ This must be the very first line
+
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +8,7 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff } from 'lucide-react';
 
-// ✅ Wrap useSearchParams() usage inside Suspense
+
 function PasswordPageWrapper() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -21,13 +21,14 @@ export default function Page() {
   return <PasswordPageWrapper />;
 }
 
-function PasswordPage({ userName = 'User' }) {
+function PasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState(null);
   const [type, setType] = useState(null);
+  const [userName, setUserName] = useState('User'); 
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -42,6 +43,42 @@ function PasswordPage({ userName = 'User' }) {
 
     setToken(token);
     setType(type);
+
+    const verifyToken = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+    const endpoint =
+      type === 'register'
+        ? `${baseUrl}/api/verify-token-register`
+        : `${baseUrl}/api/verify-token-forgot`;
+
+        console.log('Verifying token:', token);
+        console.log('Token type:', type);
+        console.log('Endpoint:', endpoint);
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        if (!res.ok) {
+          console.error(`Error verifying token at ${endpoint}`);
+          return;
+        }
+
+        const data = await res.json();
+        console.log('Token verification response:', data);
+
+        if (data?.name) {
+          setUserName(data.name);
+        }
+      } catch (err) {
+        console.error('Error during token verification:', err);
+      }
+    };
+
+    verifyToken();
   }, [searchParams, router]);
 
   const isPasswordValid = (pwd) => {
@@ -49,33 +86,66 @@ function PasswordPage({ userName = 'User' }) {
     return pattern.test(pwd);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    if (!isPasswordValid(password)) {
-      setError(
-        'Password must be at least 8 characters long and include letters, numbers, and a special character.'
-      );
-      return;
+  if (!isPasswordValid(password)) {
+    setError(
+      'Password must be at least 8 characters long and include letters, numbers, and a special character.'
+    );
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setError('Passwords do not match.');
+    return;
+  }
+
+  console.log('Submitting with token:', token);
+  console.log('Type:', type);
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const endpoint =
+    type === 'register'
+      ? `${baseUrl}/api/password`
+      : `${baseUrl}/api/resetpassword`;
+
+      console.log('Endpoint submit:', endpoint);
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const data = await res.json();
+    console.log('Password update response:', data);
+
+    if (res.ok) {
+      console.log('Password set successfully:', data);
+          // router.push('/auth/login');
+
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      console.error('Failed to set password:', data);
+      setError(data.message || 'Something went wrong.');
       return;
-    }
+  } catch (err) {
+    console.error('Error while setting password:', err);
+    setError('Failed to connect to server.');
+  }
+};
 
-    console.log('Submitting with token:', token);
-    console.log('Type:', type);
-
-    router.push('/auth/login');
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6">
         <h2 className="text-3xl font-semibold text-center text-gray-800">Set Your Password</h2>
-        <p className="text-sm text-center text-gray-600">Hi, {userName}, set your password here.</p>
+        <p className="text-sm text-center text-gray-600">Hi {userName}, set your password here.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
