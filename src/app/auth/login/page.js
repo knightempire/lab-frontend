@@ -1,11 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff } from 'lucide-react';
+
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +16,56 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+
+
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  console.log('Token found in localStorage:', token);
+
+  const verifyToken = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const endpoint = `${baseUrl}/api/verify-token`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.warn('Invalid token. Removing...');
+        localStorage.removeItem('token');
+        return;
+      }
+
+      const data = await res.json();
+      console.log('Token verification response:', data);
+
+      const { user } = data;
+
+      if (!user?.isActive) {
+        setError('Your account is deactivated. Please contact the administrator.');
+        return;
+      }
+
+      if (user?.isAdmin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/user/dashboard');
+      }
+    } catch (err) {
+      console.error('Token verification failed:', err);
+      localStorage.removeItem('token');
+    }
+  };
+
+  verifyToken();
+}, [router]);
+
 
   const validateEmail = (email) =>
      /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
@@ -63,7 +116,7 @@ const handleLogin = async (e) => {
     if (user.isAdmin) {
       router.push('/admin/dashboard');
     } else {
-      router.push('/users/dashboard');
+      router.push('/user/dashboard');
     }
   } catch (err) {
     console.error('Login error:', err);
