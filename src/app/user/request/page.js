@@ -5,6 +5,8 @@ import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle } from 'lucid
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
+import { Eye } from 'lucide-react';
+
 
 const userRequests = [
   { requestId: "REQ103", date: "2025-05-12", items: "Arduino Kit, Breadboard", status: "Pending" },
@@ -13,11 +15,16 @@ const userRequests = [
   { requestId: "REQ100", date: "2025-05-01", items: "ESP32 Module", status: "Approved" },
 ];
 
+const handleViewRequest = (request) => {
+  console.log('View Request:', request);
+};
+
 const columns = [
   { key: 'requestId', label: 'Request ID' },
   { key: 'date', label: 'Date' },
   { key: 'items', label: 'Requested Items' },
   { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' },
 ];
 
 export default function UserRequestsPage() {
@@ -78,16 +85,27 @@ export default function UserRequestsPage() {
         break;
     }
 
-    return {
-      ...req,
-      status: (
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
-          {icon}
-          {req.status}
-        </div>
-      )
-    };
-  });
+ return {
+    ...req,
+    status: (
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
+        {icon}
+        {req.status}
+      </div>
+    ),
+    actions: (
+      <div className="flex gap-2 justify-center">
+        <button
+          className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+          onClick={() => handleViewRequest(req)}
+        >
+          <Eye size={14} />
+          View Request
+        </button>
+      </div>
+    )
+  };
+});
 
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">

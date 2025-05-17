@@ -58,7 +58,7 @@ const requests = [
     rollNo: "2023456",
     phoneNo: "9123456789",
     email: "rahul@example.com",
-    isFaculty: false,
+    isFaculty: true,
     requestedDate: "2025-05-06",
     requestedDays: 7,
     status: "accepted",
