@@ -13,6 +13,7 @@ const validPaths = [
   '/admin/request',
   '/admin/users',
   '/admin/issued',
+  '/user/dashboard',
   '/user/product',
   '/user/request'
 ];
