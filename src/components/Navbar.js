@@ -1,16 +1,24 @@
 'use client';
 
+
+import { useRouter } from 'next/navigation';
 import { Menu, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Navbar({ toggleSidebar }) {
+  const router = useRouter();
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const isAdmin = pathname.startsWith('/admin');
   const userName = isAdmin ? "Admin" : "User";
+
+    const handleSignOut = () => {
+    localStorage.removeItem('token');
+    router.push('/auth/login');
+  };
 
   return (
     <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
@@ -56,12 +64,12 @@ export default function Navbar({ toggleSidebar }) {
               >
                 Settings
               </Link>
-              <Link 
-                href={isAdmin ? "/auth/login" : "/auth/login"}
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+          <button
+                onClick={handleSignOut}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
                 Sign out
-              </Link>
+              </button>
             </div>
           )}
         </div>
