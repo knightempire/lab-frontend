@@ -67,7 +67,7 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register`, 
     console.log('API Response:', data);
 
     if (res.ok) {
-setShowModal
+    setShowModal(true);
     }
 
     
@@ -128,8 +128,6 @@ setShowModal
           </Link>
         </p>
       </div>
-
-      {/* Modal for Email Verification */}
 
 
 {showModal && (
