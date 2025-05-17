@@ -14,7 +14,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [showModal, setShowModal] = useState(false); 
 
   const validateEmail = (email) =>
     /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*(amrita\.edu)$/.test(email);
@@ -22,44 +22,70 @@ export default function RegisterPage() {
   const validatePhone = (phone) =>
     /^\d{10}$/.test(phone);
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleRegister = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    if (!name.trim()) {
-      setError('Name is required.');
-      return;
-    }
+  if (!name.trim()) {
+    setError('Name is required.');
+    return;
+  }
 
-    if (!validateEmail(email)) {
-      setError('Only University email addresses are allowed.');
-      return;
-    }
+  if (!validateEmail(email)) {
+    setError('Only University email addresses are allowed.');
+    return;
+  }
 
-    if (!validatePhone(phone)) {
-      setError('Please enter a valid 10-digit phone number.');
-      return;
-    }
+  if (!validatePhone(phone)) {
+    setError('Please enter a valid 10-digit phone number.');
+    return;
+  }
 
-    // Determine user type based on email domain
-    let determinedUserType = email.includes('.students.amrita.edu') ? 'Student' : 'Faculty';
+  // Determine if the user is faculty
+  const isFaculty = !email.includes('.students.amrita.edu');
 
-    // Log data to the console
-    console.log('Registering user with the following details:');
-    console.log('Name:', name);
-    console.log('Email:', email);
-    console.log('Phone:', phone);
-    console.log('User Type:', determinedUserType);
-
-
-    setShowModal(true);
+  const payload = {
+  
+    email,
+    name,
+    phoneNo: phone,
+    isFaculty,
   };
 
-  // Function to handle modal "OK" click
+  console.log('Payload:', payload);
+  try {
+const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    console.log('API Response:', data);
+
+    if (res.ok) {
+    setShowModal(true);
+    }
+
+    
+    
+      setError(data?.message || 'Registration failed.');
+      return;
+
+  } catch (error) {
+    console.error('Error while registering:', error);
+    setError('Something went wrong. Please try again later.');
+  }
+};
+
+
   const handleModalClose = () => {
     console.log('Modal closed');
-    setShowModal(false); // Close the modal
-    // router.push('/auth/login'); 
+    setShowModal(false); 
+    router.push('/auth/login'); 
   };
 
   return (
