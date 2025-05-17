@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
-import { Flag, CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check } from 'lucide-react';
+import { Flag, CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, ExternalLink, X } from 'lucide-react';
 
 const simplifiedProducts = [
   { name: "Widget A", inStock: 90 },
@@ -16,6 +16,11 @@ const AdminRequestView = () => {
   const [requestData, setRequestData] = useState(null);
   const [windowWidth, setWindowWidth] = useState(1024); // Default to desktop size
   
+  const [userDamagedCount, setUserDamagedCount] = useState(0);
+  const [notUserDamagedCount, setNotUserDamagedCount] = useState(0);
+  const [replacingCount, setReplacingCount] = useState(0);
+
+
   //State for Request
   const [requestStatus, setRequestStatus] = useState('Open');
 
@@ -44,6 +49,12 @@ const AdminRequestView = () => {
   const [damageDescription, setDamageDescription] = useState('');
   const [isUserDamaged, setIsUserDamaged] = useState(false);
   const [damageAction, setDamageAction] = useState('return'); // 'return' or 'replace'
+
+  // Add new state for the damage details modal
+  const [showDamageDetailsModal, setShowDamageDetailsModal] = useState(false);
+  const [selectedDamageDetails, setSelectedDamageDetails] = useState(null);
+
+  const [replacements, setReplacements] = useState({});
 
   useEffect(() => {
     // Check if all components have been returned
@@ -141,9 +152,11 @@ const AdminRequestView = () => {
 
   // Handle damage checkbox change
   const handleDamageModalSubmit = () => {
-    setHasDamage({ ...hasDamage, [selectedComponentIndex]: damageCount[selectedComponentIndex] > 0 });
+    const totalDamaged = userDamagedCount + notUserDamagedCount;
+    setDamageCount({ ...damageCount, [selectedComponentIndex]: totalDamaged });
     setShowDamageModal(false);
   };
+
 
   // Handle damage count change
   const handleDamageCountChange = (index, value) => {
@@ -188,56 +201,195 @@ const AdminRequestView = () => {
       handleDamageCountChange(index, currentCount - 1);
     }
   };
-  
-  // Handle component return submission
-  const handleReturnSubmit = (componentIndex) => {
-    const component = returnTrackingComponents[componentIndex];
-    
-    // Only process if there's something to return
-    if (component.returned > 0) {
-      // Get damage count (if any)
-      const damagedCount = damageCount[componentIndex] || 0;
-      
-      // Create a return history entry
-      const returnEntry = {
-        id: returnHistory.length + 1,
-        name: component.name,
-        qtyReturned: component.returned,
-        damagedCount: damagedCount,
-        dateReturned: new Date().toISOString(),
-        damageDescription: damagedCount > 0 ? damageDescription : '',
-        isUserDamaged: damagedCount > 0 ? isUserDamaged : false,
-        actionType: damagedCount > 0 ? damageAction : 'return'
-      };
-      
-      // Add to return history
-      setReturnHistory([returnEntry, ...returnHistory]);
-      
-      // Update component in the tracking list
-      const updatedComponents = [...returnTrackingComponents];
-      updatedComponents[componentIndex] = {
-        ...component,
-        returned: 0,
-        // Only reduce the remaining count if we're not replacing the damaged items
-        remaining: damageAction === 'replace' && damagedCount > 0 
-          ? component.remaining - (component.returned - damagedCount) 
-          : component.remaining - component.returned
-      };
-      
-      // Filter out components with no items remaining
-      const filteredComponents = updatedComponents.filter((comp, idx) => {
-        return idx !== componentIndex || (idx === componentIndex && updatedComponents[idx].remaining > 0);
-      });
-      
-      setReturnTrackingComponents(filteredComponents);
-      
-      // Reset damage states
-      setDamageCount({ ...damageCount, [componentIndex]: 0 });
-      setDamageDescription('');
-      setIsUserDamaged(false);
-      setDamageAction('return');
+
+  const incrementUserDamagedCount = () => {
+  const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
+  const currentTotal = userDamagedCount + notUserDamagedCount;
+  if (currentTotal < returnQty) {
+    setUserDamagedCount(userDamagedCount + 1);
+  }
+};
+
+const decrementUserDamagedCount = () => {
+  if (userDamagedCount > 0) {
+    setUserDamagedCount(userDamagedCount - 1);
+    // Ensure replacing count doesn't exceed total damaged count
+    if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
+      setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
     }
-  };
+  }
+};
+
+const incrementNotUserDamagedCount = () => {
+  const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
+  const currentTotal = userDamagedCount + notUserDamagedCount;
+  if (currentTotal < returnQty) {
+    setNotUserDamagedCount(notUserDamagedCount + 1);
+  }
+};
+
+const decrementNotUserDamagedCount = () => {
+  if (notUserDamagedCount > 0) {
+    setNotUserDamagedCount(notUserDamagedCount - 1);
+    // Ensure replacing count doesn't exceed total damaged count
+    if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
+      setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
+    }
+  }
+};
+
+const incrementReplacingCount = () => {
+  const totalDamaged = userDamagedCount + notUserDamagedCount;
+  if (replacingCount < totalDamaged) {
+    setReplacingCount(replacingCount + 1);
+  }
+};
+
+const decrementReplacingCount = () => {
+  if (replacingCount > 0) {
+    setReplacingCount(replacingCount - 1);
+  }
+};
+
+// New function to handle viewing damage details
+const viewDamageDetails = (item) => {
+  setSelectedDamageDetails(item);
+  setShowDamageDetailsModal(true);
+};
+
+// Handle component return submission
+const handleReturnSubmit = (componentIndex) => {
+  const component = returnTrackingComponents[componentIndex];
+  
+  // Only process if there's something to return
+  if (component.returned > 0) {
+    const newReturnHistory = [];
+    let historyCounter = returnHistory.length + 1;
+    
+    // Calculate how many of each type to replace
+    const userDamagedToReplace = Math.min(userDamagedCount, replacingCount);
+    const notUserDamagedToReplace = Math.min(notUserDamagedCount, replacingCount - userDamagedToReplace);
+    
+    // Calculate remainders for returning (not replacing)
+    const userDamagedToReturn = userDamagedCount - userDamagedToReplace;
+    const notUserDamagedToReturn = notUserDamagedCount - notUserDamagedToReplace;
+    
+    // 1. Create entry for REPLACED user damaged components
+    if (userDamagedToReplace > 0) {
+      const userDamagedReplaceEntry = {
+        id: historyCounter++,
+        name: component.name,
+        qtyReturned: userDamagedToReplace,
+        damagedCount: userDamagedToReplace,
+        dateReturned: new Date().toISOString(),
+        damageDescription: damageDescription,
+        isUserDamaged: true,
+        actionType: 'replace'
+      };
+      newReturnHistory.push(userDamagedReplaceEntry);
+    }
+    
+    // 2. Create entry for REPLACED non-user damaged components
+    if (notUserDamagedToReplace > 0) {
+      const notUserDamagedReplaceEntry = {
+        id: historyCounter++,
+        name: component.name,
+        qtyReturned: notUserDamagedToReplace,
+        damagedCount: notUserDamagedToReplace,
+        dateReturned: new Date().toISOString(),
+        damageDescription: damageDescription,
+        isUserDamaged: false,
+        actionType: 'replace'
+      };
+      newReturnHistory.push(notUserDamagedReplaceEntry);
+    }
+    
+    // 3. Create entry for RETURNED user damaged components (no replacement)
+    if (userDamagedToReturn > 0) {
+      const userDamagedReturnEntry = {
+        id: historyCounter++,
+        name: component.name,
+        qtyReturned: userDamagedToReturn,
+        damagedCount: userDamagedToReturn,
+        dateReturned: new Date().toISOString(),
+        damageDescription: damageDescription,
+        isUserDamaged: true,
+        actionType: 'return'
+      };
+      newReturnHistory.push(userDamagedReturnEntry);
+    }
+    
+    // 4. Create entry for RETURNED non-user damaged components (no replacement)
+    if (notUserDamagedToReturn > 0) {
+      const notUserDamagedReturnEntry = {
+        id: historyCounter++,
+        name: component.name,
+        qtyReturned: notUserDamagedToReturn,
+        damagedCount: notUserDamagedToReturn,
+        dateReturned: new Date().toISOString(),
+        damageDescription: damageDescription,
+        isUserDamaged: false,
+        actionType: 'return'
+      };
+      newReturnHistory.push(notUserDamagedReturnEntry);
+    }
+    
+    // 5. If there are undamaged components to return
+    const undamagedCount = component.returned - (userDamagedCount + notUserDamagedCount);
+    if (undamagedCount > 0) {
+      const undamagedEntry = {
+        id: historyCounter++,
+        name: component.name,
+        qtyReturned: undamagedCount,
+        damagedCount: 0,
+        dateReturned: new Date().toISOString(),
+        damageDescription: '',
+        isUserDamaged: false,
+        actionType: 'return'
+      };
+      newReturnHistory.push(undamagedEntry);
+    }
+    
+    // Add new history entries to state
+    setReturnHistory([...newReturnHistory, ...returnHistory]);
+    
+    // Update component in the tracking list
+    const updatedComponents = [...returnTrackingComponents];
+    updatedComponents[componentIndex] = {
+      ...component,
+      returned: 0,
+      // Increment totalIssued if we're replacing damaged items
+      totalIssued: replacingCount > 0 
+        ? component.totalIssued + replacingCount
+        : component.totalIssued,
+      // Reduce the remaining count by the returned amount minus replacing amount
+      remaining: component.remaining - (component.returned - replacingCount)
+    };
+    
+    // Track replacements if there are any
+    if (replacingCount > 0) {
+      const currentReplacements = replacements[component.name] || 0;
+      setReplacements({
+        ...replacements,
+        [component.name]: currentReplacements + replacingCount
+      });
+    }
+    
+    // Filter out components with no items remaining
+    const filteredComponents = updatedComponents.filter((comp, idx) => {
+      return idx !== componentIndex || (idx === componentIndex && updatedComponents[idx].remaining > 0);
+    });
+    
+    setReturnTrackingComponents(filteredComponents);
+    
+    // Reset damage states
+    setDamageCount({ ...damageCount, [componentIndex]: 0 });
+    setDamageDescription('');
+    setUserDamagedCount(0);
+    setNotUserDamagedCount(0);
+    setReplacingCount(0);
+  }
+};
   
   if (!requestData) {
     return (
@@ -264,16 +416,27 @@ const AdminRequestView = () => {
   }));
 
   const adminComponentsColumns = [
-    { key: 'name', label: 'Component Name' },
-    { key: 'quantity', label: 'Quantity' },
-  ];
+  { key: 'name', label: 'Component Name' },
+  { key: 'quantity', label: 'Quantity', className: 'text-center' },
+];
 
-  const adminComponentsRows = requestData.components.map(component => ({
+const adminComponentsRows = requestData.components.map(component => {
+  const replacedCount = replacements[component.name] || 0;
+  
+  return {
     ...component,
     name: component.name,
-    quantity: component.quantity,
+    quantity: (
+      <div className="flex items-center justify-center">
+        <span>{component.quantity}</span>
+        {replacedCount > 0 && (
+          <span className="ml-1 text-red-600 font-medium">+{replacedCount}</span>
+        )}
+      </div>
+    ),
     description: component.description || '-'
-  }));
+  };
+});
   
   // Return tracking table configuration
   const returnTrackingColumns = [
@@ -367,7 +530,11 @@ const AdminRequestView = () => {
   
   const returnHistoryRows = returnHistory.map(item => ({
     ...item,
-    name: <div className="text-center">{item.name}</div>,
+    name: (
+      <div className="text-center flex items-center justify-center">
+        {item.name}
+      </div>
+    ),
     qtyReturned: <div className="text-center">{item.qtyReturned}</div>,
     damagedCount: (
       <div className="flex items-center justify-center">
@@ -378,6 +545,15 @@ const AdminRequestView = () => {
           </div>
         ) : (
           <span className="text-green-600">0</span>
+        )}
+        {item.damagedCount > 0 && (
+          <button
+            onClick={() => viewDamageDetails(item)}
+            className="ml-2 p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors"
+            title="View damage details"
+          >
+            <ExternalLink size={16} />
+          </button>
         )}
       </div>
     ),
@@ -395,7 +571,7 @@ const AdminRequestView = () => {
     isUserDamaged: (
       <div className="text-center">
         {item.damagedCount > 0 ? (
-          <span className={item.isUserDamaged ? 'text-red-600' : 'text-gray-600'}>
+          <span className={item.isUserDamaged ? 'text-red-600 rounded-full bg-red-100 px-3 py-1' : 'text-green-600 rounded-full bg-green-100 px-3 py-1'}>
             {item.isUserDamaged ? 'Yes' : 'No'}
           </span>
         ) : (
@@ -405,6 +581,8 @@ const AdminRequestView = () => {
     ),
     dateReturned: <div className="text-center">{formatDate(item.dateReturned)}</div>
   }));
+
+
 
   return (
     <div className="bg-gray-50">
@@ -420,18 +598,6 @@ const AdminRequestView = () => {
             </button>
             <FileText className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-800">Issued Details</h1>
-            <div className="px-6 py-3 border-b border-blue-100 flex justify-between items-center">
-            <div className="flex items-center">
-              <Flag size={20} />
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                requestStatus === 'Done' 
-                  ? 'bg-green-600 text-b-800' 
-                  : 'bg-red-500 text-white-800'
-              }`}>
-                {requestStatus}
-              </div>
-            </div>
-          </div>
           </div>
         </div>
         
@@ -446,11 +612,28 @@ const AdminRequestView = () => {
                 <p className="text-gray-600">Submitted on {formatDate(requestData.requestedDate)}</p>
 
               </div>
-              <div className="mt-4 md:mt-0">
-                <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                  <span className="font-medium">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
+              <div className="mt-4 md:mt-0 flex flex-col gap-4">
+                {/* Request Type Box */}
+                <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-sm font-medium text-gray-800">
+                    {requestData.isFaculty ? 'Faculty' : 'Student'} Request
+                  </span>
                 </div>
+
+                {/* Request Status Box */}
+                <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border 
+                ${requestStatus === 'Done' 
+                  ? 'bg-green-500 border-green-300' 
+                  : 'bg-red-500 border-red-300'
+                }`}>
+                
+                <Flag size={16} className={requestStatus === 'Done' ? 'text-white' : 'text-white'} />
+
+                <span className="text-sm font-medium text-white">
+                  Request {requestStatus}
+                </span>
+              </div>
               </div>
             </div>
           </div>
@@ -668,15 +851,15 @@ const AdminRequestView = () => {
                 {returnTrackingComponents[selectedComponentIndex].name}
               </div>
             </div>
-
-            {/* Quantity Damaged */}
+            
+            {/* User Damaged Quantity */}
             <div>
-              <label className="block text-s font-medium text-gray-700 mb-1">Quantity Damaged</label>
+              <label className="block text-s font-medium text-gray-700 mb-1">User Damaged Quantity</label>
               <div className="flex items-center space-x-2">
                 <button 
-                  onClick={() => decrementDamageCount(selectedComponentIndex)}
-                  disabled={damageCount[selectedComponentIndex] <= 0}
-                  className={`p-2 rounded-md border ${damageCount[selectedComponentIndex] <= 0 
+                  onClick={decrementUserDamagedCount}
+                  disabled={userDamagedCount <= 0}
+                  className={`p-2 rounded-md border ${userDamagedCount <= 0 
                     ? 'text-gray-300 border-gray-200' 
                     : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
                 >
@@ -685,15 +868,101 @@ const AdminRequestView = () => {
                 <input
                   type="number"
                   min="0"
-                  max={returnTrackingComponents[selectedComponentIndex].returned}
-                  value={damageCount[selectedComponentIndex] || 0}
-                  onChange={(e) => handleDamageCountChange(selectedComponentIndex, e.target.value)}
+                  max={returnTrackingComponents[selectedComponentIndex].returned - notUserDamagedCount}
+                  value={userDamagedCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    const max = returnTrackingComponents[selectedComponentIndex].returned - notUserDamagedCount;
+                    setUserDamagedCount(Math.min(val, max));
+                    // Adjust replacing count if needed
+                    if (replacingCount > val + notUserDamagedCount) {
+                      setReplacingCount(val + notUserDamagedCount);
+                    }
+                  }}
                   className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center"
                 />
                 <button 
-                  onClick={() => incrementDamageCount(selectedComponentIndex)}
-                  disabled={damageCount[selectedComponentIndex] >= returnTrackingComponents[selectedComponentIndex].returned}
-                  className={`p-2 rounded-md border ${damageCount[selectedComponentIndex] >= returnTrackingComponents[selectedComponentIndex].returned 
+                  onClick={incrementUserDamagedCount}
+                  disabled={userDamagedCount + notUserDamagedCount >= returnTrackingComponents[selectedComponentIndex].returned}
+                  className={`p-2 rounded-md border ${userDamagedCount + notUserDamagedCount >= returnTrackingComponents[selectedComponentIndex].returned 
+                    ? 'text-gray-300 border-gray-200' 
+                    : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Not User Damaged Quantity */}
+            <div>
+              <label className="block text-s font-medium text-gray-700 mb-1">Not User Damaged Quantity</label>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={decrementNotUserDamagedCount}
+                  disabled={notUserDamagedCount <= 0}
+                  className={`p-2 rounded-md border ${notUserDamagedCount <= 0 
+                    ? 'text-gray-300 border-gray-200' 
+                    : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
+                >
+                  <Minus size={16} />
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  max={returnTrackingComponents[selectedComponentIndex].returned - userDamagedCount}
+                  value={notUserDamagedCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    const max = returnTrackingComponents[selectedComponentIndex].returned - userDamagedCount;
+                    setNotUserDamagedCount(Math.min(val, max));
+                    // Adjust replacing count if needed
+                    if (replacingCount > val + userDamagedCount) {
+                      setReplacingCount(val + userDamagedCount);
+                    }
+                  }}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center"
+                />
+                <button 
+                  onClick={incrementNotUserDamagedCount}
+                  disabled={userDamagedCount + notUserDamagedCount >= returnTrackingComponents[selectedComponentIndex].returned}
+                  className={`p-2 rounded-md border ${userDamagedCount + notUserDamagedCount >= returnTrackingComponents[selectedComponentIndex].returned 
+                    ? 'text-gray-300 border-gray-200' 
+                    : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Replacing Quantity */}
+            <div>
+              <label className="block text-s font-medium text-gray-700 mb-1">Replacing Quantity</label>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={decrementReplacingCount}
+                  disabled={replacingCount <= 0}
+                  className={`p-2 rounded-md border ${replacingCount <= 0 
+                    ? 'text-gray-300 border-gray-200' 
+                    : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
+                >
+                  <Minus size={16} />
+                </button>
+                <input
+                  type="number"
+                  min="0"
+                  max={userDamagedCount + notUserDamagedCount}
+                  value={replacingCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    const max = userDamagedCount + notUserDamagedCount;
+                    setReplacingCount(Math.min(val, max));
+                  }}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center"
+                />
+                <button 
+                  onClick={incrementReplacingCount}
+                  disabled={replacingCount >= userDamagedCount + notUserDamagedCount}
+                  className={`p-2 rounded-md border ${replacingCount >= userDamagedCount + notUserDamagedCount 
                     ? 'text-gray-300 border-gray-200' 
                     : 'text-blue-600 hover:bg-blue-100 border-blue-300'}`}
                 >
@@ -701,7 +970,7 @@ const AdminRequestView = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Max: {returnTrackingComponents[selectedComponentIndex].returned} (returning amount)
+                Cannot exceed total damaged quantity ({userDamagedCount + notUserDamagedCount})
               </p>
             </div>
 
@@ -716,50 +985,7 @@ const AdminRequestView = () => {
                 placeholder="Describe the damage..."
                 required
               ></textarea>
-            </div>
-
-            {/* User Damaged Checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="user-damaged"
-                checked={isUserDamaged}
-                onChange={(e) => setIsUserDamaged(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="user-damaged" className="ml-2 text-s text-red-600">
-                User damaged the component
-              </label>
-            </div>
-
-            {/* Action Selection */}
-            <div>
-              <label className="block text-s font-medium text-gray-700 mb-2">Action</label>
-              <div className="flex space-x-6">
-                <label className="flex items-center text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    id="action-return"
-                    name="damage-action"
-                    checked={damageAction === 'return'}
-                    onChange={() => setDamageAction('return')}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="ml-2">Return</span>
-                </label>
-                <label className="flex items-center text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    id="action-replace"
-                    name="damage-action"
-                    checked={damageAction === 'replace'}
-                    onChange={() => setDamageAction('replace')}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="ml-2">Replace</span>
-                </label>
-              </div>
-            </div>
+            </div>    
           </div>
 
           {/* Modal Buttons */}
@@ -776,6 +1002,49 @@ const AdminRequestView = () => {
             >
               <Check size={20} />
               Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showDamageDetailsModal && selectedDamageDetails && (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-4">
+            <h3 className="text-lg font-semibold">Damage Description</h3>
+            <button 
+              onClick={() => setShowDamageDetailsModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="mb-4">
+            <div className="flex justify-between mb-2">
+              <span className="font-medium">Component:</span>
+              <span>{selectedDamageDetails.name}</span>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <p className="font-medium mb-1">Description:</p>
+            <div className="border rounded p-4 bg-gray-50 max-h-48 overflow-y-auto">
+              {selectedDamageDetails.damageDescription ? (
+                <p>{selectedDamageDetails.damageDescription}</p>
+              ) : (
+                <p className="text-gray-500 italic">No damage description provided.</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setShowDamageDetailsModal(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Close
             </button>
           </div>
         </div>
