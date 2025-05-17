@@ -1,13 +1,27 @@
+// ✅ This must be the very first line
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function PasswordPage({ userName = 'User' }) {
+// ✅ Wrap useSearchParams() usage inside Suspense
+function PasswordPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PasswordPage />
+    </Suspense>
+  );
+}
+
+export default function Page() {
+  return <PasswordPageWrapper />;
+}
+
+function PasswordPage({ userName = 'User' }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,24 +31,18 @@ export default function PasswordPage({ userName = 'User' }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-useEffect(() => {
-  const token = searchParams.get('token');
-  const type = searchParams.get('type');
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const type = searchParams.get('type');
 
-  // If token or type is missing, redirect to login
-  if (!token || !type) {
-    router.push('/auth/login');
-    return;
-  }
+    if (!token || !type) {
+      router.push('/auth/login');
+      return;
+    }
 
-  // If both are present, store them in state
-  setToken(token);
-  setType(type);
-
-  console.log('Token:', token);
-  console.log('Type:', type);
-}, [searchParams, router]);
-
+    setToken(token);
+    setType(type);
+  }, [searchParams, router]);
 
   const isPasswordValid = (pwd) => {
     const pattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
@@ -57,8 +65,6 @@ useEffect(() => {
       return;
     }
 
-    // You can now use token/type in your API call or state logic
-    // Example: send password + token to backend
     console.log('Submitting with token:', token);
     console.log('Type:', type);
 
