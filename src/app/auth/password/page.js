@@ -7,13 +7,20 @@ import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff } from 'lucide-react';
-
+import { motion } from 'framer-motion';
 
 function PasswordPageWrapper() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PasswordPage />
-    </Suspense>
+<Suspense
+  fallback={
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  }
+>
+  <PasswordPage />
+</Suspense>
+
   );
 }
 
@@ -31,6 +38,9 @@ function PasswordPage() {
   const [userName, setUserName] = useState('User'); 
   const router = useRouter();
   const searchParams = useSearchParams();
+    const [showModal, setShowModal] = useState(false); 
+const [expiredSession, setExpiredSession] = useState(true);
+
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -64,6 +74,10 @@ function PasswordPage() {
 
         if (!res.ok) {
           console.error(`Error verifying token at ${endpoint}`);
+            console.error('Failed to set password:', data);
+          setError(data.message || 'Something went wrong.');
+          setExpiredSession(true); 
+          setTimeout(() => router.push('/auth/login'), 3000);
           return;
         }
 
@@ -75,6 +89,10 @@ function PasswordPage() {
         }
       } catch (err) {
         console.error('Error during token verification:', err);
+         console.error('Error while setting password:', err);
+        setError('Failed to connect to server.');
+        setExpiredSession(true);
+        setTimeout(() => router.push('/auth/login'), 3000); 
       }
     };
 
@@ -85,6 +103,13 @@ function PasswordPage() {
     const pattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     return pattern.test(pwd);
   };
+
+    const handleModalClose = () => {
+    console.log('Modal closed');
+    setShowModal(false); 
+    router.push('/auth/login'); 
+  };
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -127,16 +152,21 @@ const handleSubmit = async (e) => {
 
     if (res.ok) {
       console.log('Password set successfully:', data);
-          // router.push('/auth/login');
-
+          setShowModal(true);
     }
 
-      console.error('Failed to set password:', data);
-      setError(data.message || 'Something went wrong.');
+          console.error(`Error verifying token at ${endpoint}`);
+            console.error('Failed to set password:', data);
+          setError(data.message || 'Something went wrong.');
+          setExpiredSession(true); 
+          setTimeout(() => router.push('/auth/login'), 3000);
       return;
   } catch (err) {
-    console.error('Error while setting password:', err);
-    setError('Failed to connect to server.');
+        console.error('Error during token verification:', err);
+         console.error('Error while setting password:', err);
+        setError('Failed to connect to server.');
+        setExpiredSession(true);
+        setTimeout(() => router.push('/auth/login'), 3000); 
   }
 };
 
@@ -189,6 +219,101 @@ const handleSubmit = async (e) => {
           </Link>
         </p>
       </div>
+      {showModal && (
+  <motion.div
+    className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <motion.div
+      className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center"
+      initial={{ scale: 0.8 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.8 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Dynamic Tick Animation */}
+      <div className="mb-4 flex justify-center">
+        <svg width="60" height="60" viewBox="0 0 52 52" className="text-green-600">
+          <motion.path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14 27l10 10 20-20"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+          />
+          <circle
+            cx="26"
+            cy="26"
+            r="25"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="opacity-30"
+          />
+        </svg>
+      </div>
+
+      <h3 className="text-xl font-semibold">Password Updated</h3>
+      <p className="text-sm mt-2">Dear {userName} your password is updated successfully continue to login </p>
+
+
+      <div className="mt-4">
+        <button
+          onClick={handleModalClose}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md text-sm font-medium transition"
+        >
+          continue
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
+{expiredSession && (
+  <motion.div
+    className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <motion.div
+      className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center"
+      initial={{ scale: 0.8 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.8 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="mb-4">
+        <svg className="w-12 h-12 mx-auto text-red-600" fill="none" stroke="currentColor" strokeWidth="2"
+             viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+
+      <h3 className="text-xl font-semibold text-red-700">Session Expired</h3>
+      <p className="text-sm mt-2">Hello user , This session has expired. Please generate a new link.</p>
+      <p className="text-xs text-gray-500 mt-1">Redirecting to login...</p>
+
+      <div className="mt-4">
+        <button
+          onClick={() => router.push('/auth/login')}
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium transition"
+        >
+          OK
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
+
     </div>
   );
 }
