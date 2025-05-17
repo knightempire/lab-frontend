@@ -17,22 +17,60 @@ export default function LoginPage() {
   const validateEmail = (email) =>
      /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    if (!validateEmail(email)) {
-      setError('Only University email addresses are allowed.');
+  if (!validateEmail(email)) {
+    setError('Only University email addresses are allowed.');
+    return;
+  }
+
+  if (!password.trim()) {
+    setError('Password cannot be empty.');
+    return;
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const endpoint = `${baseUrl}/api/login`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+    console.log('Login response:', data);
+
+    if (!res.ok) {
+      setError(data.message || 'Login failed. Please try again.');
       return;
     }
 
-    if (!password.trim()) {
-      setError('Password cannot be empty.');
+    const { token, user } = data;
+
+    if (!user.isActive) {
+      setError('Your account is deactivated. Please contact the administrator.');
       return;
     }
 
-    router.push('/user/dashboard');
-  };
+    localStorage.setItem('token', token);
+
+    if (user.isAdmin) {
+      router.push('/admin/dashboard');
+    } else {
+      router.push('/users/dashboard');
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Something went wrong. Please try again later.');
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
