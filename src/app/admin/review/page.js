@@ -1,13 +1,20 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
-import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft } from 'lucide-react';
+import DropdownPortal from '../../../components/dropDown';
+import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle } from 'lucide-react';
 const simplifiedProducts = [
   { name: "Widget A", inStock: 90 },
   { name: "Widget B", inStock: 45 },
   { name: "Widget C", inStock: 65 },
-  { name: "Widget Z", inStock: 85 }
+  { name: "Widget D", inStock: 85 },
+  { name: "Widget E", inStock: 90 },
+  { name: "Widget F", inStock: 45 },
+  { name: "Widget G", inStock: 65 },
+  { name: "Widget H", inStock: 85 },
+  { name: "Widget I", inStock: 90 },
+  { name: "Widget J", inStock: 45 },
 ];
 
 const AdminRequestView = () => {
@@ -28,6 +35,9 @@ const AdminRequestView = () => {
   const [action, setAction] = useState(null); // 'accept' or 'decline'
   const [responseMessage, setResponseMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [validationMessage, setValidationMessage] = useState('');
+
   
   useEffect(() => {
     // Get request data from sessionStorage that was set in the requests page
@@ -183,6 +193,24 @@ const AdminRequestView = () => {
 
   // Handle final submission
   const handleSubmit = async () => {
+    // Validate components if accepting the request
+    if (action === 'accept') {
+      if (adminIssueComponents.length === 0) {
+        setValidationMessage('Please add at least one component before accepting the request.');
+        return;
+      }
+
+      const invalidComponents = adminIssueComponents.filter(
+        component => !component.name || component.quantity <= 0
+      );
+
+      if (invalidComponents.length > 0) {
+        setValidationMessage('Please fill in all component details (name and quantity) before accepting the request.');
+        return;
+      }
+    }
+    setValidationMessage('');
+    
     setIsSubmitting(true);
     
     try {
@@ -231,71 +259,91 @@ const AdminRequestView = () => {
     );
   };
 
-  // Dropdown component renderer
   const ComponentDropdown = ({ id, selectedValue }) => {
-    // Get names of components already in the table
+    const buttonRef = useRef(null);
+    const dropdownRef = useRef(null);
+
     const existingComponentNames = adminIssueComponents
-      .filter(component => component.id !== id && component.name) // Exclude current component and empty names
+      .filter(component => component.id !== id && component.name)
       .map(component => component.name);
-    
-    // Filter products that are not already in the table and match search term
+
     const filteredProducts = simplifiedProducts
-      .filter(product => 
-        !existingComponentNames.includes(product.name) && // Exclude products already in the table
+      .filter(product =>
+        !existingComponentNames.includes(product.name) &&
         product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
       );
-    
+
+    // Close dropdown on outside click
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          dropdownOpen[id] &&
+          buttonRef.current &&
+          !buttonRef.current.contains(event.target) &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          toggleDropdown(id); // Closes the dropdown
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [dropdownOpen, id]);
+
     return (
       <div className="relative">
-        <div 
+        <div
+          ref={buttonRef}
           className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
           onClick={() => toggleDropdown(id)}
         >
           <span>{selectedValue || 'Select component'}</span>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-        
+
         {dropdownOpen[id] && (
-          <div className="absolute z-10 mt-1 w-full bg-white rounded-md border border-gray-300 shadow-lg">
-            <div className="p-2 border-b border-gray-200">
-              <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
-                <Search className="w-4 h-4 text-gray-500 mr-2" />
-                <input 
-                  type="text" 
-                  className="w-full bg-transparent border-none focus:outline-none text-sm"
-                  placeholder="Search components..."
-                  value={searchTerm[id] || ''}
-                  onChange={(e) => handleSearchChange(id, e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
+          <DropdownPortal targetRef={buttonRef}>
+            <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
+              <div className="p-2 border-b border-gray-200">
+                <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
+                  <Search className="w-4 h-4 text-gray-500 mr-2" />
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm"
+                    placeholder="Search components..."
+                    value={searchTerm[id] || ''}
+                    onChange={(e) => handleSearchChange(id, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map(product => (
+                    <div
+                      key={product.name}
+                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+                      onClick={() => handleNameChange(id, product.name)}
+                    >
+                      <span>{product.name}</span>
+                      <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    {searchTerm[id] ? 'No matching components' : 'All components already added'}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="max-h-60 overflow-y-auto">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map(product => (
-                  <div 
-                    key={product.name}
-                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
-                    onClick={() => handleNameChange(id, product.name)}
-                  >
-                    <span>{product.name}</span>
-                    <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-2 text-gray-500 text-sm">
-                  {searchTerm[id] ? 'No matching components' : 'All components already added'}
-                </div>
-              )}
-            </div>
-          </div>
+          </DropdownPortal>
         )}
       </div>
     );
   };
-
   if (!requestData) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -435,6 +483,7 @@ const AdminRequestView = () => {
                 </div>
                 <button
                   className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"                  
+                  onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
                 >
                   View Profile
                 </button>
@@ -602,6 +651,7 @@ const AdminRequestView = () => {
               </div>
             </div>
           </div>
+
           
           {/* Take Action Section */}
           <div className="p-6 border-t border-gray-200">
@@ -656,6 +706,13 @@ const AdminRequestView = () => {
                   />
                 </div>
                 
+                {validationMessage && (
+                  <div className="flex items-center gap-2 bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded-md mb-4 text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{validationMessage}</span>
+                  </div>
+                )}
+
                 <div className="flex space-x-4">
                   <button
                     className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${

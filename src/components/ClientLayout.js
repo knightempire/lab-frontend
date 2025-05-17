@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import Footer from './Footer';
 
 const validPaths = [
   '/',
@@ -11,6 +12,8 @@ const validPaths = [
   '/admin/product',
   '/admin/request',
   '/admin/users',
+  '/admin/issued',
+  '/user/dashboard',
   '/user/product',
   '/user/request'
 ];
@@ -31,6 +34,7 @@ export default function ClientLayout({ children }) {
       <div className="flex flex-col flex-1">
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-y-auto">{children}</main>
+        <Footer />
       </div>
     </div>
   );

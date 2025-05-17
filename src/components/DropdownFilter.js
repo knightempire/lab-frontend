@@ -43,7 +43,7 @@ const DropdownFilter = ({ label, options, selectedValue, onSelect }) => {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative w-48" onKeyDown={handleKeyDown} tabIndex={0}>
+    <div ref={containerRef} className="relative w-56" onKeyDown={handleKeyDown} tabIndex={0}>
       <button
         onClick={toggleDropdown}
         className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm text-gray-700 flex items-center justify-between"
