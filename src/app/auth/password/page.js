@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
@@ -12,7 +12,29 @@ export default function PasswordPage({ userName = 'User' }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [token, setToken] = useState(null);
+  const [type, setType] = useState(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+useEffect(() => {
+  const token = searchParams.get('token');
+  const type = searchParams.get('type');
+
+  // If token or type is missing, redirect to login
+  if (!token || !type) {
+    router.push('/auth/login');
+    return;
+  }
+
+  // If both are present, store them in state
+  setToken(token);
+  setType(type);
+
+  console.log('Token:', token);
+  console.log('Type:', type);
+}, [searchParams, router]);
+
 
   const isPasswordValid = (pwd) => {
     const pattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
@@ -34,7 +56,12 @@ export default function PasswordPage({ userName = 'User' }) {
       setError('Passwords do not match.');
       return;
     }
-    
+
+    // You can now use token/type in your API call or state logic
+    // Example: send password + token to backend
+    console.log('Submitting with token:', token);
+    console.log('Type:', type);
+
     router.push('/auth/login');
   };
 
