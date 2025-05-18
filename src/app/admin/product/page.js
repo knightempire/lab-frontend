@@ -6,41 +6,13 @@ import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
-
-const initialProducts = [
-  { name: "Widget A", quantity: 100, damagedQuantity: 5, inStock: 90 },
-  { name: "Widget B", quantity: 50, damagedQuantity: 2, inStock: 45 },
-  { name: "Widget C", quantity: 70, damagedQuantity: 3, inStock: 65 },
-  { name: "Widget D", quantity: 80, damagedQuantity: 4, inStock: 75 },
-  { name: "Widget E", quantity: 60, damagedQuantity: 1, inStock: 59 },
-  { name: "Widget F", quantity: 40, damagedQuantity: 0, inStock: 40 },
-  { name: "Widget G", quantity: 90, damagedQuantity: 6, inStock: 84 },
-  { name: "Widget H", quantity: 30, damagedQuantity: 2, inStock: 28 },
-  { name: "Widget I", quantity: 55, damagedQuantity: 5, inStock: 50 },
-  { name: "Widget J", quantity: 75, damagedQuantity: 3, inStock: 72 },
-  { name: "Widget K", quantity: 110, damagedQuantity: 10, inStock: 100 },
-  { name: "Widget L", quantity: 45, damagedQuantity: 1, inStock: 44 },
-  { name: "Widget M", quantity: 95, damagedQuantity: 8, inStock: 87 },
-  { name: "Widget N", quantity: 65, damagedQuantity: 2, inStock: 63 },
-  { name: "Widget O", quantity: 85, damagedQuantity: 4, inStock: 81 },
-  { name: "Widget P", quantity: 60, damagedQuantity: 6, inStock: 54 },
-  { name: "Widget Q", quantity: 100, damagedQuantity: 5, inStock: 95 },
-  { name: "Widget R", quantity: 78, damagedQuantity: 3, inStock: 75 },
-  { name: "Widget S", quantity: 88, damagedQuantity: 4, inStock: 84 },
-  { name: "Widget T", quantity: 92, damagedQuantity: 2, inStock: 90 },
-  { name: "Widget U", quantity: 70, damagedQuantity: 1, inStock: 69 },
-  { name: "Widget V", quantity: 50, damagedQuantity: 0, inStock: 50 },
-  { name: "Widget W", quantity: 80, damagedQuantity: 7, inStock: 73 },
-  { name: "Widget X", quantity: 40, damagedQuantity: 3, inStock: 37 },
-  { name: "Widget Y", quantity: 60, damagedQuantity: 2, inStock: 58 },
-  { name: "Widget Z", quantity: 90, damagedQuantity: 5, inStock: 85 }
-];
+import SuccessAlert from '../../../components/SuccessAlert';
 
 
 export default function ProductPage() {
-  const [products, setProducts] = useState(initialProducts);
+const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
+  const [newProduct, setNewProduct] = useState({ product_name: '', quantity: '', damagedQuantity: '', inStock: '' });
   const [editIndex, setEditIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,19 +20,45 @@ export default function ProductPage() {
   const [excelData, setExcelData] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const token = localStorage.getItem('token'); // adjust key if needed
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.products) {
+        setProducts(data.products);
+      } else {
+        console.error('Failed to fetch products:', data.message || res.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  fetchProducts();
+}, []);
+
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+   product.product_name?.toLowerCase().includes(searchQuery.toLowerCase())
+
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -69,15 +67,20 @@ export default function ProductPage() {
     currentPage * itemsPerPage
   );
 
-  const addProduct = () => {
-    if (!newProduct.name) return;
-    const quantity = parseInt(newProduct.quantity) || 0;
-    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
-    const inStock = parseInt(newProduct.inStock) || 0;
+const addProduct = () => {
+  if (!newProduct.name) return;
 
-    setProducts([...products, { name: newProduct.name, quantity, damagedQuantity, inStock }]);
-    resetForm();
-  };
+  const quantity = parseInt(newProduct.quantity) || 0;
+  const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
+  const inStock = parseInt(newProduct.inStock) || 0;
+
+  setProducts([...products, { name: newProduct.name, quantity, damagedQuantity, inStock }]);
+  resetForm();
+
+  setShowSuccessAlert(true);
+  setTimeout(() => setShowSuccessAlert(false), 3000);
+};
+
 
   const updateProduct = (index) => {
     const quantity = parseInt(newProduct.quantity) || 0;
@@ -104,7 +107,7 @@ export default function ProductPage() {
   };
 
   const columns = [
-    { key: 'name', label: 'Product Name' },
+    { key: 'product_name', label: 'Name' },
     { key: 'quantity', label: 'Total Quantity' },
     { key: 'issued', label: 'Issued Quantity' },
     { key: 'damagedQuantity', label: 'Damaged Quantity' },
@@ -366,6 +369,15 @@ export default function ProductPage() {
           </div>
         </div>
       )}
+
+      {showSuccessAlert && (
+  <SuccessAlert
+    message="Done successfully :)"
+    description="Product added successfully"
+    onClose={() => setShowSuccessAlert(false)}
+  />
+)}
+
     </div>
   );
 }

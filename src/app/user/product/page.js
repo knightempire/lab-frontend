@@ -7,6 +7,7 @@ import Pagination from '../../../components/pagination';
 import { useRouter } from 'next/navigation';
 
 
+
 const columns = [
   { key: 'name', label: 'Product Name' },
   { key: 'inStock', label: 'In Stock' },
@@ -20,52 +21,53 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-
+  // Initialize products and restore selections from localStorage
 useEffect(() => {
   const fetchProducts = async () => {
     try {
-      const token = localStorage.getItem('token'); // Adjust key if different
-
+      const token = localStorage.getItem('token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
+      if (!res.ok) throw new Error('Failed to fetch products');
+
       const data = await res.json();
+      const fetchedProducts = data.products.map(p => ({
+        id: p.id,
+        name: p.product_name,
+        inStock: p.inStock,
+        selected: false,
+        selectedQuantity: 0
+      }));
 
-      if (res.ok && data.products) {
-        let initializedProducts = data.products.map(product => ({
-          name: product.name,
-          inStock: product.inStock,
-          selected: false,
-          selectedQuantity: 0
-        }));
+      // Load previous selections from localStorage
+      const storedProducts = localStorage.getItem('selectedProducts');
+      if (storedProducts) {
+        const selectedItems = JSON.parse(storedProducts);
 
-        // Try to restore selections from localStorage
-        const storedProducts = localStorage.getItem('selectedProducts');
-        if (storedProducts) {
-          const selectedItems = JSON.parse(storedProducts);
-          initializedProducts = initializedProducts.map(product => {
-            const selectedItem = selectedItems.find(item => item.name === product.name);
-            if (selectedItem) {
-              return {
-                ...product,
-                selected: true,
-                selectedQuantity: selectedItem.selectedQuantity
-              };
-            }
-            return product;
-          });
-        }
+        const mergedProducts = fetchedProducts.map(product => {
+          const selected = selectedItems.find(item => item.name === product.name);
+          if (selected) {
+            return {
+              ...product,
+              selected: true,
+              selectedQuantity: selected.selectedQuantity
+            };
+          }
+          return product;
+        });
 
-        setProducts(initializedProducts);
+        setProducts(mergedProducts);
       } else {
-        console.error('Failed to fetch products:', data.message || res.statusText);
+        setProducts(fetchedProducts);
       }
-    } catch (error) {
-      console.error('Error fetching products:', error);
+
+    } catch (err) {
+      console.error('Failed to fetch or restore products:', err);
     }
   };
 
