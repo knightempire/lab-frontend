@@ -239,11 +239,14 @@ setSuccessMessage(result.message || 'Product updated successfully');
   };
 
   const cancelForm = () => resetForm();
+  
   const resetForm = () => {
+      setFormErrors({});
     setShowForm(false);
     setEditIndex(null);
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
+  
 
   const columns = [
     { key: 'product_name', label: 'Name' },
