@@ -6,41 +6,13 @@ import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
-
-const initialProducts = [
-  { name: "Widget A", quantity: 100, damagedQuantity: 5, inStock: 90 },
-  { name: "Widget B", quantity: 50, damagedQuantity: 2, inStock: 45 },
-  { name: "Widget C", quantity: 70, damagedQuantity: 3, inStock: 65 },
-  { name: "Widget D", quantity: 80, damagedQuantity: 4, inStock: 75 },
-  { name: "Widget E", quantity: 60, damagedQuantity: 1, inStock: 59 },
-  { name: "Widget F", quantity: 40, damagedQuantity: 0, inStock: 40 },
-  { name: "Widget G", quantity: 90, damagedQuantity: 6, inStock: 84 },
-  { name: "Widget H", quantity: 30, damagedQuantity: 2, inStock: 28 },
-  { name: "Widget I", quantity: 55, damagedQuantity: 5, inStock: 50 },
-  { name: "Widget J", quantity: 75, damagedQuantity: 3, inStock: 72 },
-  { name: "Widget K", quantity: 110, damagedQuantity: 10, inStock: 100 },
-  { name: "Widget L", quantity: 45, damagedQuantity: 1, inStock: 44 },
-  { name: "Widget M", quantity: 95, damagedQuantity: 8, inStock: 87 },
-  { name: "Widget N", quantity: 65, damagedQuantity: 2, inStock: 63 },
-  { name: "Widget O", quantity: 85, damagedQuantity: 4, inStock: 81 },
-  { name: "Widget P", quantity: 60, damagedQuantity: 6, inStock: 54 },
-  { name: "Widget Q", quantity: 100, damagedQuantity: 5, inStock: 95 },
-  { name: "Widget R", quantity: 78, damagedQuantity: 3, inStock: 75 },
-  { name: "Widget S", quantity: 88, damagedQuantity: 4, inStock: 84 },
-  { name: "Widget T", quantity: 92, damagedQuantity: 2, inStock: 90 },
-  { name: "Widget U", quantity: 70, damagedQuantity: 1, inStock: 69 },
-  { name: "Widget V", quantity: 50, damagedQuantity: 0, inStock: 50 },
-  { name: "Widget W", quantity: 80, damagedQuantity: 7, inStock: 73 },
-  { name: "Widget X", quantity: 40, damagedQuantity: 3, inStock: 37 },
-  { name: "Widget Y", quantity: 60, damagedQuantity: 2, inStock: 58 },
-  { name: "Widget Z", quantity: 90, damagedQuantity: 5, inStock: 85 }
-];
+import SuccessAlert from '../../../components/SuccessAlert';
 
 
 export default function ProductPage() {
-  const [products, setProducts] = useState(initialProducts);
+const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
+  const [newProduct, setNewProduct] = useState({ product_name: '', quantity: '', damagedQuantity: '', inStock: '' });
   const [editIndex, setEditIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,19 +20,47 @@ export default function ProductPage() {
   const [excelData, setExcelData] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+const [formErrors, setFormErrors] = useState({});
+const [successMessage, setSuccessMessage] = useState('');
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+useEffect(() => {
+
+  fetchProducts();
+}, []);
+
+  const fetchProducts = async () => {
+    try {
+      const token = localStorage.getItem('token'); // adjust key if needed
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.products) {
+        setProducts(data.products);
+      } else {
+        console.error('Failed to fetch products:', data.message || res.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+   product.product_name?.toLowerCase().includes(searchQuery.toLowerCase())
+
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -69,42 +69,187 @@ export default function ProductPage() {
     currentPage * itemsPerPage
   );
 
-  const addProduct = () => {
-    if (!newProduct.name) return;
-    const quantity = parseInt(newProduct.quantity) || 0;
-    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
-    const inStock = parseInt(newProduct.inStock) || 0;
+const validateProduct = (product) => {
+  const errors = {};
 
-    setProducts([...products, { name: newProduct.name, quantity, damagedQuantity, inStock }]);
-    resetForm();
+  if (!product.product_name || typeof product.product_name !== 'string' || product.product_name.trim() === '') {
+    errors.product_name = 'Product name is required.';
+  }
+
+  const quantity = parseInt(product.quantity);
+  const damagedQuantity = parseInt(product.damagedQuantity);
+  const inStock = parseInt(product.inStock);
+
+  if (isNaN(quantity) || quantity < 0) {
+    errors.quantity = 'Quantity must be a non-negative number.';
+  }
+
+  if (isNaN(damagedQuantity) || damagedQuantity < 0) {
+    errors.damagedQuantity = 'Damaged Quantity must be a non-negative number.';
+  }
+
+  if (isNaN(inStock) || inStock < 0) {
+    errors.inStock = 'In Stock must be a non-negative number.';
+  }
+
+  console.log('Validation errors:', errors);  
+  return errors;
+};
+
+
+const addProduct = async () => {
+  const errors = validateProduct(newProduct);
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
+
+  setFormErrors({});
+
+  const payload = {
+    product_name: newProduct.product_name.trim(),
+    quantity: parseInt(newProduct.quantity),
+    damagedQuantity: parseInt(newProduct.damagedQuantity),
+    inStock: parseInt(newProduct.inStock),
   };
 
-  const updateProduct = (index) => {
-    const quantity = parseInt(newProduct.quantity) || 0;
-    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
-    const inStock = parseInt(newProduct.inStock) || 0;
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-    const updated = [...products];
-    updated[index] = { name: newProduct.name, quantity, damagedQuantity, inStock };
-    setProducts(updated);
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.message === 'Product already exists') {
+            setFormErrors({ product_name: data.message });
+        } else {
+          toast.error(data.message || 'Failed to add product');
+     }
+  return;
+    }
+
+    setSuccessMessage(data.message || 'Product added successfully');
+    setProducts([...products, {
+      product_name: payload.product_name,
+      quantity: payload.quantity,
+      damagedQuantity: payload.damagedQuantity,
+      inStock: payload.inStock,
+    }]);
+
     resetForm();
+    setShowSuccessAlert(true);
+    setTimeout(() => setShowSuccessAlert(false), 3000);
+
+  } catch (error) {
+    console.error('Error adding product:', error);
+    toast.error('Something went wrong while adding the product');
+  }
+};
+
+const updateProduct = async (index) => {
+  console.log('Updating product at index:', index);
+
+    console.log('newProduct:', newProduct);
+  const errors = validateProduct(newProduct);
+  console.log('Validation errors:', errors); 
+
+
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
+
+   const token = localStorage.getItem('token');
+  setFormErrors({});
+
+  // Convert input values to integers
+  const quantity = parseInt(newProduct.quantity);
+  const damagedQuantity = parseInt(newProduct.damagedQuantity);
+  const inStock = parseInt(newProduct.inStock);
+
+  const updatedProduct = {
+    product_name: newProduct.product_name.trim(), 
+    quantity,
+    damagedQuantity,
+    inStock,
   };
+
+  try {
+
+    const productId = products[index].id; 
+  
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, 
+      },
+      body: JSON.stringify(updatedProduct),
+    });
+
+
+
+    const result = await response.json();
+
+        if (!response.ok) {
+      if (result.message === 'Product already exists') {
+            setFormErrors({ product_name: result.message });
+        } else {
+          toast.error(result.message || 'Failed to add product');
+     }
+  return;
+    }
+
+setSuccessMessage(result.message || 'Product updated successfully');
+
+    const updatedProducts = [...products];
+    updatedProducts[index] = {
+      ...updatedProducts[index], 
+      ...updatedProduct, 
+    };
+
+    setProducts(updatedProducts);
+
+
+    resetForm();
+    setShowSuccessAlert(true);
+    setTimeout(() => setShowSuccessAlert(false), 3000);
+  } catch (error) {
+    console.error('Error updating product:', error);
+
+  }
+};
+
+
+
 
   const startEdit = (product, index) => {
+      console.log("Starting to edit", product); 
     setEditIndex(index);
     setNewProduct({ ...product });
     setShowForm(true);
   };
 
   const cancelForm = () => resetForm();
+  
   const resetForm = () => {
+      setFormErrors({});
     setShowForm(false);
     setEditIndex(null);
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
+  
 
   const columns = [
-    { key: 'name', label: 'Product Name' },
+    { key: 'product_name', label: 'Name' },
     { key: 'quantity', label: 'Total Quantity' },
     { key: 'issued', label: 'Issued Quantity' },
     { key: 'damagedQuantity', label: 'Damaged Quantity' },
@@ -327,45 +472,86 @@ export default function ProductPage() {
       )}
 
       {/* Modal Form */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={cancelForm}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">{editIndex !== null ? 'Edit Product' : 'Add Product'}</h2>
-              <button onClick={cancelForm}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
-                  </label>
-                  <input
-                    name={field}
-                    type={field === 'name' ? 'text' : 'number'}
-                    value={newProduct[field]}
-                    onChange={handleChange}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2 p-4 border-t">
-              <button onClick={cancelForm} className="text-gray-600 px-3 py-2 border rounded">
-                Cancel
-              </button>
-              <button
-                onClick={editIndex !== null ? () => updateProduct(editIndex) : addProduct}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                {editIndex !== null ? 'Update' : 'Add'}
-              </button>
-            </div>
+{showForm && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
+    onClick={cancelForm}
+  >
+    <div
+      className="bg-white rounded-xl shadow-2xl w-full max-w-sm animate-fadeIn"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
+            {editIndex !== null ? <Edit2 size={18} /> : <Plus size={18} />}
           </div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            {editIndex !== null ? 'Edit Product' : 'Add Product'}
+          </h2>
         </div>
-      )}
+        <button
+          onClick={cancelForm}
+          className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Form Body */}
+      <div className="p-4 space-y-4">
+        {['product_name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
+          <div key={field}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {field === 'product_name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
+            </label>
+            <input
+              name={field}
+              type={field === 'product_name' ? 'text' : 'number'}
+              placeholder={`Enter ${field}`}
+              value={newProduct[field] ?? ''}
+              onChange={handleChange}
+              className={`w-full border ${
+                formErrors[field] ? 'border-red-500' : 'border-gray-300'
+              } rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+            />
+            {formErrors[field] && (
+              <p className="text-red-500 text-xs mt-1">{formErrors[field]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
+        <button
+          onClick={cancelForm}
+          className="px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={editIndex !== null ? () => updateProduct(editIndex) : addProduct}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+        >
+          <Save size={16} />
+          {editIndex !== null ? 'Update' : 'Add'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      {showSuccessAlert && (
+  <SuccessAlert
+    message="Done successfully :)"
+  description={successMessage}
+    onClose={() => setShowSuccessAlert(false)}
+  />
+)}
+
     </div>
   );
 }
