@@ -22,7 +22,7 @@ const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 const [formErrors, setFormErrors] = useState({});
-
+const [successMessage, setSuccessMessage] = useState('');
   const itemsPerPage = 10;
 
 useEffect(() => {
@@ -72,8 +72,8 @@ useEffect(() => {
 const validateProduct = (product) => {
   const errors = {};
 
-  if (!product.name || typeof product.name !== 'string' || product.name.trim() === '') {
-    errors.name = 'Product name is required.';
+  if (!product.product_name || typeof product.product_name !== 'string' || product.product_name.trim() === '') {
+    errors.product_name = 'Product name is required.';
   }
 
   const quantity = parseInt(product.quantity);
@@ -92,6 +92,7 @@ const validateProduct = (product) => {
     errors.inStock = 'In Stock must be a non-negative number.';
   }
 
+  console.log('Validation errors:', errors);  
   return errors;
 };
 
@@ -106,7 +107,7 @@ const addProduct = async () => {
   setFormErrors({});
 
   const payload = {
-    product_name: newProduct.name.trim(),
+    product_name: newProduct.product_name.trim(),
     quantity: parseInt(newProduct.quantity),
     damagedQuantity: parseInt(newProduct.damagedQuantity),
     inStock: parseInt(newProduct.inStock),
@@ -126,11 +127,15 @@ const addProduct = async () => {
     const data = await res.json();
 
     if (!res.ok) {
-      toast.error(data.message || 'Failed to add product');
-      return;
+      if (data.message === 'Product already exists') {
+            setFormErrors({ product_name: data.message });
+        } else {
+          toast.error(data.message || 'Failed to add product');
+     }
+  return;
     }
 
-    
+    setSuccessMessage(data.message || 'Product added successfully');
     setProducts([...products, {
       product_name: payload.product_name,
       quantity: payload.quantity,
@@ -148,38 +153,86 @@ const addProduct = async () => {
   }
 };
 
+const updateProduct = async (index) => {
+  console.log('Updating product at index:', index);
 
-const updateProduct = (index) => {
+    console.log('newProduct:', newProduct);
   const errors = validateProduct(newProduct);
+  console.log('Validation errors:', errors); 
+
+
   if (Object.keys(errors).length > 0) {
     setFormErrors(errors);
     return;
   }
 
+   const token = localStorage.getItem('token');
   setFormErrors({});
 
+  // Convert input values to integers
   const quantity = parseInt(newProduct.quantity);
   const damagedQuantity = parseInt(newProduct.damagedQuantity);
   const inStock = parseInt(newProduct.inStock);
 
-  const updated = [...products];
-  product_name[index] = {
-    name: newProduct.name.trim(),
+  const updatedProduct = {
+    product_name: newProduct.product_name.trim(), 
     quantity,
     damagedQuantity,
-    inStock
+    inStock,
   };
 
+  try {
+
+    const productId = products[index].id; 
   
 
-  setProducts(updated);
-  resetForm();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, 
+      },
+      body: JSON.stringify(updatedProduct),
+    });
+
+
+
+    const result = await response.json();
+
+        if (!response.ok) {
+      if (result.message === 'Product already exists') {
+            setFormErrors({ product_name: result.message });
+        } else {
+          toast.error(result.message || 'Failed to add product');
+     }
+  return;
+    }
+
+setSuccessMessage(result.message || 'Product updated successfully');
+
+    const updatedProducts = [...products];
+    updatedProducts[index] = {
+      ...updatedProducts[index], 
+      ...updatedProduct, 
+    };
+
+    setProducts(updatedProducts);
+
+
+    resetForm();
+    setShowSuccessAlert(true);
+    setTimeout(() => setShowSuccessAlert(false), 3000);
+  } catch (error) {
+    console.error('Error updating product:', error);
+
+  }
 };
 
 
 
 
   const startEdit = (product, index) => {
+      console.log("Starting to edit", product); 
     setEditIndex(index);
     setNewProduct({ ...product });
     setShowForm(true);
@@ -445,14 +498,14 @@ const updateProduct = (index) => {
 
       {/* Form Body */}
       <div className="p-4 space-y-4">
-        {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
+        {['product_name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
           <div key={field}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
+              {field === 'product_name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
             </label>
             <input
               name={field}
-              type={field === 'name' ? 'text' : 'number'}
+              type={field === 'product_name' ? 'text' : 'number'}
               placeholder={`Enter ${field}`}
               value={newProduct[field] ?? ''}
               onChange={handleChange}
@@ -491,7 +544,7 @@ const updateProduct = (index) => {
       {showSuccessAlert && (
   <SuccessAlert
     message="Done successfully :)"
-    description="Product added successfully"
+  description={successMessage}
     onClose={() => setShowSuccessAlert(false)}
   />
 )}
