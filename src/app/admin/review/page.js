@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import Table from '../../../components/table';
 import DropdownPortal from '../../../components/dropDown';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
@@ -98,7 +99,7 @@ const requests = [
   }
 ];
 
-const AdminRequestView = () => {
+const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
@@ -937,4 +938,10 @@ const AdminRequestView = () => {
   );
 };
 
-export default AdminRequestView;
+export default function AdminRequestView() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+      <AdminRequestViewContent />
+    </Suspense>
+  );
+}
