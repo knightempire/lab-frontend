@@ -48,40 +48,58 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Initialize products and restore selections from localStorage
-  useEffect(() => {
-    // First initialize with default state (all products, none selected)
-    let initializedProducts = initialProducts.map(p => ({ 
-      ...p, 
-      selected: false, 
-      selectedQuantity: 0 
-    }));
-    
-    // Try to restore selections from localStorage
+
+useEffect(() => {
+  const fetchProducts = async () => {
     try {
-      const storedProducts = localStorage.getItem('selectedProducts');
-      if (storedProducts) {
-        const selectedItems = JSON.parse(storedProducts);
-        
-        // Update the products with stored selection state
-        initializedProducts = initializedProducts.map(product => {
-          const selectedItem = selectedItems.find(item => item.name === product.name);
-          if (selectedItem) {
-            return {
-              ...product,
-              selected: true,
-              selectedQuantity: selectedItem.selectedQuantity
-            };
-          }
-          return product;
-        });
+      const token = localStorage.getItem('token'); // Adjust key if different
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.products) {
+        let initializedProducts = data.products.map(product => ({
+          name: product.name,
+          inStock: product.inStock,
+          selected: false,
+          selectedQuantity: 0
+        }));
+
+        // Try to restore selections from localStorage
+        const storedProducts = localStorage.getItem('selectedProducts');
+        if (storedProducts) {
+          const selectedItems = JSON.parse(storedProducts);
+          initializedProducts = initializedProducts.map(product => {
+            const selectedItem = selectedItems.find(item => item.name === product.name);
+            if (selectedItem) {
+              return {
+                ...product,
+                selected: true,
+                selectedQuantity: selectedItem.selectedQuantity
+              };
+            }
+            return product;
+          });
+        }
+
+        setProducts(initializedProducts);
+      } else {
+        console.error('Failed to fetch products:', data.message || res.statusText);
       }
     } catch (error) {
-      console.error('Failed to restore product selections:', error);
+      console.error('Error fetching products:', error);
     }
-    
-    setProducts(initializedProducts);
-  }, []);
+  };
+
+  fetchProducts();
+}, []);
+
 
   useEffect(() => {
     setCurrentPage(1);
