@@ -6,34 +6,6 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { useRouter } from 'next/navigation';
 
-const initialProducts = [
-    { name: "Widget A", inStock: 90 },
-    { name: "Widget B", inStock: 50 },
-    { name: "Widget C", inStock: 65 },
-    { name: "Widget D", inStock: 75 },
-    { name: "Widget E", inStock: 59 },
-    { name: "Widget F", inStock: 40 },
-    { name: "Widget G", inStock: 84 },
-    { name: "Widget H", inStock: 28 },
-    { name: "Widget I", inStock: 50 },
-    { name: "Widget J", inStock: 72 },
-    { name: "Widget K", inStock: 100 },
-    { name: "Widget L", inStock: 44 },
-    { name: "Widget M", inStock: 87 },
-    { name: "Widget N", inStock: 63 },
-    { name: "Widget O", inStock: 81 },
-    { name: "Widget P", inStock: 54 },
-    { name: "Widget Q", inStock: 95 },
-    { name: "Widget R", inStock: 75 },
-    { name: "Widget S", inStock: 84 },
-    { name: "Widget T", inStock: 90 },
-    { name: "Widget U", inStock: 69 },
-    { name: "Widget V", inStock: 50 },
-    { name: "Widget W", inStock: 73 },
-    { name: "Widget X", inStock: 37 },
-    { name: "Widget Y", inStock: 58 },
-    { name: "Widget Z", inStock: 85 },      
-];
 
 const columns = [
   { key: 'name', label: 'Product Name' },
@@ -194,7 +166,7 @@ useEffect(() => {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
               Products Available
               <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-                Total Products: {initialProducts.length}
+                Total Products: {products.length}
               </span>
             </h1>
           </div>
