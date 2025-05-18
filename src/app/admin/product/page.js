@@ -21,10 +21,15 @@ const [products, setProducts] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+const [formErrors, setFormErrors] = useState({});
 
   const itemsPerPage = 10;
 
 useEffect(() => {
+
+  fetchProducts();
+}, []);
+
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token'); // adjust key if needed
@@ -48,9 +53,6 @@ useEffect(() => {
     }
   };
 
-  fetchProducts();
-}, []);
-
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
@@ -67,31 +69,115 @@ useEffect(() => {
     currentPage * itemsPerPage
   );
 
-const addProduct = () => {
-  if (!newProduct.name) return;
+const validateProduct = (product) => {
+  const errors = {};
 
-  const quantity = parseInt(newProduct.quantity) || 0;
-  const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
-  const inStock = parseInt(newProduct.inStock) || 0;
+  if (!product.name || typeof product.name !== 'string' || product.name.trim() === '') {
+    errors.name = 'Product name is required.';
+  }
 
-  setProducts([...products, { name: newProduct.name, quantity, damagedQuantity, inStock }]);
-  resetForm();
+  const quantity = parseInt(product.quantity);
+  const damagedQuantity = parseInt(product.damagedQuantity);
+  const inStock = parseInt(product.inStock);
 
-  setShowSuccessAlert(true);
-  setTimeout(() => setShowSuccessAlert(false), 3000);
+  if (isNaN(quantity) || quantity < 0) {
+    errors.quantity = 'Quantity must be a non-negative number.';
+  }
+
+  if (isNaN(damagedQuantity) || damagedQuantity < 0) {
+    errors.damagedQuantity = 'Damaged Quantity must be a non-negative number.';
+  }
+
+  if (isNaN(inStock) || inStock < 0) {
+    errors.inStock = 'In Stock must be a non-negative number.';
+  }
+
+  return errors;
 };
 
 
-  const updateProduct = (index) => {
-    const quantity = parseInt(newProduct.quantity) || 0;
-    const damagedQuantity = parseInt(newProduct.damagedQuantity) || 0;
-    const inStock = parseInt(newProduct.inStock) || 0;
+const addProduct = async () => {
+  const errors = validateProduct(newProduct);
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
 
-    const updated = [...products];
-    updated[index] = { name: newProduct.name, quantity, damagedQuantity, inStock };
-    setProducts(updated);
-    resetForm();
+  setFormErrors({});
+
+  const payload = {
+    product_name: newProduct.name.trim(),
+    quantity: parseInt(newProduct.quantity),
+    damagedQuantity: parseInt(newProduct.damagedQuantity),
+    inStock: parseInt(newProduct.inStock),
   };
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || 'Failed to add product');
+      return;
+    }
+
+    
+    setProducts([...products, {
+      product_name: payload.product_name,
+      quantity: payload.quantity,
+      damagedQuantity: payload.damagedQuantity,
+      inStock: payload.inStock,
+    }]);
+
+    resetForm();
+    setShowSuccessAlert(true);
+    setTimeout(() => setShowSuccessAlert(false), 3000);
+
+  } catch (error) {
+    console.error('Error adding product:', error);
+    toast.error('Something went wrong while adding the product');
+  }
+};
+
+
+const updateProduct = (index) => {
+  const errors = validateProduct(newProduct);
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
+
+  setFormErrors({});
+
+  const quantity = parseInt(newProduct.quantity);
+  const damagedQuantity = parseInt(newProduct.damagedQuantity);
+  const inStock = parseInt(newProduct.inStock);
+
+  const updated = [...products];
+  product_name[index] = {
+    name: newProduct.name.trim(),
+    quantity,
+    damagedQuantity,
+    inStock
+  };
+
+  
+
+  setProducts(updated);
+  resetForm();
+};
+
+
+
 
   const startEdit = (product, index) => {
     setEditIndex(index);
@@ -330,45 +416,77 @@ const addProduct = () => {
       )}
 
       {/* Modal Form */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={cancelForm}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">{editIndex !== null ? 'Edit Product' : 'Add Product'}</h2>
-              <button onClick={cancelForm}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
-                  </label>
-                  <input
-                    name={field}
-                    type={field === 'name' ? 'text' : 'number'}
-                    value={newProduct[field]}
-                    onChange={handleChange}
-                    className="w-full border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2 p-4 border-t">
-              <button onClick={cancelForm} className="text-gray-600 px-3 py-2 border rounded">
-                Cancel
-              </button>
-              <button
-                onClick={editIndex !== null ? () => updateProduct(editIndex) : addProduct}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                {editIndex !== null ? 'Update' : 'Add'}
-              </button>
-            </div>
+{showForm && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
+    onClick={cancelForm}
+  >
+    <div
+      className="bg-white rounded-xl shadow-2xl w-full max-w-sm animate-fadeIn"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 border-b">
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
+            {editIndex !== null ? <Edit2 size={18} /> : <Plus size={18} />}
           </div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            {editIndex !== null ? 'Edit Product' : 'Add Product'}
+          </h2>
         </div>
-      )}
+        <button
+          onClick={cancelForm}
+          className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Form Body */}
+      <div className="p-4 space-y-4">
+        {['name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
+          <div key={field}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {field === 'name' ? 'Product Name *' : field.replace(/([A-Z])/g, ' $1')}
+            </label>
+            <input
+              name={field}
+              type={field === 'name' ? 'text' : 'number'}
+              placeholder={`Enter ${field}`}
+              value={newProduct[field] ?? ''}
+              onChange={handleChange}
+              className={`w-full border ${
+                formErrors[field] ? 'border-red-500' : 'border-gray-300'
+              } rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+            />
+            {formErrors[field] && (
+              <p className="text-red-500 text-xs mt-1">{formErrors[field]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
+        <button
+          onClick={cancelForm}
+          className="px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={editIndex !== null ? () => updateProduct(editIndex) : addProduct}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+        >
+          <Save size={16} />
+          {editIndex !== null ? 'Update' : 'Add'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {showSuccessAlert && (
   <SuccessAlert
