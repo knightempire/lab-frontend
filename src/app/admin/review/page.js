@@ -1,9 +1,14 @@
 'use client'
+
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import Table from '../../../components/table';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
-import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
+
 const simplifiedProducts = [
   { name: "Widget A", inStock: 90 },
   { name: "Widget B", inStock: 45 },
@@ -17,46 +22,120 @@ const simplifiedProducts = [
   { name: "Widget J", inStock: 45 },
 ];
 
-const AdminRequestView = () => {
+const requests = [
+  {
+    requestId: "REQ-2025-0513",
+    name: "John Doe",
+    rollNo: "CS21B054",
+    phoneNo: "9876543210",
+    email: "john.doe@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-10",
+    requestedDays: 5,
+    status: "pending",
+    isExtended: false,
+    originalRequestedDays: 2,
+    originalRequestDate: "2025-04-28",
+    originalApprovedDate: "2025-05-01",
+    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
+    referenceStaff: {
+      name: 'Dr. Sarah Johnson',
+      email: 'sarah.johnson@university.edu'
+    },
+    description: "For IoT project, Display indicators",
+    components: [
+      { id: 1, name: 'Widget A', quantity: 2 },
+      { id: 2, name: 'Widget B', quantity: 10 },
+      { id: 3, name: 'Widget C', quantity: 20 }
+    ]
+  },
+  {
+    requestId: "REQ-2025-0514",
+    name: "Alice Kumar",
+    rollNo: "2023123",
+    phoneNo: "9876543210",
+    email: "alice@example.com",
+    isFaculty: false,
+    requestedDate: "2025-05-05",
+    requestedDays: 3,
+    status: "pending",
+    isExtended: true,
+    originalRequestedDays: 2,
+    originalRequestDate: "2025-04-28",
+    originalApprovedDate: "2025-05-01",
+    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
+    referenceStaff: {
+      name: 'Prof. Michael Johnson',
+      email: 'michael.johnson@university.edu'
+    },
+    description: "For embedded project, For circuit prototyping",
+    components: [
+      { id: 1, name: 'Widget C', quantity: 1 },
+      { id: 2, name: 'Widget Z', quantity: 2 }
+    ]
+  },
+  {
+    requestId: "REQ-2025-0515",
+    name: "Rahul Mehta",
+    rollNo: "2023456",
+    phoneNo: "9123456789",
+    email: "rahul@example.com",
+    isFaculty: true,
+    requestedDate: "2025-05-06",
+    requestedDays: 7,
+    status: "accepted",
+    isExtended: false,
+    originalRequestedDays: 2,
+    originalRequestDate: "2025-04-28",
+    originalApprovedDate: "2025-04-29",
+    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
+    referenceStaff: {
+      name: 'Dr. Lisa Chen',
+      email: 'lisa.chen@university.edu'
+    },
+    description: "For robotics project",
+    components: [
+      { id: 1, name: 'Widget D', quantity: 5 }
+    ]
+  }
+];
+
+const AdminRequestViewContent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
-  
+
   // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
-  
-  // State for issuable days
   const [issuableDays, setIssuableDays] = useState(7);
-  
-  // State for dropdown
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
-  
-  // Action states
+
+    // Action states
   const [action, setAction] = useState(null); // 'accept' or 'decline'
   const [responseMessage, setResponseMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [validationMessage, setValidationMessage] = useState('');
 
-  
   useEffect(() => {
-    // Get request data from sessionStorage that was set in the requests page
-    const storedData = sessionStorage.getItem('requestData');
-    if (storedData) {
-      const parsedData = JSON.parse(storedData);
-      setRequestData(parsedData);
-      // Initialize admin issue components with requested components
-      setAdminIssueComponents([...parsedData.components]);
-      // Initialize issuable days
-      setIssuableDays(parsedData.requestedDays || 7);
-    } else {
-      // If no data is found, redirect back to the requests page
-      router.push('/admin/requests');
-    }
-  }, [router]);
+      const reqid = searchParams.get('requestId');
+      if (reqid) {
+        const req = requests.find(r => r.requestId === reqid);
+        if (req) {
+          setRequestData(req);
+          setAdminIssueComponents([...req.components]);
+          setIssuableDays(req.requestedDays || 7);
+        } else {
+          router.push('/admin/requests');
+        }
+      } else {
+        router.push('/admin/requests');
+      }
+    }, [router, searchParams]);
 
-  // Format date function
   const formatDate = (dateString) => {
+    if (!dateString) return '-';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -67,37 +146,25 @@ const AdminRequestView = () => {
     });
   };
 
-  // Handle quantity change in admin issue table
+  // --- Admin Issue Table Handlers ---
   const handleQuantityChange = (id, newQuantity) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        // Find the corresponding product in simplifiedProducts to get inStock value
         const product = simplifiedProducts.find(p => p.name === component.name);
-        // Set a default max stock (e.g., 0) when no matching product is found
         const maxStock = product ? product.inStock : 0;
-        
-        // Ensure quantity is between 0 and maxStock
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
-        
-        return {...component, quantity: limitedQuantity};
+        return { ...component, quantity: limitedQuantity };
       }
       return component;
     }));
   };
-
-  // Handle increment/decrement quantity
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        // Find the corresponding product in simplifiedProducts to get inStock value
         const product = simplifiedProducts.find(p => p.name === component.name);
-        // Set a default max stock (e.g., 0) when no matching product is found
         const maxStock = product ? product.inStock : 0;
-        
-        // Ensure quantity doesn't exceed maxStock
         const newQuantity = Math.min(component.quantity + 1, maxStock);
-        
-        return {...component, quantity: newQuantity};
+        return { ...component, quantity: newQuantity };
       }
       return component;
     }));
@@ -105,125 +172,79 @@ const AdminRequestView = () => {
   const handleDecrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        // Ensure quantity doesn't go below 0
         const newQuantity = Math.max(component.quantity - 1, 0);
-        
-        return {...component, quantity: newQuantity};
+        return { ...component, quantity: newQuantity };
       }
       return component;
     }));
   };
-
-  // Handle component name change in admin issue table through dropdown
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        // Find the corresponding product to get its stock
         const product = simplifiedProducts.find(p => p.name === newName);
-        // Set initial quantity to 1 or 0 depending on availability
         const initialQty = product && product.inStock > 0 ? 1 : 0;
-        
-        return {...component, name: newName, quantity: initialQty};
+        return { ...component, name: newName, quantity: initialQty };
       }
       return component;
     }));
-    // Close the dropdown
-    setDropdownOpen(prev => ({...prev, [id]: false}));
-    // Reset search term
-    setSearchTerm(prev => ({...prev, [id]: ''}));
+    setDropdownOpen(prev => ({ ...prev, [id]: false }));
+    setSearchTerm(prev => ({ ...prev, [id]: '' }));
   };
-
-  // Toggle dropdown visibility
   const toggleDropdown = (id) => {
-    setDropdownOpen(prev => ({...prev, [id]: !prev[id]}));
+    setDropdownOpen(prev => ({ ...prev, [id]: !prev[id] }));
   };
-
-  // Handle search input change
   const handleSearchChange = (id, value) => {
-    setSearchTerm(prev => ({...prev, [id]: value}));
+    setSearchTerm(prev => ({ ...prev, [id]: value }));
   };
-
-  // Handle delete component from admin issue table
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter(component => component.id !== id));
   };
-
-  // Handle add new component
   const handleAddComponent = () => {
     const newId = Math.max(0, ...adminIssueComponents.map(c => c.id)) + 1;
     setAdminIssueComponents([
       ...adminIssueComponents,
-      { id: newId, name: '', quantity: 0, description: '' } // Set initial quantity to 0
+      { id: newId, name: '', quantity: 0, description: '' }
     ]);
   };
-
-  // Reset admin issue components to original requested components
   const handleResetComponents = () => {
     if (requestData) {
       setAdminIssueComponents([...requestData.components]);
       setIssuableDays(requestData.requestedDays || 7);
     }
   };
-
-  // Handle issuable days change
   const handleIssuableDaysChange = (value) => {
-    // Ensure days is between 0 and 30
     const newDays = Math.min(Math.max(0, parseInt(value) || 0), 30);
     setIssuableDays(newDays);
   };
+  const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
+  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 0));
 
-  // Handle increment/decrement issuable days
-  const handleIncrementDays = () => {
-    setIssuableDays(prev => Math.min(prev + 1, 30));
-  };
-
-  const handleDecrementDays = () => {
-    setIssuableDays(prev => Math.max(prev - 1, 0));
-  };
-
-  // Handle action button click (accept/decline)
+  // --- Action Handlers ---
   const handleActionClick = (actionType) => {
     setAction(actionType);
-    if (actionType === 'accept') {
-      setResponseMessage('Your request has been approved.');
-    } else {
-      setResponseMessage('Due to component shortage, your request has been declined.');
-    }
+    setResponseMessage(
+      actionType === 'accept'
+        ? 'Your request has been approved.'
+        : 'Due to component shortage, your request has been declined.'
+    );
   };
-
-  // Handle final submission
   const handleSubmit = async () => {
-    // Validate components if accepting the request
-    if (action === 'accept') {
+    if (!requestData.isExtended && action === 'accept') {
       if (adminIssueComponents.length === 0) {
         setValidationMessage('Please add at least one component before accepting the request.');
         return;
       }
-
       const invalidComponents = adminIssueComponents.filter(
         component => !component.name || component.quantity <= 0
       );
-
       if (invalidComponents.length > 0) {
         setValidationMessage('Please fill in all component details (name and quantity) before accepting the request.');
         return;
       }
     }
     setValidationMessage('');
-    
     setIsSubmitting(true);
-    
     try {
-      // Replace with actual API call
-      console.log('Submitting request action:', {
-        requestId: requestData.id,
-        action,
-        responseMessage,
-        adminIssueComponents: action === 'accept' ? adminIssueComponents : [],
-        issuableDays: action === 'accept' ? issuableDays : null
-      });
-      
-      // Simulate API success
       setTimeout(() => {
         alert(`Request ${action === 'accept' ? 'approved' : 'declined'} successfully!`);
         setRequestData({
@@ -233,47 +254,40 @@ const AdminRequestView = () => {
         setAction(null);
         setIsSubmitting(false);
       }, 1000);
-      
     } catch (error) {
-      console.error('Error submitting request action:', error);
       alert('Failed to process request. Please try again.');
       setIsSubmitting(false);
     }
   };
 
-  // Status badge renderer
+  // --- Status Badge ---
   const StatusBadge = ({ status }) => {
     const statusConfig = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏳' },
       accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
       rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: '✕' }
     };
-    
     const config = statusConfig[status] || statusConfig.pending;
-    
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
         <span className="mr-1">{config.icon}</span>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending'}
       </span>
     );
   };
 
+  // --- Component Dropdown ---
   const ComponentDropdown = ({ id, selectedValue }) => {
     const buttonRef = useRef(null);
     const dropdownRef = useRef(null);
-
     const existingComponentNames = adminIssueComponents
       .filter(component => component.id !== id && component.name)
       .map(component => component.name);
-
     const filteredProducts = simplifiedProducts
       .filter(product =>
         !existingComponentNames.includes(product.name) &&
         product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
       );
-
-    // Close dropdown on outside click
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (
@@ -283,14 +297,12 @@ const AdminRequestView = () => {
           dropdownRef.current &&
           !dropdownRef.current.contains(event.target)
         ) {
-          toggleDropdown(id); // Closes the dropdown
+          toggleDropdown(id);
         }
       };
-
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [dropdownOpen, id]);
-
     return (
       <div className="relative">
         <div
@@ -303,7 +315,6 @@ const AdminRequestView = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-
         {dropdownOpen[id] && (
           <DropdownPortal targetRef={buttonRef}>
             <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
@@ -344,6 +355,7 @@ const AdminRequestView = () => {
       </div>
     );
   };
+
   if (!requestData) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -352,49 +364,42 @@ const AdminRequestView = () => {
     );
   }
 
-  // Table configurations
+  // Table configs
   const requestedComponentsColumns = [
     { key: 'name', label: 'Component Name' },
     { key: 'quantity', label: 'Quantity' }
   ];
-
   const requestedComponentsRows = requestData.components.map(component => ({
     ...component,
     name: component.name,
     quantity: component.quantity,
     description: component.description || '-'
   }));
-
   const adminComponentsColumns = [
     { key: 'name', label: 'Component Name' },
     { key: 'quantity', label: 'Quantity' },
     { key: 'actions', label: 'Actions' }
   ];
-
   const adminComponentsRows = adminIssueComponents.map(component => {
-    // Find the product in the simplifiedProducts array to get the inStock value
     const product = simplifiedProducts.find(p => p.name === component.name);
-    // Set a default max stock (e.g., 0 or "N/A") when no matching product is found
     const maxStock = product ? product.inStock : 0;
-    
     return {
       ...component,
       name: (
-        <ComponentDropdown 
+        <ComponentDropdown
           id={component.id}
           selectedValue={component.name}
         />
       ),
       quantity: (
         <div className="flex items-center justify-center space-x-2">
-          <button 
+          <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleDecrementQuantity(component.id)}
             disabled={component.quantity <= 0 || !component.name}
           >
             <Minus className="w-4 h-4" />
           </button>
-          
           <input
             type="text"
             className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -402,17 +407,15 @@ const AdminRequestView = () => {
             max={maxStock}
             value={component.quantity}
             onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-            disabled={!component.name} // Disable input if no component name is selected
+            disabled={!component.name}
           />
-          
-          <button 
+          <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleIncrementQuantity(component.id)}
             disabled={component.quantity >= maxStock || !component.name}
           >
             <Plus className="w-4 h-4" />
           </button>
-          
           <span className="text-xs text-gray-500 ml-1">
             Available: {component.name ? maxStock : 'N/A'}
           </span>
@@ -428,66 +431,93 @@ const AdminRequestView = () => {
         </button>
       )
     };
-  })
+  });
+
+  // --- Re-Issue Table Config ---
+  const reissueColumns = [
+    { key: 'name', label: 'Component Name' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'status', label: 'Status' }
+  ];
+  const reissueRows = requestData.components.map(component => ({
+    ...component,
+    status: (
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+        Pending Return
+      </span>
+    )
+  }));
+
+  // --- Main Render ---
+  const isReIssue = requestData.isExtended;
 
   return (
     <div className="bg-gray-50">
       <div className="mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-3">
-        <button 
-          onClick={() => router.back()}
-          className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-          aria-label="Go back"
-        >
-          <ArrowLeft size={20} className="text-gray-700" />
-        </button>
-          <FileText className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <FileText className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
+          </div>
+          <StatusBadge status={requestData.status} />
         </div>
-        <StatusBadge status={requestData.status} />
-      </div>
-        
-        {/* Main content card */}
+
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          {/* Request header */}
+          {/* --- Common Header --- */}
           <div className="bg-blue-50 p-6 border-b border-blue-100">
             <div className="flex flex-col md:flex-row justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-blue-800 mb-2">Request #{requestData.id}</h2>
-                <p className="text-gray-600">Submitted on {formatDate(requestData.requestedDate)}</p>
+                <h2 className="text-xl font-semibold text-blue-800 mb-2">
+                  Request #{requestData.requestId || requestData.id}
+                  </h2>
+                  {requestData.isExtended && (
+                      <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                        <Repeat className="w-4 h-4 mr-1" />
+                        Extension / Re-Issue Request
+                      </span>
+                    )}
+                <p className="text-gray-600">
+                  Requested on {formatDate(requestData.requestedDate)}
+                </p>
               </div>
               <div className="mt-4 md:mt-0">
                 <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                  <div className={`w-3 h-3 rounded-full ${requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'} mr-2`}></div>
                   <span className="font-medium">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* User and Reference Information */}
+
+          {/* --- User and Reference Info --- */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 p-5 rounded-lg">
               <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
                 Requester Information
               </h3>
               <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="text-gray-500 w-32">Name:</span>
-                  <span className="font-medium">{requestData.name}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-32">Name:</span>
+                    <span className="font-medium">{requestData.name}</span>
+                  </div>
+                  <button
+                    className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
+                    onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
+                  >
+                    View Profile
+                  </button>
                 </div>
-                <button
-                  className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"                  
-                  onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
-                >
-                  View Profile
-                </button>
-              </div>
                 <div className="flex">
                   <span className="text-gray-500 w-32">Email:</span>
                   <span className="font-medium">{requestData.email}</span>
@@ -502,10 +532,9 @@ const AdminRequestView = () => {
                 </div>
               </div>
             </div>
-            
             <div className="bg-gray-50 p-5 rounded-lg">
               <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
                 Reference Staff
@@ -513,169 +542,328 @@ const AdminRequestView = () => {
               <div className="space-y-3">
                 <div className="flex">
                   <span className="text-gray-500 w-32">Name:</span>
-                  <span className="font-medium">{requestData.referenceStaff.name}</span>
+                  <span className="font-medium">{requestData.referenceStaff?.name}</span>
                 </div>
                 <div className="flex">
                   <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.referenceStaff.email}</span>
+                  <span className="font-medium">{requestData.referenceStaff?.email}</span>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Requested Components */}
-          <div className="p-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-              Requested Components
-            </h3>
-            <div className="overflow-x-auto">
-              <Table 
-                columns={requestedComponentsColumns} 
-                rows={requestedComponentsRows} 
-                currentPage={1} 
-                itemsPerPage={10}
-              />
-            </div>
 
-            {/* Description and requested days */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <h4 className="font-medium text-gray-700">Request Description</h4>
+          {/* --- Main Section: Re-Issue or New Request --- */}
+          {isReIssue ? (
+            <>
+              <div className="p-6 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  {/* Requested Components Table */}
+                  <div className="bg-white shadow rounded-lg">
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                          </svg>
+                          Original Requested Components
+                        </h2>
+                        <div className="flex gap-4">
+                          <div className="flex items-center">
+                            <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                            <h4 className="font-medium text-gray-700">Requested Days</h4>
+                          </div>
+                          <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>{requestData.originalRequestedDays || "N/A"} Days</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Table
+                        columns={requestedComponentsColumns}
+                        rows={requestedComponentsRows}
+                        currentPage={1}
+                        itemsPerPage={10}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Admin Issue Components Table (Read-only) */}
+                  <div className="bg-white shadow rounded-lg">
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                          </svg>
+                          Admin Issued Components
+                        </h2>
+                        <div className="flex gap-4">
+                          <div className="flex items-center">
+                            <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                            <h4 className="font-medium text-gray-700">Issued Days</h4>
+                          </div>
+                          <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>{requestData.originalRequestedDays || "N/A"} Days</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Table
+                        columns={[
+                          { key: 'name', label: 'Component Name' },
+                          { key: 'quantity', label: 'Quantity' }
+                        ]}
+                        rows={adminIssueComponents.map(({ name, quantity }) => ({ name, quantity }))}
+                        currentPage={1}
+                        itemsPerPage={10}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-gray-600">{requestData.description || "No description provided."}</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-end gap-4">
-                  <div className="flex items-center">
+              {/* Dates and User Note */}
+              <div className="p-6 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                      <h4 className="font-medium text-gray-700">Original Request Date</h4>
+                    </div>
+                    <p className="text-gray-600">{formatDate(requestData.originalRequestDate || requestData.requestedDate)}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                      <h4 className="font-medium text-gray-700">First Approved Date</h4>
+                    </div>
+                    <p className="text-gray-600">{formatDate(requestData.originalApprovedDate)}</p>
+                  </div>
+                </div>
+                 {/* --- Admin Message from First Approval --- */}
+                  {requestData.originalAdminMessage && (
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                        <h4 className="font-medium text-green-700">Admin Message (First Approval)</h4>
+                      </div>
+                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
+                    </div>
+                  )}
+                <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                    <h4 className="font-medium text-gray-700">User Note / Reason</h4>
+                  </div>
+                  <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                </div>
+              </div>
+
+              {/* Re-Issue Request Components Table (Read-only) */}
+              <div className="p-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
+                  <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+                  Re-Issue Request Components
+                </h3>
+                <Table
+                  columns={reissueColumns}
+                  rows={reissueRows}
+                  currentPage={1}
+                  itemsPerPage={10}
+                />
+              </div>
+              {/* Issuable Days (Below Re-Issue Table) */}
+              <div className="p-6 border-t border-blue-100">
+                <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <div className="flex items-center mb-2">
                     <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-gray-700">Requested Days</h4>
+                    <h4 className="font-medium text-blue-700">Issuable Days</h4>
                   </div>
-                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{requestData.requestedDays || "7"} Days</span>
+                  <div className="flex items-center mt-2 gap-4">
+                    <span className="text-gray-600">Requested:</span>
+                    <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
+                  </div>
+                  <div className="flex items-center mt-3">
+                    <span className="text-gray-600 w-32">Issue Duration:</span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleDecrementDays}
+                        disabled={issuableDays <= 0}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="text"
+                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        min="0"
+                        max="30"
+                        value={issuableDays}
+                        onChange={(e) => handleIssuableDaysChange(e.target.value)}
+                      />
+                      <button
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleIncrementDays}
+                        disabled={issuableDays >= 30}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium">Days</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          {/* Admin Issue Components */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                Admin Issue Components
-              </h3>
-              <div className="flex gap-2">
-                <button 
-                  onClick={handleResetComponents}
-                  className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset
-                </button>
-                <button 
-                  onClick={handleAddComponent}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Add Component
-                </button>
-              </div>
-            </div>
-            <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
-              <Table 
-                columns={adminComponentsColumns} 
-                rows={adminComponentsRows} 
-                currentPage={1} 
-                itemsPerPage={10}
-                customClasses={{ table: "min-w-full divide-y divide-gray-200" }}
-              />
-              {adminIssueComponents.length === 0 && (
-                <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
-                  <p className="text-gray-500">No components added. Click `&rdquo` Add Component `&rdquo` to add one.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Issuable days */}
-            <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <div className="flex items-center mb-2">
-                <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                <h4 className="font-medium text-blue-700">Issuable Days</h4>
-              </div>
-              <div className="flex items-center mt-2 gap-4">
-                <span className="text-gray-600">Requested:</span>
-                <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
-              </div>
-              <div className="flex items-center mt-3">
-                <span className="text-gray-600 w-32">Issue Duration:</span>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onClick={handleDecrementDays}
-                    disabled={issuableDays <= 0}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  
-                  <input
-                    type="text"
-                    className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    min="0"
-                    max="30"
-                    value={issuableDays}
-                    onChange={(e) => handleIssuableDaysChange(e.target.value)}
+            </>
+          ) : (
+            <>
+              {/* --- Standard New Request UI --- */}
+              <div className="p-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                  </svg>
+                  Requested Components
+                </h3>
+                <div className="overflow-x-auto">
+                  <Table
+                    columns={requestedComponentsColumns}
+                    rows={requestedComponentsRows}
+                    currentPage={1}
+                    itemsPerPage={10}
                   />
-                  
-                  <button 
-                    className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onClick={handleIncrementDays}
-                    disabled={issuableDays >= 30}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                  
-                  <span className="text-sm font-medium">Days</span>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      <h4 className="font-medium text-gray-700">Request Description</h4>
+                    </div>
+                    <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-end gap-4">
+                      <div className="flex items-center">
+                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                        <h4 className="font-medium text-gray-700">Requested Days</h4>
+                      </div>
+                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span>{requestData.requestedDays || "7"} Days</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          
-          {/* Take Action Section */}
+              {/* --- Admin Issue Components --- */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Admin Issue Components
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleResetComponents}
+                      className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Reset
+                    </button>
+                    <button
+                      onClick={handleAddComponent}
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Add Component
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <Table
+                    columns={adminComponentsColumns}
+                    rows={adminComponentsRows}
+                    currentPage={1}
+                    itemsPerPage={10}
+                    customClasses={{ table: "min-w-full divide-y divide-gray-200" }}
+                  />
+                  {adminIssueComponents.length === 0 && (
+                    <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
+                      <p className="text-gray-500">No components added. Click &ldquo;Add Component&rdquo; to add one.</p>
+                    </div>
+                  )}
+                </div>
+                {/* Issuable days */}
+                <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <div className="flex items-center mb-2">
+                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                    <h4 className="font-medium text-blue-700">Issuable Days</h4>
+                  </div>
+                  <div className="flex items-center mt-2 gap-4">
+                    <span className="text-gray-600">Requested:</span>
+                    <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
+                  </div>
+                  <div className="flex items-center mt-3">
+                    <span className="text-gray-600 w-32">Issue Duration:</span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleDecrementDays}
+                        disabled={issuableDays <= 0}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="text"
+                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        min="0"
+                        max="30"
+                        value={issuableDays}
+                        onChange={(e) => handleIssuableDaysChange(e.target.value)}
+                      />
+                      <button
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleIncrementDays}
+                        disabled={issuableDays >= 30}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium">Days</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          {/* --- Take Action Section --- */}
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               Take Action
             </h3>
-            
             {!action ? (
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
                   onClick={() => handleActionClick('accept')}
+                  aria-label="Accept Request"
+                  title="Accept this request"
                 >
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                   Accept Request
                 </button>
                 <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
                   onClick={() => handleActionClick('decline')}
+                  aria-label="Decline Request"
+                  title="Decline this request"
                 >
-                  <XCircle className="w-5 h-5 mr-2" />
+                  <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                   Decline Request
                 </button>
               </div>
@@ -705,14 +893,12 @@ const AdminRequestView = () => {
                     onChange={(e) => setResponseMessage(e.target.value)}
                   />
                 </div>
-                
                 {validationMessage && (
                   <div className="flex items-center gap-2 bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded-md mb-4 text-sm">
                     <AlertTriangle className="w-4 h-4" />
                     <span>{validationMessage}</span>
                   </div>
                 )}
-
                 <div className="flex space-x-4">
                   <button
                     className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
@@ -752,4 +938,10 @@ const AdminRequestView = () => {
   );
 };
 
-export default AdminRequestView;
+export default function AdminRequestView() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <AdminRequestViewContent />
+    </Suspense>
+  );
+}
