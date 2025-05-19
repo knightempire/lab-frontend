@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import Table from '../../../components/table';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
@@ -671,7 +672,6 @@ const AdminRequestViewContent = () => {
                   itemsPerPage={10}
                 />
               </div>
-
               {/* Issuable Days (Below Re-Issue Table) */}
               <div className="p-6 border-t border-blue-100">
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -940,13 +940,7 @@ const AdminRequestViewContent = () => {
 
 export default function AdminRequestView() {
   return (
-    <Suspense 
-      fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen />}>
       <AdminRequestViewContent />
     </Suspense>
   );
