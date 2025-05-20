@@ -4,6 +4,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat } from 'lucide-react';
+import { Suspense } from 'react';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 
 const requests = [
   {
@@ -113,7 +115,7 @@ const reissue = [
   }
 ];
 
-const AdminRequestView = () => {
+const AdminRetrunViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestId = searchParams.get('requestId');
@@ -216,7 +218,7 @@ const AdminRequestView = () => {
   } else {
     router.back();
   }
-}, [requestId, requests?.length]); // ✅ only depend on requestId and requests.length
+}, [requestId, requests?.length]);
 
 
   // Format date function
@@ -1333,4 +1335,10 @@ const handleReturnSubmit = (componentIndex) => {
   );
 };
 
-export default AdminRequestView;
+export default function AdminRetrunView() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <AdminRetrunViewContent />
+    </Suspense>
+  );
+}
