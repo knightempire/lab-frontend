@@ -110,15 +110,7 @@ export default function RequestsPage() {
   };
 
   const handleViewRequest = (request) => {
-    // Encode request data as URL parameters
-    const params = new URLSearchParams();
-    params.append('requestId', request.id);
-    
-    // Navigate to the request view page with the request ID
-    router.push(`/admin/return?${params.toString()}`);
-    
-    // Store the request data in sessionStorage for retrieval
-    sessionStorage.setItem('requestData', JSON.stringify(request));
+    router.push(`/admin/return?requestId=${encodeURIComponent(request.id)}`);
   };
 
   const filteredRequests = getFilteredResults();
