@@ -39,7 +39,7 @@ function PasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
     const [showModal, setShowModal] = useState(false); 
-const [expiredSession, setExpiredSession] = useState(true);
+const [expiredSession, setExpiredSession] = useState(false);
 
 
   useEffect(() => {
@@ -54,47 +54,56 @@ const [expiredSession, setExpiredSession] = useState(true);
     setToken(token);
     setType(type);
 
-    const verifyToken = async () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const verifyToken = async () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-    const endpoint =
-      type === 'register'
-        ? `${baseUrl}/api/verify-token-register`
-        : `${baseUrl}/api/verify-token-forgot`;
+  const endpoint =
+    type === 'register'
+      ? `${baseUrl}/api/verify-token-register`
+      : `${baseUrl}/api/verify-token-forgot`;
 
-        console.log('Verifying token:', token);
-        console.log('Token type:', type);
-        console.log('Endpoint:', endpoint);
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
+  console.log('Verifying token:', token);
+  console.log('Token type:', type);
+  console.log('Endpoint:', endpoint);
 
-        if (!res.ok) {
-          console.error(`Error verifying token at ${endpoint}`);
-            console.error('Failed to set password:', data);
-          setError(data.message || 'Something went wrong.');
-          setExpiredSession(true); 
-          setTimeout(() => router.push('/auth/login'), 3000);
-          return;
-        }
+  try {
+    const res = await fetch(endpoint, {
+      method: 'GET', // Method is GET
+      headers: {
+        'Content-Type': 'application/json', // Optional, but you can include it
+        'Authorization': `Bearer ${token}`, // Send token in Authorization header
+      },
+    });
 
-        const data = await res.json();
-        console.log('Token verification response:', data);
 
-        if (data?.name) {
-          setUserName(data.name);
-        }
-      } catch (err) {
-        console.error('Error during token verification:', err);
-         console.error('Error while setting password:', err);
-        setError('Failed to connect to server.');
-        setExpiredSession(true);
-        setTimeout(() => router.push('/auth/login'), 3000); 
-      }
-    };
+    if (!res.ok) {
+      const errorData = await res.json(); // Wait for error response data
+      console.error(`Error verifying token at ${endpoint}`);
+      console.error('Error response:', errorData); // Log the actual error response
+
+      setError(errorData.message || 'Something went wrong.');
+      setExpiredSession(true);
+      setTimeout(() => router.push('/auth/login'), 3000);
+      return;
+    }
+
+    // If response is OK, process the data
+    const data = await res.json();
+    console.log('Token verification response:', data);
+  
+    if (data?.user.name) {
+      setUserName(data.user.name);
+    }
+  } catch (err) {
+    console.error('Error during token verification:', err);
+    console.error('Error while setting password:', err);
+    setError('Failed to connect to server.');
+    setExpiredSession(true);
+    setTimeout(() => router.push('/auth/login'), 3000);
+  }
+};
+
+
 
     verifyToken();
   }, [searchParams, router]);
