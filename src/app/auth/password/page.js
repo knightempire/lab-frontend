@@ -167,7 +167,7 @@ const handleSubmit = async (e) => {
           console.error(`Error verifying token at ${endpoint}`);
             console.error('Failed to set password:', data);
           setError(data.message || 'Something went wrong.');
-          setExpiredSession(true); 
+          setShowModal(true); 
           setTimeout(() => router.push('/auth/login'), 3000);
       return;
   } catch (err) {
