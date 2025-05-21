@@ -165,18 +165,15 @@ const handleCustomFacultySubmit = async (e) => {
     email: customFacultyEmail
   });
   
-  // Set the reference staff with the custom entry
+
   setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
   
-
-  
-  // Clear any previous errors
   const updatedErrors = {...errors};
   delete updatedErrors.customFaculty;
   delete updatedErrors.referenceStaff;
   setErrors(updatedErrors);
 
-  // Get token from localStorage
+
   const token = localStorage.getItem('token'); 
 
   if (!token) {
@@ -187,7 +184,7 @@ const handleCustomFacultySubmit = async (e) => {
    router.push('/auth/login'); 
   }
 
-  // Prepare the request payload
+
   const payload = {
     refName: customFacultyName,
     refEmail: customFacultyEmail
@@ -198,7 +195,7 @@ const handleCustomFacultySubmit = async (e) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // Send token in the Authorization header
+        'Authorization': `Bearer ${token}`, 
       },
       body: JSON.stringify(payload),
     });
@@ -206,7 +203,6 @@ const handleCustomFacultySubmit = async (e) => {
     const data = await response.json();
     console.log('Response:', data);
     if (!response.ok) {
-      // Handle server-side errors
       console.log('Server error:', data);
       if (response.status === 400 && data?.message === "Reference already exists") {
         setErrors({
@@ -266,23 +262,20 @@ const handleCustomFacultySubmit = async (e) => {
     return validationErrors;
   };
 
-  // Initial form submission handler
+
   const handleSubmitRequest = () => {
     setSubmitted(true);
     
-    // Validate form
     const validationErrors = validateForm();
     setErrors(validationErrors);
-    
-    // If no errors, show confirmation dialog
+
     if (Object.keys(validationErrors).length === 0) {
       setShowConfirmDialog(true);
     }
   };
   
-  // Final form submission after confirmation
+
   const handleConfirmSubmit = () => {
-    // Hide the confirmation dialog
     setShowConfirmDialog(false);
     
     console.log('Form submitted successfully', {
@@ -293,27 +286,27 @@ const handleCustomFacultySubmit = async (e) => {
       acknowledged
     });
     
-    // Show success message
+
     setSubmitSuccess(true);
     
     setTimeout(() => {
       localStorage.removeItem('selectedProducts');
-      router.push('/'); // Redirect to home page
+      router.push('/'); 
     }, 1500);
   };
   
-  // Cancel confirmation dialog
+
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
   };
 
-  // Handle back button
+
   const handleBack = () => {
     localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts));
     router.back();
   };
 
-  // Close success alert
+
   const closeSuccessAlert = () => {
     setSubmitSuccess(false);
   };
@@ -326,7 +319,7 @@ const handleCustomFacultySubmit = async (e) => {
     { key: 'action', label: 'Action' },
   ];
   
-  // Custom cell renderer for the table
+
   const renderCell = (key, product, index) => {
     switch (key) {
       case 'name':
@@ -436,9 +429,8 @@ const handleCustomFacultySubmit = async (e) => {
         )}
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Main Form */}
+          {/* Main Form -  Selected Products Section */}
           <div className="md:w-2/3 space-y-4">
-            {/* Selected Products Section */}
             <section className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-2 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-lg font-medium text-gray-800">Selected Components</h2>
@@ -455,7 +447,6 @@ const handleCustomFacultySubmit = async (e) => {
               
               {selectedProducts.length > 0 ? (
                 <div className="overflow-x-auto min-h-[310px]">
-                  {/* Using the Table component */}
                   <Table 
                     columns={columns} 
                     rows={selectedProducts.slice(
@@ -494,13 +485,12 @@ const handleCustomFacultySubmit = async (e) => {
               )}
             </section>
 
-            {/* Request Details Section */}
+
             <section className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-2 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-800">Request Details</h2>
               </div>
               <div className="px-6 py-4 space-y-5">
-                {/* Purpose Field */}
                 <div>
                   <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-1">
                     Purpose <span className="text-red-500">*</span>
@@ -523,9 +513,8 @@ const handleCustomFacultySubmit = async (e) => {
                   )}
                 </div>
 
-                {/* Reference Staff and Return Days in same row */}
+
                 <div className="flex flex-col md:flex-row md:space-x-4">
-                  {/* Reference Staff Field - Takes 2/3 of the space */}
                   <div className="md:w-2/3 mb-5 md:mb-0">
                     <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
                       Reference Staff <span className="text-red-500">*</span>
@@ -581,11 +570,11 @@ const handleCustomFacultySubmit = async (e) => {
             }}
           >
             <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-              {staff.name.charAt(0)} {/* Display the first letter of the staff name */}
+              {staff.name.charAt(0)} 
             </div>
             <div className="flex flex-col">
-              <span>{staff.name}</span> {/* Staff name */}
-              <span className="text-xs text-gray-500">{staff.email}</span> {/* Staff email */}
+              <span>{staff.name}</span> 
+              <span className="text-xs text-gray-500">{staff.email}</span> 
             </div>
           </li>
         ))
@@ -604,7 +593,7 @@ const handleCustomFacultySubmit = async (e) => {
           e.stopPropagation();
           setShowCustomFacultyForm(true);
           setStaffSearchQuery('');
-          setShowStaffDropdown(false); // Close dropdown when Add button is clicked
+          setShowStaffDropdown(false); 
         }}
       >
         <UserPlus size={16} className="mr-2" />
@@ -615,8 +604,6 @@ const handleCustomFacultySubmit = async (e) => {
 )}
 
 
-                      
-                      {/* Custom Faculty Form Modal */}
                       {showCustomFacultyForm && (
                         <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                           <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden animate-fade-in">
@@ -704,7 +691,7 @@ const handleCustomFacultySubmit = async (e) => {
                     )}
                   </div>
                   
-                  {/* Return Days Field - Takes 1/3 of the space */}
+
                   <div className="md:w-1/3">
                     <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
                       Return Days <span className="text-red-500">*</span>
@@ -741,9 +728,8 @@ const handleCustomFacultySubmit = async (e) => {
             </section>
           </div>
 
-          {/* Sidebar */}
+ 
           <div className="md:w-1/3 space-y-6">
-            {/* Summary Card */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-800">Summary</h2>
@@ -766,13 +752,12 @@ const handleCustomFacultySubmit = async (e) => {
               </div>
             </div>
            
-            {/* Terms & Conditions Card */}
+ 
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-800">Terms & Conditions</h2>
               </div>
               <div className="p-6 space-y-4">
-                {/* Important Note */}
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
                   <div className="flex items-start">
                     <Info size={20} className="text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
@@ -782,7 +767,7 @@ const handleCustomFacultySubmit = async (e) => {
                   </div>
                 </div>
                 
-                {/* Acknowledgement Checkbox */}
+
                 <div className="flex items-start pt-2">
                   <div className="flex items-center h-5 mt-0.5">
                     <input
@@ -810,7 +795,7 @@ const handleCustomFacultySubmit = async (e) => {
                   </div>
                 </div>
                 
-                {/* Submit Button */}
+   
                 <button
                   type="button"
                   onClick={handleSubmitRequest}
@@ -823,7 +808,7 @@ const handleCustomFacultySubmit = async (e) => {
           </div>
         </div>
       </div>
-      {/* Confirmation Dialog */}
+
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
