@@ -211,7 +211,7 @@ export default function UsersPage() {
           </h1>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
@@ -219,7 +219,7 @@ export default function UsersPage() {
             <Plus size={18} />
             <span className="hidden sm:inline">Add User</span>
           </button>
-        </div>
+        </div> */}
       </div>
 
       <div className="mb-4">
