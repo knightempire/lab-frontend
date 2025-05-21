@@ -31,6 +31,7 @@ export default function CheckoutPage() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [referenceStaff, setReferenceStaff] = useState('');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+const [referenceStaffId, setReferenceStaffId] = useState('')
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
   
   // Custom faculty state
@@ -281,10 +282,14 @@ const handleCustomFacultySubmit = async (e) => {
   const handleConfirmSubmit = () => {
     setShowConfirmDialog(false);
     
+
+  console.log("staffId", referenceStaffId);
+
+
     console.log('Form submitted successfully', {
       selectedProducts,
       purpose,
-      referenceStaff,
+      referenceStaffId,
       returnDays,
       acknowledged
     });
@@ -293,8 +298,10 @@ const handleCustomFacultySubmit = async (e) => {
     setSubmitSuccess(true);
     
     setTimeout(() => {
-      localStorage.removeItem('selectedProducts');
-      router.push('/'); 
+      console.log('Redirecting to home page...');
+      setSubmitSuccess(false);
+      // localStorage.removeItem('selectedProducts');
+      // router.push('/'); 
     }, 1500);
   };
   
@@ -569,6 +576,7 @@ const handleCustomFacultySubmit = async (e) => {
             className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
             onClick={() => {
               setReferenceStaff(`${staff.name} (${staff.email})`);
+              setReferenceStaffId(staff.id);
               setShowStaffDropdown(false);
             }}
           >
@@ -727,6 +735,7 @@ const handleCustomFacultySubmit = async (e) => {
                     )}
                   </div>
                 </div>
+                
               </div>
             </section>
           </div>
