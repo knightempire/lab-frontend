@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, CalendarDays, Clock, ArrowLeft } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft } from 'lucide-react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
+import Pagination from '../../../components/pagination';
 import { Suspense } from 'react';
 
 const requests = [
@@ -17,8 +18,9 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-10T09:30:00",
     requestedDays: 5,
+    adminApprovedDays: 3,
     status: "pending",
-    isExtended: false,
+    isExtended: true,
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@university.edu'
@@ -42,6 +44,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-09T14:15:00",
     requestedDays: 3,
+    adminApprovedDays: 3,
     status: "accepted",
     isExtended: true,
     referenceStaff: {
@@ -54,8 +57,8 @@ const requests = [
       { name: "Raspberry Pi", quantity: 1 },
       { name: "HDMI Cable", quantity: 1 }
     ],
-    adminIssueComponents: [
-      { name: "Raspberry Pi", quantity: 1 }
+    adminIssueComponents: [   
+      { name: "Raspberry Pi", quantity: 1 },
     ],
     returnedComponents: [
       { name: "Raspberry Pi", quantity: 1 }
@@ -70,8 +73,9 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-05T11:00:00",
     requestedDays: 3,
+    adminApprovedDays: 3,
     status: "rejected",
-    isExtended: false,
+    isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
       email: 'michael.johnson@university.edu'
@@ -92,10 +96,11 @@ const requests = [
     phoneNo: "9876543222",
     email: "priya.singh@university.edu",
     isFaculty: true,
-    requestedDate: "2025-04-28T16:45:00",
+    requestedDate: "2025-05-19T16:45:00",
     requestedDays: 7,
+    adminApprovedDays: 3,
     status: "accepted",
-    isExtended: false,
+    isExtended: true,
     referenceStaff: {
       name: 'Dr. Ramesh Gupta',
       email: 'ramesh.gupta@university.edu'
@@ -121,6 +126,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-04-20T10:00:00",
     requestedDays: 2,
+    adminApprovedDays: 1,
     status: "pending",
     isExtended: false,
     referenceStaff: {
@@ -139,6 +145,14 @@ function UserReviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
+  const [userPage, setUserPage] = useState(1);
+  const [adminPage, setAdminPage] = useState(1);
+  const [returnPage, setReturnPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const [extensionDays, setExtensionDays] = useState('');
+  const [extensionMessage, setExtensionMessage] = useState('');
+  const [extensionSent, setExtensionSent] = useState(false);
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -185,6 +199,95 @@ function UserReviewContent() {
     { key: 'name', label: 'Component Name' },
     { key: 'quantity', label: 'Quantity' }
   ];
+
+  const getPageRows = (rows, page) =>
+      rows.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const handleDecrementDays = () => setExtensionDays(d => Math.max(1, d - 1));
+  const handleIncrementDays = () => setExtensionDays(d => Math.min(30, d + 1));
+  const handleExtensionDaysChange = (val) => {
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 1 && num <= 30) setExtensionDays(num);
+  };
+
+  function getDaysLeft(approvedDays, requestedDate) {
+    if (!approvedDays || !requestedDate) return "N/A";
+    const approved = Number(approvedDays);
+    const start = new Date(requestedDate);
+    const now = new Date();
+    const end = new Date(start);
+    end.setDate(start.getDate() + approved);
+    const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? `${diff} Days` : "Expired";
+  }
+
+
+  function ReIssueDetails({ requestData, columns, getPageRows, userPage, setUserPage, itemsPerPage }) {
+    return (
+      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8 mt-4 m-1">
+        <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
+          <Repeat className="w-5 h-5 text-yellow-500" />
+          <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Admin Message */}
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-green-700">Admin Message</span>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
+              {requestData.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
+            </div>
+            <div className="mb-2 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="font-semibold text-blue-700">User Note / Reason</span>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
+              {requestData.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-blue-600" />
+              <span className="font-medium text-gray-700">Requested Days:</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+                {requestData.extensionDays || "N/A"} Days
+              </span>
+            </div>
+          </div>
+          {/* Re-Issued Components Table */}
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-green-700">Re-Issued Components</span>
+              <span className="ml-auto flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm">
+                <CalendarDays className="w-4 h-4" />
+                {requestData.adminApprovedDays || "N/A"} Days
+              </span>
+            </div>
+            {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
+              <>
+                <Table
+                  columns={columns}
+                  rows={getPageRows(requestData.adminIssueComponents, userPage)}
+                  currentPage={userPage}
+                  itemsPerPage={itemsPerPage}
+                />
+                {requestData.adminIssueComponents.length > itemsPerPage && (
+                  <Pagination
+                    currentPage={userPage}
+                    totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                    setCurrentPage={setUserPage}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
      <div className="bg-gray-50">
@@ -289,20 +392,75 @@ function UserReviewContent() {
                     Requested Components
                 </h3>
                 {requestData.components && requestData.components.length > 0 ? (
-                    <Table
+                    <>
+                      <Table
                         columns={columns}
-                        rows={requestData.components}
-                        currentPage={1}
-                        itemsPerPage={10}
-                    />
+                        rows={getPageRows(requestData.components, userPage)}
+                        currentPage={userPage}
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {requestData.components.length > itemsPerPage && (
+                        <Pagination
+                          currentPage={userPage}
+                          totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                          setCurrentPage={setUserPage}
+                        />
+                      )}
+                    </>
                     ) : (
                     <div className="text-gray-400 text-center py-6">No components found.</div>
                     )}
+                  {/* Re-Issue Details: show in addition if extended */}
+                  {requestData.isExtended && (
+                    <ReIssueDetails
+                      requestData={requestData}
+                      columns={columns}
+                      getPageRows={getPageRows}
+                      userPage={userPage}
+                      setUserPage={setUserPage}
+                      itemsPerPage={itemsPerPage}
+                    />
+                  )}
                 </>
             )}
 
             {/* Accepted */}
             {requestData.status === 'accepted' && (
+            <>
+            <div className="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <span className="text-gray-700 font-medium">Allocated:</span>
+                <span className="font-semibold">{requestData.adminApprovedDays || requestData.requestedDays || "N/A"} Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-indigo-600" />
+                <span className="text-gray-700 font-medium">Return Date:</span>
+                <span className="font-semibold">
+                  {(() => {
+                    const days = Number(requestData.adminApprovedDays || requestData.requestedDays);
+                    if (!days || !requestData.requestedDate) return "N/A";
+                    const start = new Date(requestData.requestedDate);
+                    start.setDate(start.getDate() + days);
+                    return start.toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                  })()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-green-600" />
+                <span className="text-gray-700 font-medium">Time Left:</span>
+                <span className="font-semibold">
+                  {getDaysLeft(requestData.adminApprovedDays, requestData.requestedDate)}
+                </span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* User Requested Components Table */}
                 <div className="bg-white shadow rounded-lg">
@@ -318,12 +476,21 @@ function UserReviewContent() {
                     </div>
                     </div>
                     {requestData.components && requestData.components.length > 0 ? (
-                    <Table
+                    <>
+                      <Table
                         columns={columns}
-                        rows={requestData.components}
-                        currentPage={1}
-                        itemsPerPage={10}
-                    />
+                        rows={getPageRows(requestData.components, userPage)}
+                        currentPage={userPage}
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {requestData.components.length > itemsPerPage && (
+                        <Pagination
+                          currentPage={userPage}
+                          totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                          setCurrentPage={setUserPage}
+                        />
+                      )}
+                    </>
                     ) : (
                     <div className="text-gray-400 text-center py-6">No components found.</div>
                     )}
@@ -338,14 +505,27 @@ function UserReviewContent() {
                         <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
                         Admin Issued Components
                     </h2>
+                    <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                      <Clock className="w-4 h-4 mr-1" />
+                      <span>{requestData.adminApprovedDays || "N/A"} Days</span>
+                    </div>
                     </div>
                     {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
-                    <Table
+                    <>
+                      <Table
                         columns={columns}
-                        rows={requestData.adminIssueComponents}
-                        currentPage={1}
-                        itemsPerPage={10}
-                    />
+                        rows={getPageRows(requestData.adminIssueComponents, adminPage)}
+                        currentPage={adminPage}
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {requestData.adminIssueComponents.length > itemsPerPage && (
+                        <Pagination
+                          currentPage={adminPage}
+                          totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                          setCurrentPage={setAdminPage}
+                        />
+                      )}
+                    </>
                     ) : (
                     <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
                     )}
@@ -360,18 +540,128 @@ function UserReviewContent() {
                     <h2 className="text-lg font-semibold text-indigo-700">Returned Components</h2>
                     </div>
                     {requestData.returnedComponents && requestData.returnedComponents.length > 0 ? (
-                    <Table
+                    <>
+                      <Table
                         columns={columns}
-                        rows={requestData.returnedComponents}
-                        currentPage={1}
-                        itemsPerPage={10}
-                    />
+                        rows={getPageRows(requestData.returnedComponents, returnPage)}
+                        currentPage={returnPage}
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {requestData.returnedComponents.length > itemsPerPage && (
+                        <Pagination
+                          currentPage={returnPage}
+                          totalPages={Math.ceil(requestData.returnedComponents.length / itemsPerPage)}
+                          setCurrentPage={setReturnPage}
+                        />
+                      )}
+                    </>
                     ) : (
                     <div className="text-gray-400 text-center py-6">No return history available yet.</div>
                     )}
                 </div>
+
+                
+                {/* Re-Issue Details: show in addition if extended */}
+                <div className="m-4">
+                  {requestData.isExtended && (
+                    <ReIssueDetails
+                      requestData={requestData}
+                      columns={columns}
+                      getPageRows={getPageRows}
+                      userPage={userPage}
+                      setUserPage={setUserPage}
+                      itemsPerPage={itemsPerPage}
+                    />
+                  )}
                 </div>
+                </div>
+
+                {/* Extension Request Button */}
+                {requestData.adminIssueComponents &&
+                requestData.adminIssueComponents.length > requestData.returnedComponents.length && (
+                  <div className="md:col-span-2 mt-8">
+                    <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
+                      <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                        <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+                        Request Extension
+                      </h3>
+                      {extensionSent ? (
+                        <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg">
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Extension request sent!
+                        </div>
+                      ) : (
+                        <form
+                          onSubmit={e => {
+                            e.preventDefault();
+                            setExtensionSent(true);
+                          }}
+                          className="space-y-4"
+                        >
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Number of additional days
+                            </label>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <button
+                                type="button"
+                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onClick={handleDecrementDays}
+                                disabled={extensionDays <= 1}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <input
+                                type="text"
+                                className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                min="1"
+                                max="30"
+                                value={extensionDays}
+                                onChange={e => handleExtensionDaysChange(e.target.value)}
+                                disabled={extensionSent}
+                              />
+                              <button
+                                type="button"
+                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onClick={handleIncrementDays}
+                                disabled={extensionDays >= 30 || extensionSent}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              <span className="text-sm font-medium">Days</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Reason for extension
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={extensionMessage}
+                              onChange={e => setExtensionMessage(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Explain why you need more time..."
+                              required
+                              disabled={extensionSent}
+                            />
+                          </div>
+                          <div className="flex space-x-4">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                              disabled={extensionSent}
+                            >
+                              <Repeat className="w-5 h-5 mr-2" />
+                              Submit Extension Request
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                )}
             </div>
+            </>
             )}
 
             {/* Rejected */}
@@ -385,12 +675,37 @@ function UserReviewContent() {
                         Requested Components
                     </h2>
                     </div>
-                    <Table
-                    columns={columns}
-                    rows={requestData.components}
-                    currentPage={1}
-                    itemsPerPage={10}
-                    />
+                    {requestData.components && requestData.components.length > 0 ? (
+                    <>
+                      <Table
+                        columns={columns}
+                        rows={getPageRows(requestData.components, userPage)}
+                        currentPage={userPage}
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {requestData.components.length > itemsPerPage && (
+                        <Pagination
+                          currentPage={userPage}
+                          totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                          setCurrentPage={setUserPage}
+                        />
+                      )}
+
+                      {/* Re-Issue Details: show in addition if extended */}
+                      {requestData.isExtended && (
+                        <ReIssueDetails
+                          requestData={requestData}
+                          columns={columns}
+                          getPageRows={getPageRows}
+                          userPage={userPage}
+                          setUserPage={setUserPage}
+                          itemsPerPage={itemsPerPage}
+                        />
+                      )}
+                    </>
+                    ) : (
+                    <div className="text-gray-400 text-center py-6">No components found.</div>
+                  )}
                 </div>
                 </div>
                 <div className="text-center py-8">
