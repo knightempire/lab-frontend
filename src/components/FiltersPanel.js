@@ -1,8 +1,70 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DropdownFilter from './DropdownFilter';
-import { Filter, ChevronUp } from 'lucide-react';
+import { Filter, ChevronUp, X } from 'lucide-react';
+
+const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleCheckboxChange = (value) => {
+    const newSelectedValues = selectedValues.includes(value)
+      ? selectedValues.filter(item => item !== value)
+      : [...selectedValues, value];
+    
+    onChange(newSelectedValues);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-48 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
+      >
+        <span>{label} {selectedValues.length > 0 && `(${selectedValues.length})`}</span>
+        <ChevronUp
+          size={14}
+          className={`${isOpen ? 'rotate-0' : 'rotate-180'} transition-transform`}
+        />
+      </button>
+
+      
+      {isOpen && (
+        <div className="absolute z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg">
+          <div className="p-2 max-h-60 overflow-auto">
+            {options.map((option) => (
+              <label key={option} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedValues.includes(option)}
+                  onChange={() => handleCheckboxChange(option)}
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                <span className="text-gray-700">{option}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FiltersPanel = ({
   filters = [],
@@ -10,8 +72,23 @@ const FiltersPanel = ({
   onReset,
   children,
   Text = '',
+  products = [],
+  selectedProducts = [],
+  onProductsChange,
 }) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const handleProductChange = (newSelectedProducts) => {
+    if (onProductsChange) {
+      onProductsChange(newSelectedProducts);
+    }
+  };
+
+  const removeProduct = (product) => {
+    if (onProductsChange) {
+      onProductsChange(selectedProducts.filter(p => p !== product));
+    }
+  };
 
   return (
     <div className="w-full py-2 px-3 rounded-md text-sm border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -49,6 +126,16 @@ const FiltersPanel = ({
             />
           ))}
           
+          {/* Product Filter with Checkboxes */}
+          {products && products.length > 0 && (
+            <CheckboxDropdown
+              label="Products"
+              options={products}
+              selectedValues={selectedProducts || []}
+              onChange={handleProductChange}
+            />
+          )}
+          
           <button
             type="button"
             onClick={onReset}
@@ -56,6 +143,27 @@ const FiltersPanel = ({
           >
             Reset
           </button>
+        </div>
+      )}
+
+      {/* Selected Products Tags */}
+      {selectedProducts && selectedProducts.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3 ml-2">
+          {selectedProducts.map(product => (
+            <div 
+              key={product}
+              className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-sm"
+            >
+              <span>{product}</span>
+              <button 
+                type="button"
+                onClick={() => removeProduct(product)}
+                className="text-blue-700 hover:text-blue-900"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
