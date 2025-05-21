@@ -765,7 +765,7 @@ const handleCustomFacultySubmit = async (e) => {
                   <div className="flex items-start">
                     <Info size={20} className="text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
                     <p className="text-sm text-blue-700">
-                      The request for components is valid for a maximum of 30 days. To request for more, you should get re-issued. For more details, contact lab in-charge.
+                      The return days for your request start when the admin approves it. Once you receive the approval email, you can collect components from the lab 
                     </p>
                   </div>
                 </div>
