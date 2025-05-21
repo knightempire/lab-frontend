@@ -218,9 +218,12 @@ const handleCustomFacultySubmit = async (e) => {
 
 
     console.log('Faculty added successfully:', data);
+ 
     await fetchReferenceStaff(); 
-  setShowCustomFacultyForm(false);
-  setShowStaffDropdown(false);
+    setCustomFacultyName('');
+    setCustomFacultyEmail('');
+    setShowCustomFacultyForm(false);
+    setShowStaffDropdown(false);
     
   } catch (error) {
     
