@@ -1,0 +1,415 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, CalendarDays, Clock, ArrowLeft } from 'lucide-react';
+import Table from '../../../components/table';
+import LoadingScreen from '../../../components/loading/loadingscreen';
+import { Suspense } from 'react';
+
+const requests = [
+  {
+    requestId: "REQ-2025-0513",
+    name: "John Doe",
+    rollNo: "CS21B054",
+    phoneNo: "9876543210",
+    email: "john.doe@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-10T09:30:00",
+    requestedDays: 5,
+    status: "pending",
+    isExtended: false,
+    referenceStaff: {
+      name: 'Dr. Sarah Johnson',
+      email: 'sarah.johnson@university.edu'
+    },
+    userMessage: "I need these for my IoT project, to display indicators.",
+    adminMessage: "",
+    components: [
+      { name: "Arduino Kit", quantity: 1 },
+      { name: "Breadboard", quantity: 2 },
+      { name: "LED Pack", quantity: 10 }
+    ],
+    adminIssueComponents: [],
+    returnedComponents: []
+  },
+  {
+    requestId: "REQ-2025-0512",
+    name: "Jane Smith",
+    rollNo: "CS21B055",
+    phoneNo: "9876543211",
+    email: "jane.smith@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-09T14:15:00",
+    requestedDays: 3,
+    status: "accepted",
+    isExtended: true,
+    referenceStaff: {
+      name: 'Dr. Alan Turing',
+      email: 'alan.turing@university.edu'
+    },
+    userMessage: "Required for ML project demo.",
+    adminMessage: "Approved. Please return the Raspberry Pi by the due date.",
+    components: [
+      { name: "Raspberry Pi", quantity: 1 },
+      { name: "HDMI Cable", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "Raspberry Pi", quantity: 1 }
+    ],
+    returnedComponents: [
+      { name: "Raspberry Pi", quantity: 1 }
+    ]
+  },
+  {
+    requestId: "REQ-2025-0511",
+    name: "Alice Kumar",
+    rollNo: "2023123",
+    phoneNo: "9876543210",
+    email: "alice@example.com",
+    isFaculty: false,
+    requestedDate: "2025-05-05T11:00:00",
+    requestedDays: 3,
+    status: "rejected",
+    isExtended: false,
+    referenceStaff: {
+      name: 'Prof. Michael Johnson',
+      email: 'michael.johnson@university.edu'
+    },
+    userMessage: "For embedded project, for circuit prototyping.",
+    adminMessage: "Rejected due to insufficient stock of jumper wires.",
+    components: [
+      { name: "Jumper Wires", quantity: 5 },
+      { name: "Breadboard", quantity: 1 }
+    ],
+    adminIssueComponents: [],
+    returnedComponents: []
+  },
+  {
+    requestId: "REQ-2025-0510",
+    name: "Priya Singh",
+    rollNo: "EE20B123",
+    phoneNo: "9876543222",
+    email: "priya.singh@university.edu",
+    isFaculty: true,
+    requestedDate: "2025-04-28T16:45:00",
+    requestedDays: 7,
+    status: "accepted",
+    isExtended: false,
+    referenceStaff: {
+      name: 'Dr. Ramesh Gupta',
+      email: 'ramesh.gupta@university.edu'
+    },
+    userMessage: "For faculty workshop on IoT.",
+    adminMessage: "Issued as per faculty request.",
+    components: [
+      { name: "ESP32 Module", quantity: 2 },
+      { name: "Sensor Kit", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "ESP32 Module", quantity: 2 },
+      { name: "Sensor Kit", quantity: 1 }
+    ],
+    returnedComponents: []
+  },
+  {
+    requestId: "REQ-2025-0509",
+    name: "Rahul Verma",
+    rollNo: "ME19B007",
+    phoneNo: "9876543233",
+    email: "rahul.verma@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-04-20T10:00:00",
+    requestedDays: 2,
+    status: "pending",
+    isExtended: false,
+    referenceStaff: {
+      name: 'Dr. Anita Desai',
+      email: 'anita.desai@university.edu'
+    },
+    userMessage: "Need for robotics club event.",
+    adminMessage: "",
+    components: [],
+    adminIssueComponents: [],
+    returnedComponents: []
+  }
+];
+
+function UserReviewContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [requestData, setRequestData] = useState(null);
+
+  useEffect(() => {
+    const requestId = searchParams.get('requestId');
+    const req = requests.find(r => r.requestId === requestId);
+    if (!req) {
+      router.push('/user/request');
+    } else {
+      setRequestData(req);
+    }
+  }, [searchParams, router]);
+
+  if (!requestData) {
+    return <LoadingScreen />;
+  }
+
+  function StatusBadge({ status }) {
+    const statusConfig = {
+        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏳' },
+        accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
+        rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: '✕' }
+    };
+    const config = statusConfig[status] || statusConfig.pending;
+    return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
+        <span className="mr-1">{config.icon}</span>
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending'}
+        </span>
+    );
+    }
+
+    function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    }
+
+  const columns = [
+    { key: 'name', label: 'Component Name' },
+    { key: 'quantity', label: 'Quantity' }
+  ];
+
+  return (
+     <div className="bg-gray-50">
+       <div className="mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center space-x-3">
+            <button
+                onClick={() => router.back()}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Go back"
+            >
+                <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <FileText className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
+            </div>
+            <StatusBadge status={requestData.status} />
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        {/* --- Common Header --- */}
+        <div className="bg-blue-50 p-6 border-b border-blue-100">
+            <div className="flex flex-col md:flex-row justify-between">
+            <div>
+                <h2 className="text-xl font-semibold text-blue-800 mb-2">
+                Request #{requestData.requestId}
+                </h2>
+                {requestData.isExtended && (
+                <div className="flex items-center pb-2">
+                    <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                        <Repeat className="w-4 h-4 mr-1" />
+                        Extension / Re-Issue Request
+                      </span>
+                </div>
+                )}
+                <p className="text-gray-600">
+                Requested on {formatDate(requestData.requestedDate)}
+                </p>
+            </div>
+            <div className="mt-4 md:mt-0">
+                <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                <div className={`w-3 h-3 rounded-full ${requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'} mr-2`}></div>
+                <span className="font-medium">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
+                </div>
+            </div>
+            </div>
+        </div>
+
+            {/* --- User and Reference Info --- */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* User Message */}
+            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
+                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                User Message
+                </h3>
+                <div className="text-gray-700 text-sm flex-1">
+                {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
+                </div>
+            </div>
+
+            {/* Admin Message */}
+            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
+                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 20.5a8.38 8.38 0 01-7.45-4.4 8.5 8.5 0 1114.9 0A8.38 8.38 0 0112 20.5z" />
+                </svg>
+                Admin Message
+                </h3>
+                <div className="text-gray-700 text-sm flex-1">
+                {requestData.adminMessage
+                    ? requestData.adminMessage
+                    : <span className="text-gray-400">No message from admin.</span>}
+                </div>
+            </div>
+
+            {/* Reference Staff */}
+            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
+                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                Reference Staff
+                </h3>
+                <div className="space-y-3 text-sm">
+                <div className="flex"><span className="text-gray-500 w-28">Name:</span><span className="font-medium">{requestData.referenceStaff?.name}</span></div>
+                <div className="flex"><span className="text-gray-500 w-28">Email:</span><span className="font-medium">{requestData.referenceStaff?.email}</span></div>
+                </div>
+            </div>
+            </div>
+
+          {/* --- Conditional Tables --- */}
+          <div className="p-6 border-t border-gray-200">
+            {/* Pending */}
+            {requestData.status === 'pending' && (
+                <>
+                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                    <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+                    Requested Components
+                </h3>
+                {requestData.components && requestData.components.length > 0 ? (
+                    <Table
+                        columns={columns}
+                        rows={requestData.components}
+                        currentPage={1}
+                        itemsPerPage={10}
+                    />
+                    ) : (
+                    <div className="text-gray-400 text-center py-6">No components found.</div>
+                    )}
+                </>
+            )}
+
+            {/* Accepted */}
+            {requestData.status === 'accepted' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* User Requested Components Table */}
+                <div className="bg-white shadow rounded-lg">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                        <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+                        Requested Components
+                    </h2>
+                    <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span>{requestData.requestedDays || "N/A"} Days</span>
+                    </div>
+                    </div>
+                    {requestData.components && requestData.components.length > 0 ? (
+                    <Table
+                        columns={columns}
+                        rows={requestData.components}
+                        currentPage={1}
+                        itemsPerPage={10}
+                    />
+                    ) : (
+                    <div className="text-gray-400 text-center py-6">No components found.</div>
+                    )}
+                </div>
+                </div>
+
+                {/* Admin Issued Components Table */}
+                <div className="bg-white shadow rounded-lg">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                        Admin Issued Components
+                    </h2>
+                    </div>
+                    {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
+                    <Table
+                        columns={columns}
+                        rows={requestData.adminIssueComponents}
+                        currentPage={1}
+                        itemsPerPage={10}
+                    />
+                    ) : (
+                    <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
+                    )}
+                </div>
+                </div>
+
+                {/* Returned Components Table - spans both columns */}
+                <div className="bg-white shadow rounded-lg md:col-span-2">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center mb-4">
+                    <RefreshCw className="w-5 h-5 mr-2 text-indigo-600" />
+                    <h2 className="text-lg font-semibold text-indigo-700">Returned Components</h2>
+                    </div>
+                    {requestData.returnedComponents && requestData.returnedComponents.length > 0 ? (
+                    <Table
+                        columns={columns}
+                        rows={requestData.returnedComponents}
+                        currentPage={1}
+                        itemsPerPage={10}
+                    />
+                    ) : (
+                    <div className="text-gray-400 text-center py-6">No return history available yet.</div>
+                    )}
+                </div>
+                </div>
+            </div>
+            )}
+
+            {/* Rejected */}
+            {requestData.status === 'rejected' && (
+            <div className="space-y-8">
+                <div className="bg-white shadow rounded-lg">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center mb-4">
+                    <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+                    <h2 className="text-lg font-semibold text-gray-700">
+                        Requested Components
+                    </h2>
+                    </div>
+                    <Table
+                    columns={columns}
+                    rows={requestData.components}
+                    currentPage={1}
+                    itemsPerPage={10}
+                    />
+                </div>
+                </div>
+                <div className="text-center py-8">
+                <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+                <p className="text-lg text-red-700 font-semibold">Your request was rejected.</p>
+                </div>
+            </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function UserReviewPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <UserReviewContent />
+    </Suspense>
+  );
+}

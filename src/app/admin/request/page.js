@@ -119,7 +119,6 @@ export default function RequestsPage() {
     const params = new URLSearchParams();
     params.append('requestId', request.requestId);
     router.push(`/admin/review?${params.toString()}`);
-    sessionStorage.setItem('requestData', JSON.stringify(request));
   };
 
   const filteredRequests = getFilteredResults();
