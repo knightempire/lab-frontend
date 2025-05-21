@@ -422,208 +422,215 @@ export default function CheckoutPage() {
                     </p>
                   )}
                 </div>
-                {/* Reference Staff Dropdown */}
-                <div>
-                  <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
-                    Reference Staff <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div 
-                      ref={staffDropdownRef}
-                      className={`w-full px-4 py-2 border ${
-                        submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between`}
-                      onClick={() => setShowStaffDropdown(!showStaffDropdown)}
-                    >
-                      <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
-                        {referenceStaff || 'Select reference staff...'}
-                      </span>
-                      <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    
-                    {showStaffDropdown && (
-                      <DropdownPortal 
-                        targetRef={staffDropdownRef} 
-                        onClose={() => setShowStaffDropdown(false)}
-                        className="max-h-60 overflow-auto"
-                        position="top" // Add this prop to position the dropdown above
+
+                {/* Reference Staff and Return Days in same row */}
+                <div className="flex flex-col md:flex-row md:space-x-4">
+                  {/* Reference Staff Field - Takes 2/3 of the space */}
+                  <div className="md:w-2/3 mb-5 md:mb-0">
+                    <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
+                      Reference Staff <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div 
+                        ref={staffDropdownRef}
+                        className={`w-full px-4 py-2 border ${
+                          submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between`}
+                        onClick={() => setShowStaffDropdown(!showStaffDropdown)}
                       >
-                        <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Search staff..."
-                              value={staffSearchQuery}
-                              onChange={(e) => setStaffSearchQuery(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              autoComplete="off"
-                              autoFocus
-                            />
-                            <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
-                          </div>
-                        </div>
-                        
-                        <ul className="py-1">
-                          {filteredStaffOptions.length > 0 ? (
-                            filteredStaffOptions.map((staff) => (
-                              <li 
-                                key={staff.id}
-                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
-                                onClick={() => {
-                                  setReferenceStaff(staff.name);
-                                  setShowStaffDropdown(false);
-                                }}
-                              >
-                                <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-                                  {staff.name.charAt(0)}
-                                </div>
-                                {staff.name}
-                              </li>
-                            ))
-                          ) : (
-                            <li className="px-4 py-2 text-sm text-gray-500 italic">
-                              No matching staff found
-                            </li>
-                          )}
-                        </ul>
-                        
-                        <div className="p-2 border-t border-gray-200 bg-gray-50">
-                          <button
-                            type="button"
-                            className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
-                            onClick={() => {
-                              setShowCustomFacultyForm(true);
-                              setStaffSearchQuery('');
-                            }}
-                          >
-                            <UserPlus size={16} className="mr-2" />
-                            Add new faculty member
-                          </button>
-                        </div>
-                      </DropdownPortal>
-                    )}
-                    
-                    {/* Custom Faculty Form Modal remains unchanged */}
-                    {showCustomFacultyForm && (
-                      <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden animate-fade-in">
-                          <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
-                            <h4 className="text-lg font-medium text-black flex items-center">
-                              <UserPlus size={20} className="mr-2" />
-                              Add New Faculty Member
-                            </h4>
-                            <button 
-                              type="button" 
-                              className="text-white/80 hover:text-white transition-colors" 
-                              onClick={() => setShowCustomFacultyForm(false)}
-                            >
-                              <X size={20} />
-                            </button>
+                        <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
+                          {referenceStaff || 'Select reference staff...'}
+                        </span>
+                        <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      
+                      {showStaffDropdown && (
+                        <DropdownPortal 
+                          targetRef={staffDropdownRef} 
+                          onClose={() => setShowStaffDropdown(false)}
+                          className="max-h-60 overflow-auto"
+                          position="top"
+                        >
+                          <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Search staff..."
+                                value={staffSearchQuery}
+                                onChange={(e) => setStaffSearchQuery(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoComplete="off"
+                                autoFocus
+                              />
+                              <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
+                            </div>
                           </div>
                           
-                          <form onSubmit={handleCustomFacultySubmit} className="p-6">
-                            <div className="space-y-4">
-                              <div>
-                                <label htmlFor="facultyName" className="block text-sm font-medium text-gray-700 mb-1">
-                                  Full Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  id="facultyName"
-                                  value={customFacultyName}
-                                  onChange={(e) => setCustomFacultyName(e.target.value)}
-                                  className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="e.g. Prof. John Doe"
-                                  autoFocus
-                                  required
-                                />
-                              </div>
-                              
-                              <div>
-                                <label htmlFor="facultyEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                                  Email Address <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="email"
-                                  id="facultyEmail"
-                                  value={customFacultyEmail}
-                                  onChange={(e) => setCustomFacultyEmail(e.target.value)}
-                                  className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="e.g. john.doe@university.edu"
-                                  required
-                                />
-                              </div>
-                              
-                              {errors.customFaculty && (
-                                <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700 flex items-center">
-                                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                                  {errors.customFaculty}
-                                </div>
-                              )}
-                              
-                              <div className="pt-4 flex justify-end space-x-3">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowCustomFacultyForm(false)}
-                                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          <ul className="py-1">
+                            {filteredStaffOptions.length > 0 ? (
+                              filteredStaffOptions.map((staff) => (
+                                <li 
+                                  key={staff.id}
+                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
+                                  onClick={() => {
+                                    setReferenceStaff(staff.name);
+                                    setShowStaffDropdown(false);
+                                  }}
                                 >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="submit"
-                                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center"
-                                >
-                                  <UserPlus size={16} className="mr-2" />
-                                  Add Faculty
-                                </button>
-                              </div>
+                                  <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
+                                    {staff.name.charAt(0)}
+                                  </div>
+                                  {staff.name}
+                                </li>
+                              ))
+                            ) : (
+                              <li className="px-4 py-2 text-sm text-gray-500 italic">
+                                No matching staff found
+                              </li>
+                            )}
+                          </ul>
+                          
+                          <div className="p-2 border-t border-gray-200 bg-gray-50">
+                            <button
+                              type="button"
+                              className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowCustomFacultyForm(true);
+                                setStaffSearchQuery('');
+                                setShowStaffDropdown(false); // Close dropdown when Add button is clicked
+                              }}
+                            >
+                              <UserPlus size={16} className="mr-2" />
+                              Add new faculty member
+                            </button>
+                          </div>
+                        </DropdownPortal>
+                      )}
+                      
+                      {/* Custom Faculty Form Modal */}
+                      {showCustomFacultyForm && (
+                        <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                          <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden animate-fade-in">
+                            <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
+                              <h4 className="text-lg font-medium text-black flex items-center">
+                                <UserPlus size={20} className="mr-2" />
+                                Add New Faculty Member
+                              </h4>
+                              <button 
+                                type="button" 
+                                className="text-gray-500 hover:text-gray-700 transition-colors" 
+                                onClick={() => setShowCustomFacultyForm(false)}
+                              >
+                                <X size={20} />
+                              </button>
                             </div>
-                          </form>
+                            
+                            <form onSubmit={handleCustomFacultySubmit} className="p-6">
+                              <div className="space-y-4">
+                                <div>
+                                  <label htmlFor="facultyName" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Full Name <span className="text-red-500">*</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="facultyName"
+                                    value={customFacultyName}
+                                    onChange={(e) => setCustomFacultyName(e.target.value)}
+                                    className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="e.g. Prof. John Doe"
+                                    autoFocus
+                                    required
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label htmlFor="facultyEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Email Address <span className="text-red-500">*</span>
+                                  </label>
+                                  <input
+                                    type="email"
+                                    id="facultyEmail"
+                                    value={customFacultyEmail}
+                                    onChange={(e) => setCustomFacultyEmail(e.target.value)}
+                                    className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="e.g. john.doe@university.edu"
+                                    required
+                                  />
+                                </div>
+                                
+                                {errors.customFaculty && (
+                                  <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700 flex items-center">
+                                    <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                                    {errors.customFaculty}
+                                  </div>
+                                )}
+                                
+                                <div className="pt-4 flex justify-end space-x-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowCustomFacultyForm(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center"
+                                  >
+                                    <UserPlus size={16} className="mr-2" />
+                                    Add Faculty
+                                  </button>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                    </div>
+                    {submitted && errors.referenceStaff && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={14} className="mr-1" />
+                        {errors.referenceStaff}
+                      </p>
                     )}
                   </div>
-                  {submitted && errors.referenceStaff && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={14} className="mr-1" />
-                      {errors.referenceStaff}
-                    </p>
-                  )}
-                </div>
-                {/* Return Days Field */}
-                <div>
-                  <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
-                    Return Days <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative max-w-xs">
-                    <input
-                      type="number"
-                      id="returnDays"
-                      value={returnDays}
-                      onChange={(e) => handleReturnDaysChange(e.target.value)}
-                      min="1"
-                      max="30"
-                      className={`w-full px-4 py-2 border ${
-                        submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors pr-16`}
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <span className="text-gray-500 text-sm">days</span>
+                  
+                  {/* Return Days Field - Takes 1/3 of the space */}
+                  <div className="md:w-1/3">
+                    <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
+                      Return Days <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        id="returnDays"
+                        value={returnDays}
+                        onChange={(e) => handleReturnDaysChange(e.target.value)}
+                        min="1"
+                        max="30"
+                        className={`w-full px-4 py-2 border ${
+                          submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors pr-16`}
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-gray-500 text-sm">days</span>
+                      </div>
                     </div>
+                    <div className="flex items-center mt-1">
+                      <Info size={14} className="text-gray-400 mr-1" />
+                      <p className="text-xs text-gray-500">Maximum 30 days</p>
+                    </div>
+                    {submitted && errors.returnDays && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={14} className="mr-1" />
+                        {errors.returnDays}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center mt-1">
-                    <Info size={14} className="text-gray-400 mr-1" />
-                    <p className="text-xs text-gray-500">Maximum 30 days</p>
-                  </div>
-                  {submitted && errors.returnDays && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={14} className="mr-1" />
-                      {errors.returnDays}
-                    </p>
-                  )}
                 </div>
               </div>
             </section>

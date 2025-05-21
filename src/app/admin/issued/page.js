@@ -173,7 +173,7 @@ export default function RequestsPage() {
     { key: 'requestId', label: 'Request ID' },
     { key: 'emailAndPhone', label: 'Email / Phone No' },
     { key: 'role', label: 'Role' },
-    { key: 'requestedDate', label: 'Requested Date' },
+    { key: 'issuedate', label: 'Issued Date' },
     { key: 'status', label: 'Status' },
     { key: 'actions', label: 'Actions' }
   ];
@@ -224,7 +224,7 @@ export default function RequestsPage() {
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-      requestedDate: (
+      issuedate: (
         <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
           <CalendarDays size={14} />
           {item.requestedDate}
