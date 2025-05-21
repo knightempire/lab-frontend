@@ -1,7 +1,8 @@
 'use client';
 
+// app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, CalendarDays, Repeat } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -10,6 +11,7 @@ import { useRouter } from 'next/navigation';
 
 const requests = [
   {
+    id: 1, // Added id property
     requestId: "REQ-2025-0513",
     name: "John Doe",
     rollNo: "CS21B054",
@@ -26,12 +28,13 @@ const requests = [
     },
     description: "For IoT project, Display indicators",
     components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 }
+      { id: 1, name: 'Arduino', quantity: 2 },
+      { id: 2, name: 'LEDs', quantity: 10 },
+      { id: 3, name: 'Sensors', quantity: 20 }
     ]
   },
   {
+    id: 2, // Added id property
     requestId: "REQ-2025-0514",
     name: "Alice Kumar",
     rollNo: "2023123",
@@ -48,11 +51,12 @@ const requests = [
     },
     description: "For embedded project, For circuit prototyping",
     components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
+      { id: 1, name: 'Raspberry Pi', quantity: 1 },
+      { id: 2, name: 'Breadboards', quantity: 2 }
     ]
   },
   {
+    id: 3, // Added id property
     requestId: "REQ-2025-0515",
     name: "Rahul Mehta",
     rollNo: "2023456",
@@ -69,10 +73,21 @@ const requests = [
     },
     description: "For robotics project",
     components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
+      { id: 1, name: 'Motors', quantity: 5 }
     ]
   }
 ];
+
+// Extract unique product names from the requests data
+const getUniqueComponents = () => {
+  const componentSet = new Set();
+  requests.forEach(request => {
+    request.components.forEach(component => {
+      componentSet.add(component.name);
+    });
+  });
+  return Array.from(componentSet);
+};
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -80,46 +95,58 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    requestType: ''
+    status: '',
+    component: '' // Changed from 'product' to 'component' to match with the data structure
   });
 
   const itemsPerPage = 10;
+  const uniqueComponents = getUniqueComponents();
 
   const handleReset = () => {
     setFilters({
       role: '',
-      requestType: '',
+      status: '',
+      component: '' // Reset component filter
     });
   };
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filters]);
-
+  
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const getFilteredResults = () => {
     return requests.filter(req => {
-      const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesRequestType =
-        filters.requestType === '' ||
-        (filters.requestType === 'Extension' && req.isExtended) ||
-        (filters.requestType === 'New' && !req.isExtended);
-      return matchesRole && matchesRequestType;
+      // Filter by role
+      const matchesRole = filters.role === '' || 
+        (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
+      
+      // Filter by status
+      const matchesStatus = filters.status === '' || 
+        req.status.toLowerCase() === filters.status.toLowerCase();
+      
+      // Filter by component
+      const matchesComponent = filters.component === '' || 
+        req.components.some(component => 
+          component.name === filters.component
+        );
+      
+      return matchesRole && matchesStatus && matchesComponent;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.requestId.toLowerCase().includes(searchQuery.toLowerCase())
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
   const handleViewRequest = (request) => {
-    const params = new URLSearchParams();
-    params.append('requestId', request.requestId);
-    router.push(`/admin/review?${params.toString()}`);
-    sessionStorage.setItem('requestData', JSON.stringify(request));
+    // Using requestId instead of id for the route parameter
+    router.push(`/admin/return?requestId=${encodeURIComponent(request.requestId)}`);
+    
+    // For debugging - log what we're trying to navigate to
+    console.log(`Navigating to: /admin/return?requestId=${encodeURIComponent(request.requestId)}`);
   };
 
   const filteredRequests = getFilteredResults();
@@ -129,9 +156,16 @@ export default function RequestsPage() {
     currentPage * itemsPerPage
   );
 
+  // Add component filter to the filterList with unique components
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Request Type', key: 'requestType', options: ['', 'New', 'Extension'], value: filters.requestType },
+    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { 
+      label: 'Product', 
+      key: 'component', 
+      options: ['', ...uniqueComponents], 
+      value: filters.component 
+    }
   ];
 
   const columns = [
@@ -140,11 +174,33 @@ export default function RequestsPage() {
     { key: 'emailAndPhone', label: 'Email / Phone No' },
     { key: 'role', label: 'Role' },
     { key: 'requestedDate', label: 'Requested Date' },
-    { key: 'requestType', label: 'Request Type' },
+    { key: 'status', label: 'Status' },
     { key: 'actions', label: 'Actions' }
   ];
 
   const rows = paginatedRequests.map((item) => {
+    let statusIcon, statusText, bgColor, textColor;
+
+    switch (item.status) {
+      case 'accepted':
+        statusIcon = <CheckCircle size={16} className="text-green-700" />;
+        bgColor = 'bg-green-100';
+        textColor = 'text-green-700';
+        statusText = 'Accepted';
+        break;
+      case 'pending':
+        statusIcon = <Clock size={16} className="text-yellow-700" />;
+        bgColor = 'bg-yellow-100';
+        textColor = 'text-yellow-700';
+        statusText = 'Pending';
+        break;
+      case 'rejected':
+        statusIcon = <XCircle size={16} className="text-red-700" />;
+        bgColor = 'bg-red-100';
+        textColor = 'text-red-700';
+        statusText = 'Rejected';
+        break;
+    }
     return {
       ...item,
       nameAndRoll: (
@@ -174,21 +230,10 @@ export default function RequestsPage() {
           {item.requestedDate}
         </div>
       ),
-      requestType: (
-        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
-          item.isExtended ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'
-        }`}>
-          {item.isExtended ? (
-            <>
-              <Repeat size={16} className="text-indigo-700" />
-              Extension
-            </>
-          ) : (
-            <>
-              <CheckCircle size={16} className="text-cyan-700" />
-              New
-            </>
-          )}
+      status: (
+        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
+          {statusIcon}
+          {statusText}
         </div>
       ),
       actions: (
@@ -204,7 +249,6 @@ export default function RequestsPage() {
       )
     };
   });
-
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50 ">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -213,7 +257,7 @@ export default function RequestsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
             Request Management
             <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-              Requests: {requests.length}
+              Request Received: {requests.length}
             </span>
           </h1>
         </div>

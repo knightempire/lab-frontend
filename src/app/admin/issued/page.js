@@ -8,9 +8,11 @@ import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+
 const requests = [
   {
-    id: "REQ-2025-0513",
+    id: 1, // Added id property
+    requestId: "REQ-2025-0513",
     name: "John Doe",
     rollNo: "CS21B054",
     phoneNo: "9876543210",
@@ -19,19 +21,21 @@ const requests = [
     requestedDate: "2025-05-10",
     requestedDays: 5,
     status: "pending",
+    isExtended: false,
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@university.edu'
     },
     description: "For IoT project, Display indicators",
     components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 }
+      { id: 1, name: 'Arduino', quantity: 2 },
+      { id: 2, name: 'LEDs', quantity: 10 },
+      { id: 3, name: 'Sensors', quantity: 20 }
     ]
   },
   {
-    id: "REQ-2025-0514",
+    id: 2, // Added id property
+    requestId: "REQ-2025-0514",
     name: "Alice Kumar",
     rollNo: "2023123",
     phoneNo: "9876543210",
@@ -40,37 +44,50 @@ const requests = [
     requestedDate: "2025-05-05",
     requestedDays: 3,
     status: "pending",
+    isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
       email: 'michael.johnson@university.edu'
     },
     description: "For embedded project, For circuit prototyping",
     components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
+      { id: 1, name: 'Raspberry Pi', quantity: 1 },
+      { id: 2, name: 'Breadboards', quantity: 2 }
     ]
   },
   {
-    id: "REQ-2025-0515",
+    id: 3, // Added id property
+    requestId: "REQ-2025-0515",
     name: "Rahul Mehta",
-    rollNo: "12345",
+    rollNo: "2023456",
     phoneNo: "9123456789",
     email: "rahul@example.com",
-    isFaculty: false,
+    isFaculty: true,
     requestedDate: "2025-05-06",
     requestedDays: 7,
     status: "accepted",
+    isExtended: false,
     referenceStaff: {
       name: 'Dr. Lisa Chen',
       email: 'lisa.chen@university.edu'
     },
     description: "For robotics project",
     components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
+      { id: 1, name: 'Motors', quantity: 5 }
     ]
   }
 ];
 
+// Extract unique product names from the requests data
+const getUniqueProducts = () => {
+  const productSet = new Set();
+  requests.forEach(request => {
+    request.components.forEach(component => {
+      productSet.add(component.name);
+    });
+  });
+  return Array.from(productSet);
+};
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -78,15 +95,18 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    status: ''
+    status: '',
+    product: '' // Added product filter similar to other filters
   });
 
   const itemsPerPage = 10;
+  const uniqueProducts = getUniqueProducts();
 
   const handleReset = () => {
     setFilters({
       role: '',
       status: '',
+      product: '' // Reset product filter
     });
   };
 
@@ -100,9 +120,21 @@ export default function RequestsPage() {
 
   const getFilteredResults = () => {
     return requests.filter(req => {
-      const matchesRole = filters.role === '' || (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      const matchesStatus = filters.status === '' || req.status.toLowerCase() === filters.status.toLowerCase();
-      return matchesRole && matchesStatus;
+      // Filter by role
+      const matchesRole = filters.role === '' || 
+        (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
+      
+      // Filter by status
+      const matchesStatus = filters.status === '' || 
+        req.status.toLowerCase() === filters.status.toLowerCase();
+      
+      // Filter by product
+      const matchesProduct = filters.product === '' || 
+        req.components.some(component => 
+          component.name === filters.product
+        );
+      
+      return matchesRole && matchesStatus && matchesProduct;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,7 +142,11 @@ export default function RequestsPage() {
   };
 
   const handleViewRequest = (request) => {
-    router.push(`/admin/return?requestId=${encodeURIComponent(request.id)}`);
+    // Using requestId instead of id for the route parameter
+    router.push(`/admin/return?requestId=${encodeURIComponent(request.requestId)}`);
+    
+    // For debugging - log what we're trying to navigate to
+    console.log(`Navigating to: /admin/return?requestId=${encodeURIComponent(request.requestId)}`);
   };
 
   const filteredRequests = getFilteredResults();
@@ -120,13 +156,21 @@ export default function RequestsPage() {
     currentPage * itemsPerPage
   );
 
+  // Add product filter to the filterList with unique products
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
     { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { 
+      label: 'Product', 
+      key: 'product', 
+      options: ['', ...uniqueProducts], 
+      value: filters.product 
+    }
   ];
 
   const columns = [
     { key: 'nameAndRoll', label: 'Name / Roll No' },
+    { key: 'requestId', label: 'Request ID' },
     { key: 'emailAndPhone', label: 'Email / Phone No' },
     { key: 'role', label: 'Role' },
     { key: 'requestedDate', label: 'Requested Date' },
@@ -157,7 +201,6 @@ export default function RequestsPage() {
         statusText = 'Rejected';
         break;
     }
-
     return {
       ...item,
       nameAndRoll: (
@@ -170,6 +213,9 @@ export default function RequestsPage() {
             <span className="text-gray-500 text-sm">{item.rollNo}</span>
           </div>
         </div>
+      ),
+      requestId: (
+        <span className="text-xs text-gray-700">{item.requestId}</span>
       ),
       emailAndPhone: (
         <div className="flex flex-col items-center text-center">
@@ -203,7 +249,6 @@ export default function RequestsPage() {
       )
     };
   });
-
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50 ">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
