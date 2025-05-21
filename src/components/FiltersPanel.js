@@ -22,6 +22,7 @@ const FiltersPanel = ({
 
         {/* Filter Toggle Button */}
         <button
+          type="button"
           onClick={() => setFiltersOpen(!filtersOpen)}
           className={`flex items-center gap-2 text-sm font-medium ${
             filtersOpen ? 'text-blue-600' : 'text-gray-700'
@@ -47,7 +48,9 @@ const FiltersPanel = ({
               onSelect={(val) => onChange(filter.key, val)}
             />
           ))}
+          
           <button
+            type="button"
             onClick={onReset}
             className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-all"
           >
