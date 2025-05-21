@@ -7,26 +7,12 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import DropdownPortal from '../../../components/dropDown';
 
-const referenceStaffOptions = [
-  { id: 1, name: 'Prof 1' },
-  { id: 2, name: 'Prof 2' },
-  { id: 3, name: 'Prof 3' },
-  { id: 4, name: 'Prof 4' },
-  { id: 5, name: 'Prof 5' },
-  { id: 6, name: 'Prof 6' },
-  { id: 7, name: 'Prof 7' },
-  { id: 8, name: 'Prof 8' },
-  { id: 9, name: 'Prof 9' },
-  { id: 10, name: 'Prof 10' },
-];
-
 export default function CheckoutPage() {
   const router = useRouter();
   
-  // State for selected products
   const [selectedProducts, setSelectedProducts] = useState([]);
   
-  // Retrieve selected products from localStorage when component mounts
+
   useEffect(() => {
     const storedProducts = localStorage.getItem('selectedProducts');
     if (storedProducts) {
@@ -64,34 +50,82 @@ export default function CheckoutPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
-  // Filter staff options based on search query
-  const filteredStaffOptions = referenceStaffOptions.filter(staff => 
-    staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase())
-  );
+  // Staff options state
+  const [referenceStaffOptions, setReferenceStaffOptions] = useState([]);
+
+  // Fetch reference staff from the API
+  useEffect(() => {
+ 
+    fetchReferenceStaff();
+  }, []);
+
+
+     const fetchReferenceStaff = async () => {
+      const token = localStorage.getItem('token'); 
+
+      if (!token) {
+         router.push('/auth/login'); 
+      }
+      if (token) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/get`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+      if (response.ok) {
+            const data = await response.json();
+            if (data.references && Array.isArray(data.references)) {
+              setReferenceStaffOptions(data.references); 
+            } else {
+              console.error('Invalid data format: "references" should be an array');
+              setReferenceStaffOptions([]);
+            }
+          } else {
+            console.error('Failed to fetch reference staff:', response.statusText);
+            setReferenceStaffOptions([]);
+          }
+        } catch (error) {
+          console.error('Error fetching reference staff:', error);
+          setReferenceStaffOptions([]);
+        }
+      } else {
+        console.error('No token found in localStorage');
+        setReferenceStaffOptions([]);
+      }
+    };
+
+
+const filteredStaffOptions = referenceStaffOptions.filter((staff) => 
+  staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) || 
+  staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
+);
+
 
   // Calculate total items
   const totalItems = selectedProducts.reduce((acc, product) => acc + product.selectedQuantity, 0);
 
-  // Handle quantity change
   const updateQuantity = (index, newQuantity) => {
     const updated = [...selectedProducts];
     const product = updated[index];
     
-    // Validate quantity
+
     const quantity = Math.max(1, Math.min(parseInt(newQuantity) || 1, product.inStock));
     
     product.selectedQuantity = quantity;
     setSelectedProducts(updated);
   };
 
-  // Remove product from selection
   const removeProduct = (index) => {
     const updated = selectedProducts.filter((_, i) => i !== index);
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
   };
 
-  // Handle return days change with max limit of 30
+
   const handleReturnDaysChange = (value) => {
     const days = parseInt(value) || 0;
     if (days > 30) {
@@ -101,42 +135,109 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle custom faculty submission
-  const handleCustomFacultySubmit = (e) => {
-    e.preventDefault();
-    
-    if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
-      setErrors({
-        ...errors,
-        customFaculty: 'Both name and email are required'
-      });
-      return;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@cb\.amrita\.edu$/;
-    if (!emailRegex.test(customFacultyEmail)) {
-      setErrors({
-        ...errors,
-        customFaculty: 'Please enter a valid faculty email address'
-      });
-      return;
+
+  
+
+const handleCustomFacultySubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
+    setErrors({
+      ...errors,
+      customFaculty: 'Both name and email are required'
+    });
+    return;
+  }
+  
+
+  const emailRegex = /^[^\s@]+@cb\.amrita\.edu$/;
+  if (!emailRegex.test(customFacultyEmail)) {
+    setErrors({
+      ...errors,
+      customFaculty: 'Please enter a valid faculty email address'
+    });
+    return;
+  }
+
+
+  console.log('New Faculty Added:', {
+    name: customFacultyName,
+    email: customFacultyEmail
+  });
+  
+  // Set the reference staff with the custom entry
+  setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
+  
+
+  
+  // Clear any previous errors
+  const updatedErrors = {...errors};
+  delete updatedErrors.customFaculty;
+  delete updatedErrors.referenceStaff;
+  setErrors(updatedErrors);
+
+  // Get token from localStorage
+  const token = localStorage.getItem('token'); 
+
+  if (!token) {
+    setErrors({
+      ...errors,
+      customFaculty: 'Token is missing. Please log in again.'
+    });
+   router.push('/auth/login'); 
+  }
+
+  // Prepare the request payload
+  const payload = {
+    refName: customFacultyName,
+    refEmail: customFacultyEmail
+  };
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Send token in the Authorization header
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    console.log('Response:', data);
+    if (!response.ok) {
+      // Handle server-side errors
+      console.log('Server error:', data);
+      if (response.status === 400 && data?.message === "Reference already exists") {
+        setErrors({
+          ...errors,
+          customFaculty: 'This reference already exists in the system.'
+        });
+        return;
+      }
+
+
+      throw new Error(data?.message || 'Something went wrong.');
     }
 
+
+    console.log('Faculty added successfully:', data);
+    await fetchReferenceStaff(); 
+  setShowCustomFacultyForm(false);
+  setShowStaffDropdown(false);
     
-    // Set the reference staff with the custom entry
-    setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
+  } catch (error) {
     
-    // Close the custom faculty form and the dropdown
-    setShowCustomFacultyForm(false);
-    setShowStaffDropdown(false);
-    
-    // Clear any previous errors
-    const updatedErrors = {...errors};
-    delete updatedErrors.customFaculty;
-    delete updatedErrors.referenceStaff;
-    setErrors(updatedErrors);
-  };
+    setErrors({
+      ...errors,
+      customFaculty: `Error: ${error.message}`
+    });
+    console.error('Error adding faculty:', error);
+  }
+};
+
+
+
 
   // Validate form data
   const validateForm = () => {
@@ -208,10 +309,7 @@ export default function CheckoutPage() {
 
   // Handle back button
   const handleBack = () => {
-    // Store the current state of selected products back to localStorage
     localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts));
-    
-    // Navigate back to product page
     router.back();
   };
 
@@ -220,7 +318,7 @@ export default function CheckoutPage() {
     setSubmitSuccess(false);
   };
   
-  // Table column definitions for selected products
+
   const columns = [
     { key: 'name', label: 'Component' },
     { key: 'selectedQuantity', label: 'Quantity' },
@@ -293,6 +391,8 @@ export default function CheckoutPage() {
   };
 
   const staffDropdownRef = useRef(null);
+
+
 
   return (
     <div className="bg-gray-50">
@@ -446,70 +546,75 @@ export default function CheckoutPage() {
                         </svg>
                       </div>
                       
-                      {showStaffDropdown && (
-                        <DropdownPortal 
-                          targetRef={staffDropdownRef} 
-                          onClose={() => setShowStaffDropdown(false)}
-                          className="max-h-60 overflow-auto"
-                          position="top"
-                        >
-                          <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
-                            <div className="relative">
-                              <input
-                                type="text"
-                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Search staff..."
-                                value={staffSearchQuery}
-                                onChange={(e) => setStaffSearchQuery(e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                autoComplete="off"
-                                autoFocus
-                              />
-                              <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
-                            </div>
-                          </div>
-                          
-                          <ul className="py-1">
-                            {filteredStaffOptions.length > 0 ? (
-                              filteredStaffOptions.map((staff) => (
-                                <li 
-                                  key={staff.id}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
-                                  onClick={() => {
-                                    setReferenceStaff(staff.name);
-                                    setShowStaffDropdown(false);
-                                  }}
-                                >
-                                  <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-                                    {staff.name.charAt(0)}
-                                  </div>
-                                  {staff.name}
-                                </li>
-                              ))
-                            ) : (
-                              <li className="px-4 py-2 text-sm text-gray-500 italic">
-                                No matching staff found
-                              </li>
-                            )}
-                          </ul>
-                          
-                          <div className="p-2 border-t border-gray-200 bg-gray-50">
-                            <button
-                              type="button"
-                              className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowCustomFacultyForm(true);
-                                setStaffSearchQuery('');
-                                setShowStaffDropdown(false); // Close dropdown when Add button is clicked
-                              }}
-                            >
-                              <UserPlus size={16} className="mr-2" />
-                              Add new faculty member
-                            </button>
-                          </div>
-                        </DropdownPortal>
-                      )}
+{showStaffDropdown && (
+  <DropdownPortal 
+    targetRef={staffDropdownRef} 
+    onClose={() => setShowStaffDropdown(false)}
+    className="max-h-60 overflow-auto"
+    position="top"
+  >
+    <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+      <div className="relative">
+        <input
+          type="text"
+          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Search staff..."
+          value={staffSearchQuery}
+          onChange={(e) => setStaffSearchQuery(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          autoComplete="off"
+          autoFocus
+        />
+        <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
+      </div>
+    </div>
+    
+    <ul className="py-1">
+      {filteredStaffOptions.length > 0 ? (
+        filteredStaffOptions.map((staff) => (
+          <li 
+            key={staff.id}
+            className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
+            onClick={() => {
+              setReferenceStaff(`${staff.name} (${staff.email})`);
+              setShowStaffDropdown(false);
+            }}
+          >
+            <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
+              {staff.name.charAt(0)} {/* Display the first letter of the staff name */}
+            </div>
+            <div className="flex flex-col">
+              <span>{staff.name}</span> {/* Staff name */}
+              <span className="text-xs text-gray-500">{staff.email}</span> {/* Staff email */}
+            </div>
+          </li>
+        ))
+      ) : (
+        <li className="px-4 py-2 text-sm text-gray-500 italic">
+          No matching staff found
+        </li>
+      )}
+    </ul>
+    
+    <div className="p-2 border-t border-gray-200 bg-gray-50">
+      <button
+        type="button"
+        className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowCustomFacultyForm(true);
+          setStaffSearchQuery('');
+          setShowStaffDropdown(false); // Close dropdown when Add button is clicked
+        }}
+      >
+        <UserPlus size={16} className="mr-2" />
+        Add new faculty member
+      </button>
+    </div>
+  </DropdownPortal>
+)}
+
+
                       
                       {/* Custom Faculty Form Modal */}
                       {showCustomFacultyForm && (
