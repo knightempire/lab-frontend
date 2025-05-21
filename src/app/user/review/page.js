@@ -20,7 +20,6 @@ const requests = [
     requestedDays: 5,
     adminApprovedDays: 3,
     status: "pending",
-    isExtended: true,
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@university.edu'
@@ -33,7 +32,8 @@ const requests = [
       { name: "LED Pack", quantity: 10 }
     ],
     adminIssueComponents: [],
-    returnedComponents: []
+    returnedComponents: [],
+    // No reIssueRequest yet
   },
   {
     requestId: "REQ-2025-0512",
@@ -46,7 +46,6 @@ const requests = [
     requestedDays: 3,
     adminApprovedDays: 3,
     status: "accepted",
-    isExtended: true,
     referenceStaff: {
       name: 'Dr. Alan Turing',
       email: 'alan.turing@university.edu'
@@ -58,11 +57,18 @@ const requests = [
       { name: "HDMI Cable", quantity: 1 }
     ],
     adminIssueComponents: [   
-      { name: "Raspberry Pi", quantity: 1 },
+      { name: "Raspberry Pi", quantity: 1 , replacedQuantity: 1 },
     ],
     returnedComponents: [
       { name: "Raspberry Pi", quantity: 1 }
-    ]
+    ],
+    reIssueRequest: {
+      status: "pending", 
+      userExtensionMessage: "Need more time for final testing.",
+      adminExtensionMessage: "",
+      extensionDays: 4,
+      adminIssueComponents: [],
+    }
   },
   {
     requestId: "REQ-2025-0511",
@@ -75,7 +81,6 @@ const requests = [
     requestedDays: 3,
     adminApprovedDays: 3,
     status: "rejected",
-    isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
       email: 'michael.johnson@university.edu'
@@ -87,7 +92,7 @@ const requests = [
       { name: "Breadboard", quantity: 1 }
     ],
     adminIssueComponents: [],
-    returnedComponents: []
+    returnedComponents: [],
   },
   {
     requestId: "REQ-2025-0510",
@@ -100,7 +105,6 @@ const requests = [
     requestedDays: 7,
     adminApprovedDays: 3,
     status: "accepted",
-    isExtended: true,
     referenceStaff: {
       name: 'Dr. Ramesh Gupta',
       email: 'ramesh.gupta@university.edu'
@@ -112,10 +116,21 @@ const requests = [
       { name: "Sensor Kit", quantity: 1 }
     ],
     adminIssueComponents: [
-      { name: "ESP32 Module", quantity: 2 },
+      { name: "ESP32 Module", quantity: 2 , replacedQuantity: 1},
       { name: "Sensor Kit", quantity: 1 }
     ],
-    returnedComponents: []
+    returnedComponents: [],
+    // Example: re-issue was accepted
+    reIssueRequest: {
+      status: "accepted",
+      userExtensionMessage: "Workshop extended, need 2 more days.",
+      adminExtensionMessage: "Extension granted.",
+      extensionDays: 2,
+      adminIssueComponents: [
+        { name: "ESP32 Module", quantity: 2 },
+        { name: "Sensor Kit", quantity: 1 }
+      ],
+    }
   },
   {
     requestId: "REQ-2025-0509",
@@ -128,7 +143,6 @@ const requests = [
     requestedDays: 2,
     adminApprovedDays: 1,
     status: "pending",
-    isExtended: false,
     referenceStaff: {
       name: 'Dr. Anita Desai',
       email: 'anita.desai@university.edu'
@@ -138,6 +152,39 @@ const requests = [
     components: [],
     adminIssueComponents: [],
     returnedComponents: []
+    // No reIssueRequest
+  },
+  {
+    requestId: "REQ-2025-0514",
+    name: "Suresh Raina",
+    rollNo: "ME20B101",
+    phoneNo: "9876543244",
+    email: "suresh.raina@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-01T10:00:00",
+    requestedDays: 2,
+    adminApprovedDays: 2,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. Kavita Rao',
+      email: 'kavita.rao@university.edu'
+    },
+    userMessage: "Need for mechanical project testing.",
+    adminMessage: "Approved for 2 days.",
+    components: [
+      { name: "Stepper Motor", quantity: 2 }
+    ],
+    adminIssueComponents: [
+      { name: "Stepper Motor", quantity: 2 }
+    ],
+    returnedComponents: [],
+    reIssueRequest: {
+      status: "rejected",
+      userExtensionMessage: "Project delayed, need 2 more days.",
+      adminExtensionMessage: "Cannot extend due to upcoming lab maintenance.",
+      extensionDays: 2,
+      adminIssueComponents: []
+    }
   }
 ];
 
@@ -150,7 +197,7 @@ function UserReviewContent() {
   const [returnPage, setReturnPage] = useState(1);
   const itemsPerPage = 5;
 
-  const [extensionDays, setExtensionDays] = useState('');
+  const [extensionDays, setExtensionDays] = useState(1);
   const [extensionMessage, setExtensionMessage] = useState('');
   const [extensionSent, setExtensionSent] = useState(false);
 
@@ -221,61 +268,67 @@ function UserReviewContent() {
     return diff > 0 ? `${diff} Days` : "Expired";
   }
 
-
-  function ReIssueDetails({ requestData, columns, getPageRows, userPage, setUserPage, itemsPerPage }) {
+  function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage }) {
     return (
-      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8 mt-4 m-1">
+      <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
         <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
           <Repeat className="w-5 h-5 text-yellow-500" />
           <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+          <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
+            reIssue.status === 'pending'
+              ? 'bg-yellow-100 text-yellow-800'
+              : reIssue.status === 'accepted'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
+          </span>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Admin Message */}
           <div>
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="font-semibold text-green-700">Admin Message</span>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
-              {requestData.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
+              {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
             </div>
             <div className="mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4 text-blue-600" />
               <span className="font-semibold text-blue-700">User Note / Reason</span>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
-              {requestData.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+              {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
             </div>
             <div className="flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-blue-600" />
               <span className="font-medium text-gray-700">Requested Days:</span>
               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-                {requestData.extensionDays || "N/A"} Days
+                {reIssue.extensionDays || "N/A"} Days
               </span>
             </div>
           </div>
-          {/* Re-Issued Components Table */}
           <div>
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="font-semibold text-green-700">Re-Issued Components</span>
               <span className="ml-auto flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm">
                 <CalendarDays className="w-4 h-4" />
-                {requestData.adminApprovedDays || "N/A"} Days
+                {reIssue.extensionDays || "N/A"} Days
               </span>
             </div>
-            {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
+            {reIssue.adminIssueComponents && reIssue.adminIssueComponents.length > 0 ? (
               <>
                 <Table
                   columns={columns}
-                  rows={getPageRows(requestData.adminIssueComponents, userPage)}
+                  rows={getPageRows(reIssue.adminIssueComponents, userPage)}
                   currentPage={userPage}
                   itemsPerPage={itemsPerPage}
                 />
-                {requestData.adminIssueComponents.length > itemsPerPage && (
+                {reIssue.adminIssueComponents.length > itemsPerPage && (
                   <Pagination
                     currentPage={userPage}
-                    totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                    totalPages={Math.ceil(reIssue.adminIssueComponents.length / itemsPerPage)}
                     setCurrentPage={setUserPage}
                   />
                 )}
@@ -410,17 +463,6 @@ function UserReviewContent() {
                     ) : (
                     <div className="text-gray-400 text-center py-6">No components found.</div>
                     )}
-                  {/* Re-Issue Details: show in addition if extended */}
-                  {requestData.isExtended && (
-                    <ReIssueDetails
-                      requestData={requestData}
-                      columns={columns}
-                      getPageRows={getPageRows}
-                      userPage={userPage}
-                      setUserPage={setUserPage}
-                      itemsPerPage={itemsPerPage}
-                    />
-                  )}
                 </>
             )}
 
@@ -517,6 +559,19 @@ function UserReviewContent() {
                         rows={getPageRows(requestData.adminIssueComponents, adminPage)}
                         currentPage={adminPage}
                         itemsPerPage={itemsPerPage}
+                        renderCell={(key, row) => {
+                        if (key === 'quantity' && row.replacedQuantity && row.replacedQuantity > 0) {
+                          return (
+                            <span>
+                              {row.quantity}
+                              <span className="font-semibold text-orange-600">
+                                {" + " + row.replacedQuantity}
+                              </span>
+                            </span>
+                          );
+                        }
+                        return row[key];
+                      }}
                       />
                       {requestData.adminIssueComponents.length > itemsPerPage && (
                         <Pagination
@@ -560,12 +615,11 @@ function UserReviewContent() {
                     )}
                 </div>
 
-                
                 {/* Re-Issue Details: show in addition if extended */}
-                <div className="m-4">
-                  {requestData.isExtended && (
+                  {requestData.status === 'accepted' && requestData.reIssueRequest && requestData.adminIssueComponents &&
+                    requestData.adminIssueComponents.length > requestData.returnedComponents.length &&(
                     <ReIssueDetails
-                      requestData={requestData}
+                      reIssue={requestData.reIssueRequest}
                       columns={columns}
                       getPageRows={getPageRows}
                       userPage={userPage}
@@ -573,7 +627,6 @@ function UserReviewContent() {
                       itemsPerPage={itemsPerPage}
                     />
                   )}
-                </div>
                 </div>
 
                 {/* Extension Request Button */}
@@ -688,18 +741,6 @@ function UserReviewContent() {
                           currentPage={userPage}
                           totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
                           setCurrentPage={setUserPage}
-                        />
-                      )}
-
-                      {/* Re-Issue Details: show in addition if extended */}
-                      {requestData.isExtended && (
-                        <ReIssueDetails
-                          requestData={requestData}
-                          columns={columns}
-                          getPageRows={getPageRows}
-                          userPage={userPage}
-                          setUserPage={setUserPage}
-                          itemsPerPage={itemsPerPage}
                         />
                       )}
                     </>
