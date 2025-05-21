@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
+import Pagination from '../../../components/pagination';
+import DropdownPortal from '../../../components/dropDown';
 
 const referenceStaffOptions = [
   { id: 1, name: 'Prof 1' },
@@ -112,14 +114,15 @@ export default function CheckoutPage() {
     }
     
     // Basic email validation
-    const emailRegex = /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/;
+    const emailRegex = /^[^\s@]+@cb\.amrita\.edu$/;
     if (!emailRegex.test(customFacultyEmail)) {
       setErrors({
         ...errors,
-        customFaculty: 'Please enter a valid University email address'
+        customFaculty: 'Please enter a valid faculty email address'
       });
       return;
     }
+
     
     // Set the reference staff with the custom entry
     setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
@@ -209,7 +212,7 @@ export default function CheckoutPage() {
     localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts));
     
     // Navigate back to product page
-    router.push('/user/product');
+    router.back();
   };
 
   // Close success alert
@@ -289,6 +292,8 @@ export default function CheckoutPage() {
     }
   };
 
+  const staffDropdownRef = useRef(null);
+
   return (
     <div className="bg-gray-50">
       <div className="mx-auto px-4 py-3">
@@ -349,14 +354,22 @@ export default function CheckoutPage() {
               </div>
               
               {selectedProducts.length > 0 ? (
-                <div className={`${selectedProducts.length > 3 ? 'max-h-66 overflow-y-auto' : ''} overflow-x-auto`}>
+                <div className="overflow-x-auto min-h-[310px]">
                   {/* Using the Table component */}
                   <Table 
                     columns={columns} 
-                    rows={selectedProducts} 
+                    rows={selectedProducts.slice(
+                        (currentPage - 1) * 3,
+                        currentPage * 3
+                      )} 
                     currentPage={currentPage} 
-                    itemsPerPage={itemsPerPage} 
+                    itemsPerPage={3} 
                     renderCell={renderCell} 
+                  />
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(selectedProducts.length / 3)}
+                    setCurrentPage={setCurrentPage}
                   />
                 </div>
               ) : (
@@ -409,7 +422,6 @@ export default function CheckoutPage() {
                     </p>
                   )}
                 </div>
-
                 {/* Reference Staff Dropdown */}
                 <div>
                   <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
@@ -417,6 +429,7 @@ export default function CheckoutPage() {
                   </label>
                   <div className="relative">
                     <div 
+                      ref={staffDropdownRef}
                       className={`w-full px-4 py-2 border ${
                         submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between`}
@@ -431,7 +444,12 @@ export default function CheckoutPage() {
                     </div>
                     
                     {showStaffDropdown && (
-                      <div className="absolute z-10 bottom-full mb-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                      <DropdownPortal 
+                        targetRef={staffDropdownRef} 
+                        onClose={() => setShowStaffDropdown(false)}
+                        className="max-h-60 overflow-auto"
+                        position="top" // Add this prop to position the dropdown above
+                      >
                         <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
                           <div className="relative">
                             <input
@@ -485,7 +503,7 @@ export default function CheckoutPage() {
                             Add new faculty member
                           </button>
                         </div>
-                      </div>
+                      </DropdownPortal>
                     )}
                     
                     {/* Custom Faculty Form Modal remains unchanged */}
@@ -635,35 +653,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
-            
-            {/* Confirmation Dialog */}
-            {showConfirmDialog && (
-              <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Submission</h3>
-                  <p className="text-gray-500 mb-5">
-                    Are you sure you want to submit this request? Once submitted, you will be responsible for all the components listed.
-                  </p>
-                  <div className="flex space-x-3 justify-end">
-                    <button
-                      type="button"
-                      onClick={handleCancelSubmit}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmSubmit}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
+           
             {/* Terms & Conditions Card */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -721,6 +711,38 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center mb-4 border-b border-gray-200 py-4">
+              <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
+              <h3 className="text-lg font-medium text-gray-900">Confirm Submission</h3>
+            </div>
+            <p className="text-gray-500 mb-6">
+              Are you sure you want to submit this request? Once submitted, you will be responsible for all the components listed.
+            </p>
+            <div className="flex space-x-3 justify-end mb-2">
+              <button
+                type="button"
+                onClick={handleCancelSubmit}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

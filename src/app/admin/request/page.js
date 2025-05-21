@@ -143,10 +143,10 @@ export default function RequestsPage() {
 
   const handleViewRequest = (request) => {
     // Using requestId instead of id for the route parameter
-    router.push(`/admin/return?requestId=${encodeURIComponent(request.requestId)}`);
+    router.push(`/admin/review?requestId=${encodeURIComponent(request.requestId)}`);
     
     // For debugging - log what we're trying to navigate to
-    console.log(`Navigating to: /admin/return?requestId=${encodeURIComponent(request.requestId)}`);
+    console.log(`Navigating to: /admin/review?requestId=${encodeURIComponent(request.requestId)}`);
   };
 
   const filteredRequests = getFilteredResults();
