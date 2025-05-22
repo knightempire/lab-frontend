@@ -95,9 +95,9 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    status: '',
-    product: '' // Added product filter similar to other filters
+    status: ''
   });
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   const itemsPerPage = 10;
   const uniqueProducts = getUniqueProducts();
@@ -106,16 +106,20 @@ export default function RequestsPage() {
     setFilters({
       role: '',
       status: '',
-      product: '' // Reset product filter
     });
+    setSelectedProducts([]);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, selectedProducts]);
   
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+  
+  const handleProductsChange = (products) => {
+    setSelectedProducts(products);
   };
 
   const getFilteredResults = () => {
@@ -128,13 +132,15 @@ export default function RequestsPage() {
       const matchesStatus = filters.status === '' || 
         req.status.toLowerCase() === filters.status.toLowerCase();
       
-      // Filter by product
-      const matchesProduct = filters.product === '' || 
-        req.components.some(component => 
-          component.name === filters.product
+      // Filter by selected products
+      const matchesProducts =
+        selectedProducts.length === 0 ||
+        selectedProducts.every(product =>
+          req.components.some(component => component.name === product)
         );
+
       
-      return matchesRole && matchesStatus && matchesProduct;
+      return matchesRole && matchesStatus && matchesProducts;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
@@ -156,16 +162,9 @@ export default function RequestsPage() {
     currentPage * itemsPerPage
   );
 
-  // Add product filter to the filterList with unique products
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
     { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
-    { 
-      label: 'Product', 
-      key: 'product', 
-      options: ['', ...uniqueProducts], 
-      value: filters.product 
-    }
   ];
 
   const columns = [
@@ -173,7 +172,7 @@ export default function RequestsPage() {
     { key: 'requestId', label: 'Request ID' },
     { key: 'emailAndPhone', label: 'Email / Phone No' },
     { key: 'role', label: 'Role' },
-    { key: 'issuedate', label: 'Issued Date' },
+    { key: 'requestedDate', label: 'Requested Date' },
     { key: 'status', label: 'Status' },
     { key: 'actions', label: 'Actions' }
   ];
@@ -224,7 +223,7 @@ export default function RequestsPage() {
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-      issuedate: (
+      requestedDate: (
         <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
           <CalendarDays size={14} />
           {item.requestedDate}
@@ -269,6 +268,9 @@ export default function RequestsPage() {
           onChange={handleFilterChange}
           onReset={handleReset}
           Text="All requests"
+          products={uniqueProducts}
+          onProductsChange={handleProductsChange}
+          selectedProducts={selectedProducts}
         />
       </div>
 

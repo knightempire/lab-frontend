@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -9,15 +10,12 @@ import { Eye } from 'lucide-react';
 
 
 const userRequests = [
-  { requestId: "REQ103", date: "2025-05-12", items: "Arduino Kit, Breadboard", status: "Pending" },
-  { requestId: "REQ102", date: "2025-05-10", items: "Raspberry Pi", status: "Approved" },
-  { requestId: "REQ101", date: "2025-05-08", items: "Jumper Wires", status: "Rejected" },
-  { requestId: "REQ100", date: "2025-05-01", items: "ESP32 Module", status: "Approved" },
+  { requestId: "REQ-2025-0513", date: "2025-05-12", items: "Arduino Kit, Breadboard", status: "Pending" },
+  { requestId: "REQ-2025-0512", date: "2025-05-10", items: "Raspberry Pi", status: "Approved" },
+  { requestId: "REQ-2025-0511", date: "2025-05-08", items: "Jumper Wires", status: "Rejected" },
+  { requestId: "REQ-2025-0510", date: "2025-05-01", items: "ESP32 Module", status: "Approved" },
 ];
 
-const handleViewRequest = (request) => {
-  console.log('View Request:', request);
-};
 
 const columns = [
   { key: 'requestId', label: 'Request ID' },
@@ -28,6 +26,7 @@ const columns = [
 ];
 
 export default function UserRequestsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -36,6 +35,11 @@ export default function UserRequestsPage() {
 
   const handleReset = () => {
     setStatusFilter('');
+  };
+
+  const handleViewRequest = (request) => {
+    const params = new URLSearchParams({ requestId: request.requestId});
+    router.push(`/user/review?${params.toString()}`);
   };
 
   useEffect(() => {
@@ -87,6 +91,9 @@ export default function UserRequestsPage() {
 
  return {
     ...req,
+    requestId: (
+        <span className="text-xs text-gray-700">{req.requestId}</span>
+      ),
     status: (
       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
         {icon}

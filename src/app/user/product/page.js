@@ -6,8 +6,6 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { useRouter } from 'next/navigation';
 
-
-
 const columns = [
   { key: 'name', label: 'Product Name' },
   { key: 'inStock', label: 'In Stock' },
@@ -21,7 +19,7 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Initialize products and restore selections from localStorage
+// Initialize products and restore selections from localStorage
 useEffect(() => {
   const fetchProducts = async () => {
     try {
@@ -82,6 +80,7 @@ useEffect(() => {
   // Helper function to save current selections to localStorage
   const saveSelectionsToLocalStorage = (updatedProducts) => {
     const selected = updatedProducts.filter(p => p.selected).map(p => ({ 
+      id: p.id,
       name: p.name, 
       inStock: p.inStock, 
       selectedQuantity: p.selectedQuantity 

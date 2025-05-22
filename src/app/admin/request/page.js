@@ -1,6 +1,5 @@
 'use client';
 
-// app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
 import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
@@ -78,7 +77,7 @@ const requests = [
   }
 ];
 
-// Extract unique product names from the requests data
+// Extract unique component names from the requests data
 const getUniqueComponents = () => {
   const componentSet = new Set();
   requests.forEach(request => {
@@ -95,9 +94,9 @@ export default function RequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     role: '',
-    status: '',
-    component: '' // Changed from 'product' to 'component' to match with the data structure
+    status: ''
   });
+  const [selectedComponents, setSelectedComponents] = useState([]);
 
   const itemsPerPage = 10;
   const uniqueComponents = getUniqueComponents();
@@ -106,16 +105,20 @@ export default function RequestsPage() {
     setFilters({
       role: '',
       status: '',
-      component: '' // Reset component filter
     });
+    setSelectedComponents([]);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, selectedComponents]);
   
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+  
+  const handleComponentsChange = (components) => {
+    setSelectedComponents(components);
   };
 
   const getFilteredResults = () => {
@@ -128,13 +131,14 @@ export default function RequestsPage() {
       const matchesStatus = filters.status === '' || 
         req.status.toLowerCase() === filters.status.toLowerCase();
       
-      // Filter by component
-      const matchesComponent = filters.component === '' || 
-        req.components.some(component => 
-          component.name === filters.component
+      // Filter by selected components
+      const matchesComponents =
+        selectedComponents.length === 0 ||
+        selectedComponents.every(product =>
+          req.components.some(component => component.name === product)
         );
       
-      return matchesRole && matchesStatus && matchesComponent;
+      return matchesRole && matchesStatus && matchesComponents;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
@@ -142,11 +146,9 @@ export default function RequestsPage() {
   };
 
   const handleViewRequest = (request) => {
-    // Using requestId instead of id for the route parameter
-    router.push(`/admin/review?requestId=${encodeURIComponent(request.requestId)}`);
-    
-    // For debugging - log what we're trying to navigate to
-    console.log(`Navigating to: /admin/review?requestId=${encodeURIComponent(request.requestId)}`);
+    const params = new URLSearchParams();
+    params.append('requestId', request.requestId);
+    router.push(`/admin/review?${params.toString()}`);
   };
 
   const filteredRequests = getFilteredResults();
@@ -156,16 +158,9 @@ export default function RequestsPage() {
     currentPage * itemsPerPage
   );
 
-  // Add component filter to the filterList with unique components
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
     { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
-    { 
-      label: 'Product', 
-      key: 'component', 
-      options: ['', ...uniqueComponents], 
-      value: filters.component 
-    }
   ];
 
   const columns = [
@@ -269,6 +264,9 @@ export default function RequestsPage() {
           onChange={handleFilterChange}
           onReset={handleReset}
           Text="All requests"
+          products={uniqueComponents}
+          onProductsChange={handleComponentsChange}
+          selectedProducts={selectedComponents}
         />
       </div>
 
