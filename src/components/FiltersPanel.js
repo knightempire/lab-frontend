@@ -41,15 +41,35 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-80 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 min-h-10"
+        className="flex items-center justify-between w-80 px-1.5 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 min-h-10"
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {selectedValues.length === 0 && (
-            <span className="whitespace-nowrap">{label}</span>
+            <span className="whitespace-nowrap">Select Products</span>
           )}
           
           {selectedValues.length > 0 ? (
-            <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 flex-1 min-w-0">
+            <div className="flex gap-1 overflow-x-auto flex-1 min-w-0" 
+                 style={{
+                   scrollbarWidth: 'thin',
+                   scrollbarColor: '#cbd5e1 #f1f5f9'
+                 }}>
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  height: 3px;
+                }
+                div::-webkit-scrollbar-track {
+                  background: #f1f5f9;
+                  border-radius: 2px;
+                }
+                div::-webkit-scrollbar-thumb {
+                  background: #cbd5e1;
+                  border-radius: 2px;
+                }
+                div::-webkit-scrollbar-thumb:hover {
+                  background: #94a3b8;
+                }
+              `}</style>
               {selectedValues.map(product => (
                 <div 
                   key={product}
@@ -80,7 +100,7 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
         
         <ChevronUp
           size={14}
-          className={`${isOpen ? 'rotate-0' : 'rotate-180'} transition-transform flex-shrink-0 ml-2`}
+          className={`${isOpen ? 'rotate-0' : 'rotate-180'} transition-transform flex-shrink-0 ml-1`}
         />
       </button>
 
@@ -162,7 +182,7 @@ const FiltersPanel = ({
           {/* Product Filter with Checkboxes */}
           {products && products.length > 0 && (
             <CheckboxDropdown
-              label=""
+              label="Products"
               options={products}
               selectedValues={selectedProducts || []}
               onChange={handleProductChange}

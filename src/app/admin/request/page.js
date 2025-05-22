@@ -133,9 +133,10 @@ export default function RequestsPage() {
         req.status.toLowerCase() === filters.status.toLowerCase();
       
       // Filter by selected components
-      const matchesComponents = selectedComponents.length === 0 || 
-        req.components.some(component => 
-          selectedComponents.includes(component.name)
+      const matchesComponents =
+        selectedComponents.length === 0 ||
+        selectedComponents.every(product =>
+          req.components.some(component => component.name === product)
         );
       
       return matchesRole && matchesStatus && matchesComponents;
