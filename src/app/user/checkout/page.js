@@ -330,9 +330,8 @@ const handleConfirmSubmit = async () => {
       setTimeout(() => {
         console.log('Redirecting to home page...');
         setSubmitSuccess(false);
-
-        // localStorage.removeItem('selectedProducts');
-        // router.push('/'); 
+        localStorage.removeItem('selectedProducts');
+        router.push('/user/dashboard'); 
       }, 1500);
     } else {
       const errorData = await response.json();
