@@ -1,6 +1,6 @@
 'use client';
 
-import { useState , useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, X, Edit2, Save, Users, Search, Eye } from 'lucide-react';
@@ -9,24 +9,6 @@ import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import ActiveStatus from '../../../components/ui/ActiveStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
-
-const initialUsers = [
-  { name: "John Doe", email: "johndoe@example.com", rollNo: "12345", phoneNo: "9876543210", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 4 },
-  { name: "Jane Smith", email: "janesmith@example.com", rollNo: "23456", phoneNo: "8765432109", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 7 },
-  { name: "Alice Johnson", email: "alicej@example.com", rollNo: "34567", phoneNo: "7654321098", isFaculty: false, isAdmin: false, isActive: false, borrowedComponents: 0 },
-  { name: "Bob Brown", email: "bobbrown@example.com", rollNo: "45678", phoneNo: "6543210987", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 2 },
-  { name: "Charlie Davis", email: "charlied@example.com", rollNo: "56789", phoneNo: "5432109876", isFaculty: false, isAdmin: true, isActive: true, borrowedComponents: 6 },
-  { name: "Eva Green", email: "evagreen@example.com", rollNo: "67890", phoneNo: "4321098765", isFaculty: true, isAdmin: false, isActive: false, borrowedComponents: 0 },
-  { name: "Frank Harris", email: "frankh@example.com", rollNo: "78901", phoneNo: "3210987654", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 1 },
-  { name: "Grace Lee", email: "gracelee@example.com", rollNo: "89012", phoneNo: "2109876543", isFaculty: true, isAdmin: true, isActive: true, borrowedComponents: 5 },
-  { name: "Henry Adams", email: "henrya@example.com", rollNo: "90123", phoneNo: "1098765432", isFaculty: false, isAdmin: false, isActive: false, borrowedComponents: 0 },
-  { name: "Ivy Clark", email: "ivyc@example.com", rollNo: "11223", phoneNo: "1987654321", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 3 },
-  { name: "Jack White", email: "jackw@example.com", rollNo: "22334", phoneNo: "8765432190", isFaculty: true, isAdmin: true, isActive: true, borrowedComponents: 8 },
-  { name: "Kara Black", email: "karab@example.com", rollNo: "33445", phoneNo: "7654321980", isFaculty: false, isAdmin: false, isActive: true, borrowedComponents: 2 },
-  { name: "Leo King", email: "leok@example.com", rollNo: "44556", phoneNo: "6543219870", isFaculty: false, isAdmin: true, isActive: false, borrowedComponents: 0 },
-  { name: "Mia Scott", email: "mias@example.com", rollNo: "55667", phoneNo: "5432198760", isFaculty: true, isAdmin: false, isActive: true, borrowedComponents: 6 },
-  { name: "Nathan Young", email: "nathany@example.com", rollNo: "66778", phoneNo: "4321987650", isFaculty: true, isAdmin: false, isActive: false, borrowedComponents: 0 }
-];
 
 const columns = [
   { key: 'nameAndRoll', label: 'Name / Roll No' },
@@ -39,7 +21,7 @@ const columns = [
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', rollNo: '', phoneNo: '', isFaculty: false, isActive: true });
   const [editIndex, setEditIndex] = useState(null);
@@ -52,10 +34,65 @@ export default function UsersPage() {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    setCurrentPage(1);
+    const verifyadmin = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Token verification failed:', data.message);
+        router.push('/auth/login');
+      } else {
+        const user = data.user;
+        console.log('User data:', user);
+        console.log('Is admin:', user.isAdmin);
+        if (!user.isAdmin) {
+          router.push('/auth/login');
+        }
+        if (!user.isActive) {
+          router.push('/auth/login');
+        }
+      }
+    };
+    verifyadmin();
+
+    const fetchUsers = async () => {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/get`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log('Fetched users:', data.users);  
+        const usersWithBorrowed = data.users.map((user) => ({
+          ...user,
+          borrowedComponents: 0,  
+ 
+        }));
+        setUsers(usersWithBorrowed);
+      } else {
+        console.error('Failed to fetch users:', data.message);
+      }
+    };
+    fetchUsers();
+
+    setCurrentPage(1); // Reset to first page when filters/search change
   }, [searchQuery, filters]);
 
-   const handleReset = () => {
+  const handleReset = () => {
     setFilters({
       isFaculty: '',
       isActive: '',
@@ -73,8 +110,8 @@ export default function UsersPage() {
       const matchesActiveFilter = filters.isActive === '' || (filters.isActive === 'Active' ? user.isActive : !user.isActive);
       return matchesFacultyFilter && matchesActiveFilter;
     });
-  };  
-  
+  };
+
   const getSearchResults = (users, searchQuery) => {
     const lowerQuery = searchQuery.toLowerCase();
     return users.filter(
@@ -82,7 +119,7 @@ export default function UsersPage() {
         user.name.toLowerCase().includes(lowerQuery) ||
         user.rollNo.toLowerCase().includes(lowerQuery)
     );
-  };  
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prevFilters) => ({
@@ -122,16 +159,16 @@ export default function UsersPage() {
   const rows = paginatedUsers.map((item, idx) => ({
     ...item,
     nameAndRoll: (
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-100 text-blue-700 font-semibold rounded-full w-8 h-8 flex items-center justify-center">
-            {item.name.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium">{item.name}</span>
-            <span className="text-gray-500 text-sm">{item.rollNo}</span>
-          </div>
+      <div className="flex items-center gap-2">
+        <div className="bg-blue-100 text-blue-700 font-semibold rounded-full w-8 h-8 flex items-center justify-center">
+          {item.name.charAt(0).toUpperCase()}
         </div>
-      ),
+        <div className="flex flex-col">
+          <span className="font-medium">{item.name}</span>
+          <span className="text-gray-500 text-sm">{item.rollNo}</span>
+        </div>
+      </div>
+    ),
     emailAndPhone: (
       <div className="flex flex-col items-center text-center">
         <span className="font-medium">{item.email}</span>
@@ -146,7 +183,7 @@ export default function UsersPage() {
       </div>
     ),
     actions: (
-        <div className="flex justify-center pt-2 border-t border-gray-100 mb-2">
+      <div className="flex justify-center pt-2 border-t border-gray-100 mb-2">
         <Link
           href={`/admin/profile?rollNo=${item.rollNo}`}
           className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
@@ -155,7 +192,7 @@ export default function UsersPage() {
           <span>View Profile</span>
         </Link>
       </div>
-    )    
+    )
   }));
   
   return (
@@ -169,12 +206,12 @@ export default function UsersPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
             User Management
             <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-              Total Users: {initialUsers.length}
+              Total Users: {users.length}
             </span>
           </h1>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
@@ -182,7 +219,7 @@ export default function UsersPage() {
             <Plus size={18} />
             <span className="hidden sm:inline">Add User</span>
           </button>
-        </div>
+        </div> */}
       </div>
 
       <div className="mb-4">
