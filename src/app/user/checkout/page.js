@@ -279,31 +279,70 @@ const handleCustomFacultySubmit = async (e) => {
   };
   
 
-  const handleConfirmSubmit = () => {
-    setShowConfirmDialog(false);
-    
+const handleConfirmSubmit = async () => {
+  setShowConfirmDialog(false);
+  
+  // Get the token from localStorage
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
 
-  console.log("staffId", referenceStaffId);
+    router.push('/auth/login');
+    return;
+  }
 
-
-    console.log('Form submitted successfully', {
-      selectedProducts,
-      purpose,
-      referenceStaffId,
-      returnDays,
-      acknowledged
-    });
-    
-
-    setSubmitSuccess(true);
-    
-    setTimeout(() => {
-      console.log('Redirecting to home page...');
-      setSubmitSuccess(false);
-      // localStorage.removeItem('selectedProducts');
-      // router.push('/'); 
-    }, 1500);
+  const requestData = {
+    referenceId: referenceStaffId, 
+    description: purpose, 
+    requestedDays: returnDays,  
+    requestedProducts: selectedProducts.map(product => ({
+      productId: product.id, 
+      quantity: product.selectedQuantity,  
+    }))
   };
+
+  console.log("Sending the following data to API:", requestData);
+
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/add`;
+
+  try {
+    // Make the API request
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,  
+      },
+      body: JSON.stringify(requestData), 
+    });
+
+    if (response.ok) {
+      console.log('Form submitted successfully', {
+        selectedProducts,
+        purpose,
+        referenceStaffId,
+        returnDays,
+        acknowledged
+      });
+
+      setSubmitSuccess(true);
+
+      setTimeout(() => {
+        console.log('Redirecting to home page...');
+        setSubmitSuccess(false);
+
+        // localStorage.removeItem('selectedProducts');
+        // router.push('/'); 
+      }, 1500);
+    } else {
+      const errorData = await response.json();
+      console.error('Error submitting form:', errorData);
+
+    }
+  } catch (error) {
+    console.error('Error during API request:', error);
+  }
+};
   
 
   const handleCancelSubmit = () => {
