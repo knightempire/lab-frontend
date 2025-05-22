@@ -44,10 +44,7 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
         className="flex items-center justify-between w-80 px-1.5 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 min-h-10"
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {selectedValues.length === 0 && (
-            <span className="whitespace-nowrap">Select Products</span>
-          )}
-          
+         
           {selectedValues.length > 0 ? (
             <div className="flex gap-1 overflow-x-auto flex-1 min-w-0" 
                  style={{
