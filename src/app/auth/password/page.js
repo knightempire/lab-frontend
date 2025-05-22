@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -103,13 +102,11 @@ const verifyToken = async () => {
   }
 };
 
-
-
     verifyToken();
   }, [searchParams, router]);
 
   const isPasswordValid = (pwd) => {
-    const pattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+])[A-Za-z\d!@#$%^&*()_\-+]{8,}$/;
     return pattern.test(pwd);
   };
 

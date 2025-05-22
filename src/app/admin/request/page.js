@@ -1,6 +1,5 @@
 'use client';
 
-// app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
 import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
 import Table from '../../../components/table';
@@ -147,11 +146,9 @@ export default function RequestsPage() {
   };
 
   const handleViewRequest = (request) => {
-    // Using requestId instead of id for the route parameter
-    router.push(`/admin/review?requestId=${encodeURIComponent(request.requestId)}`);
-    
-    // For debugging - log what we're trying to navigate to
-    console.log(`Navigating to: /admin/review?requestId=${encodeURIComponent(request.requestId)}`);
+    const params = new URLSearchParams();
+    params.append('requestId', request.requestId);
+    router.push(`/admin/review?${params.toString()}`);
   };
 
   const filteredRequests = getFilteredResults();
