@@ -67,7 +67,6 @@ const requests = [
       userExtensionMessage: "Need more time for final testing.",
       adminExtensionMessage: "",
       extensionDays: 4,
-      adminIssueComponents: [],
     }
   },
   {
@@ -126,10 +125,7 @@ const requests = [
       userExtensionMessage: "Workshop extended, need 2 more days.",
       adminExtensionMessage: "Extension granted.",
       extensionDays: 2,
-      adminIssueComponents: [
-        { name: "ESP32 Module", quantity: 2 },
-        { name: "Sensor Kit", quantity: 1 }
-      ],
+      adminApprovedDays : 1
     }
   },
   {
@@ -182,9 +178,214 @@ const requests = [
       status: "rejected",
       userExtensionMessage: "Project delayed, need 2 more days.",
       adminExtensionMessage: "Cannot extend due to upcoming lab maintenance.",
-      extensionDays: 2,
-      adminIssueComponents: []
+      extensionDays: 2
     }
+  },
+    // Pending request, no extension
+  {
+    requestId: "REQ-2025-0515",
+    name: "Vikram Patel",
+    rollNo: "CS22B001",
+    phoneNo: "9876543255",
+    email: "vikram.patel@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-20T09:00:00",
+    requestedDays: 4,
+    adminApprovedDays: null,
+    status: "pending",
+    referenceStaff: {
+      name: 'Dr. Leena Shah',
+      email: 'leena.shah@university.edu'
+    },
+    userMessage: "Need for AI project.",
+    adminMessage: "",
+    components: [
+      { name: "Jetson Nano", quantity: 1 }
+    ],
+    adminIssueComponents: [],
+    returnedComponents: []
+  },
+
+  // Accepted, not extended yet (extension button should show)
+  {
+    requestId: "REQ-2025-0516",
+    name: "Meera Nair",
+    rollNo: "EE21B045",
+    phoneNo: "9876543266",
+    email: "meera.nair@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-18T10:30:00",
+    requestedDays: 3,
+    adminApprovedDays: 3,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. S. Krishnan',
+      email: 'krishnan@university.edu'
+    },
+    userMessage: "For circuit design lab.",
+    adminMessage: "Approved.",
+    components: [
+      { name: "Oscilloscope", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "Oscilloscope", quantity: 1 }
+    ],
+    returnedComponents: [],
+    // No reIssueRequest yet
+  },
+
+  // Accepted, extension pending
+  {
+    requestId: "REQ-2025-0517",
+    name: "Arjun Rao",
+    rollNo: "ME21B099",
+    phoneNo: "9876543277",
+    email: "arjun.rao@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-15T11:00:00",
+    requestedDays: 2,
+    adminApprovedDays: 2,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. P. Suresh',
+      email: 'psuresh@university.edu'
+    },
+    userMessage: "For mechanical prototype.",
+    adminMessage: "Approved.",
+    components: [
+      { name: "3D Printer", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "3D Printer", quantity: 1 }
+    ],
+    returnedComponents: [],
+    reIssueRequest: {
+      status: "pending",
+      userExtensionMessage: "Need 1 more day for print completion.",
+      adminExtensionMessage: "",
+      extensionDays: 1
+    }
+  },
+
+  // Accepted, extension accepted
+  {
+    requestId: "REQ-2025-0518",
+    name: "Fatima Khan",
+    rollNo: "CE20B021",
+    phoneNo: "9876543288",
+    email: "fatima.khan@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-10T14:00:00",
+    requestedDays: 5,
+    adminApprovedDays: 5,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. R. Menon',
+      email: 'rmenon@university.edu'
+    },
+    userMessage: "For concrete testing.",
+    adminMessage: "Approved.",
+    components: [
+      { name: "Compression Machine", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "Compression Machine", quantity: 1 }
+    ],
+    returnedComponents: [],
+    reIssueRequest: {
+      status: "accepted",
+      userExtensionMessage: "Need 2 more days for final test.",
+      adminExtensionMessage: "Extension granted.",
+      extensionDays: 2,
+      adminApprovedDays : 1
+    }
+  },
+
+  // Accepted, extension rejected
+  {
+    requestId: "REQ-2025-0519",
+    name: "Rohit Sharma",
+    rollNo: "CS20B077",
+    phoneNo: "9876543299",
+    email: "rohit.sharma@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-05T13:00:00",
+    requestedDays: 2,
+    adminApprovedDays: 2,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. A. Iyer',
+      email: 'aiyer@university.edu'
+    },
+    userMessage: "For coding contest.",
+    adminMessage: "Approved.",
+    components: [
+      { name: "Laptop", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "Laptop", quantity: 1 }
+    ],
+    returnedComponents: [],
+    reIssueRequest: {
+      status: "rejected",
+      userExtensionMessage: "Contest extended, need 1 more day.",
+      adminExtensionMessage: "Extension denied due to high demand.",
+      extensionDays: 1
+    }
+  },
+
+  // Rejected request
+  {
+    requestId: "REQ-2025-0520",
+    name: "Sneha Das",
+    rollNo: "EE22B011",
+    phoneNo: "9876543300",
+    email: "sneha.das@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-05-02T15:00:00",
+    requestedDays: 3,
+    adminApprovedDays: null,
+    status: "rejected",
+    referenceStaff: {
+      name: 'Dr. V. Rao',
+      email: 'vrao@university.edu'
+    },
+    userMessage: "For electronics mini project.",
+    adminMessage: "Rejected due to insufficient stock.",
+    components: [
+      { name: "Multimeter", quantity: 2 }
+    ],
+    adminIssueComponents: [],
+    returnedComponents: []
+  },
+
+  // Accepted, all components returned (no extension possible)
+  {
+    requestId: "REQ-2025-0521",
+    name: "Kiran Joshi",
+    rollNo: "ME22B055",
+    phoneNo: "9876543311",
+    email: "kiran.joshi@university.edu",
+    isFaculty: false,
+    requestedDate: "2025-04-28T10:00:00",
+    requestedDays: 2,
+    adminApprovedDays: 2,
+    status: "accepted",
+    referenceStaff: {
+      name: 'Dr. S. Nair',
+      email: 'snair@university.edu'
+    },
+    userMessage: "For lab experiment.",
+    adminMessage: "Approved.",
+    components: [
+      { name: "Vernier Caliper", quantity: 1 }
+    ],
+    adminIssueComponents: [
+      { name: "Vernier Caliper", quantity: 1 }
+    ],
+    returnedComponents: [
+      { name: "Vernier Caliper", quantity: 1 }
+    ]
   }
 ];
 
@@ -268,7 +469,10 @@ function UserReviewContent() {
     return diff > 0 ? `${diff} Days` : "Expired";
   }
 
-  function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage }) {
+  function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage ,   adminIssueComponents, returnedComponents }) {
+    const notReturned = adminIssueComponents.filter(adminItem =>
+      !returnedComponents.some(retItem => retItem.name === adminItem.name)
+    );
     return (
       <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
         <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
@@ -312,23 +516,25 @@ function UserReviewContent() {
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="font-semibold text-green-700">Re-Issued Components</span>
-              <span className="ml-auto flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm">
-                <CalendarDays className="w-4 h-4" />
-                {reIssue.extensionDays || "N/A"} Days
-              </span>
+                {reIssue.status === 'accepted' && (
+                <span className="ml-auto flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm">
+                  <CalendarDays className="w-4 h-4" />
+                  {reIssue.adminApprovedDays || reIssue.extensionDays} Days
+                </span>
+              )}
             </div>
-            {reIssue.adminIssueComponents && reIssue.adminIssueComponents.length > 0 ? (
+            {notReturned.length > 0 ? (
               <>
                 <Table
                   columns={columns}
-                  rows={getPageRows(reIssue.adminIssueComponents, userPage)}
+                  rows={getPageRows(notReturned, userPage)}
                   currentPage={userPage}
                   itemsPerPage={itemsPerPage}
                 />
-                {reIssue.adminIssueComponents.length > itemsPerPage && (
+                {notReturned.length > itemsPerPage && (
                   <Pagination
                     currentPage={userPage}
-                    totalPages={Math.ceil(reIssue.adminIssueComponents.length / itemsPerPage)}
+                    totalPages={Math.ceil(notReturned.length / itemsPerPage)}
                     setCurrentPage={setUserPage}
                   />
                 )}
@@ -617,7 +823,11 @@ function UserReviewContent() {
 
                 {/* Re-Issue Details: show in addition if extended */}
                   {requestData.status === 'accepted' && requestData.reIssueRequest && requestData.adminIssueComponents &&
-                    requestData.adminIssueComponents.length > requestData.returnedComponents.length &&(
+                    requestData.adminIssueComponents.length > requestData.returnedComponents.length && requestData.reIssueRequest &&
+                  (
+                    requestData.reIssueRequest.userExtensionMessage?.trim() ||
+                    requestData.reIssueRequest.extensionDays
+                  ) ? (
                     <ReIssueDetails
                       reIssue={requestData.reIssueRequest}
                       columns={columns}
@@ -625,13 +835,24 @@ function UserReviewContent() {
                       userPage={userPage}
                       setUserPage={setUserPage}
                       itemsPerPage={itemsPerPage}
+                      adminIssueComponents={requestData.adminIssueComponents}
+                      returnedComponents={requestData.returnedComponents}
                     />
-                  )}
+                  ) : null 
+                }
                 </div>
 
                 {/* Extension Request Button */}
                 {requestData.adminIssueComponents &&
-                requestData.adminIssueComponents.length > requestData.returnedComponents.length && (
+                  requestData.adminIssueComponents.length > requestData.returnedComponents.length &&
+                  (
+                    !requestData.reIssueRequest ||
+                    (
+                      requestData.reIssueRequest.status === 'pending' &&
+                      !requestData.reIssueRequest.userExtensionMessage &&
+                      !requestData.reIssueRequest.extensionDays
+                    )
+                  ) && (
                   <div className="md:col-span-2 mt-8">
                     <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                       <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
@@ -647,6 +868,16 @@ function UserReviewContent() {
                         <form
                           onSubmit={e => {
                             e.preventDefault();
+                            setRequestData(prev => ({
+                              ...prev,
+                              reIssueRequest: {
+                                status: "pending",
+                                userExtensionMessage: extensionMessage,
+                                adminExtensionMessage: "",
+                                extensionDays: extensionDays,
+                                adminIssueComponents: []
+                              }
+                            }));
                             setExtensionSent(true);
                           }}
                           className="space-y-4"
