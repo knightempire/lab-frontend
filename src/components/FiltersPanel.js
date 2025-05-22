@@ -56,13 +56,20 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
                   className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs whitespace-nowrap flex-shrink-0"
                 >
                   <span>{product}</span>
-                  <button 
-                    type="button"
+                  <span 
                     onClick={(e) => removeProduct(product, e)}
-                    className="text-blue-700 hover:text-blue-900"
+                    className="text-blue-700 hover:text-blue-900 cursor-pointer flex items-center"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        removeProduct(product, e);
+                      }
+                    }}
                   >
                     <X size={12} />
-                  </button>
+                  </span>
                 </div>
               ))}
             </div>
