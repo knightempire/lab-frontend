@@ -82,6 +82,7 @@ useEffect(() => {
   // Helper function to save current selections to localStorage
   const saveSelectionsToLocalStorage = (updatedProducts) => {
     const selected = updatedProducts.filter(p => p.selected).map(p => ({ 
+      id: p.id,
       name: p.name, 
       inStock: p.inStock, 
       selectedQuantity: p.selectedQuantity 
