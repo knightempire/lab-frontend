@@ -30,23 +30,55 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
     onChange(newSelectedValues);
   };
 
+  const removeProduct = (product, event) => {
+    event.stopPropagation(); // Prevent dropdown from toggling
+    const newSelectedValues = selectedValues.filter(item => item !== product);
+    onChange(newSelectedValues);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-48 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
+        className="flex items-center justify-between w-80 px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 min-h-10"
       >
-        <span>{label} {selectedValues.length > 0 && `(${selectedValues.length})`}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {selectedValues.length === 0 && (
+            <span className="whitespace-nowrap">{label}</span>
+          )}
+          
+          {selectedValues.length > 0 ? (
+            <div className="flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 flex-1 min-w-0">
+              {selectedValues.map(product => (
+                <div 
+                  key={product}
+                  className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs whitespace-nowrap flex-shrink-0"
+                >
+                  <span>{product}</span>
+                  <button 
+                    type="button"
+                    onClick={(e) => removeProduct(product, e)}
+                    className="text-blue-700 hover:text-blue-900"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-500 text-sm">Select products...</span>
+          )}
+        </div>
+        
         <ChevronUp
           size={14}
-          className={`${isOpen ? 'rotate-0' : 'rotate-180'} transition-transform`}
+          className={`${isOpen ? 'rotate-0' : 'rotate-180'} transition-transform flex-shrink-0 ml-2`}
         />
       </button>
 
-      
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg">
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
           <div className="p-2 max-h-60 overflow-auto">
             {options.map((option) => (
               <label key={option} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
@@ -81,12 +113,6 @@ const FiltersPanel = ({
   const handleProductChange = (newSelectedProducts) => {
     if (onProductsChange) {
       onProductsChange(newSelectedProducts);
-    }
-  };
-
-  const removeProduct = (product) => {
-    if (onProductsChange) {
-      onProductsChange(selectedProducts.filter(p => p !== product));
     }
   };
 
@@ -129,7 +155,7 @@ const FiltersPanel = ({
           {/* Product Filter with Checkboxes */}
           {products && products.length > 0 && (
             <CheckboxDropdown
-              label="Products"
+              label=""
               options={products}
               selectedValues={selectedProducts || []}
               onChange={handleProductChange}
@@ -143,27 +169,6 @@ const FiltersPanel = ({
           >
             Reset
           </button>
-        </div>
-      )}
-
-      {/* Selected Products Tags */}
-      {selectedProducts && selectedProducts.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3 ml-2">
-          {selectedProducts.map(product => (
-            <div 
-              key={product}
-              className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-sm"
-            >
-              <span>{product}</span>
-              <button 
-                type="button"
-                onClick={() => removeProduct(product)}
-                className="text-blue-700 hover:text-blue-900"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
         </div>
       )}
 
