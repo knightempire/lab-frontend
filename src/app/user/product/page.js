@@ -24,6 +24,13 @@ useEffect(() => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('No token found in localStorage');
+        router.push('/auth/login');
+        return;
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
         headers: {
           'Authorization': `Bearer ${token}`,
