@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
-import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat } from 'lucide-react';
+import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat, XCircle, RefreshCcw } from 'lucide-react';
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 
@@ -18,7 +18,7 @@ const requests = [
     requestedDate: "2025-05-10",
     acceptedDate: "2025-05-11",
     requestedDays: 5,
-    status: "pending",
+    status: "closed",
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
       email: 'sarah.johnson@university.edu'
@@ -34,7 +34,7 @@ const requests = [
       { id: 6, name: 'Widget G', quantity: 2 },
       { id: 7, name: 'Widget H', quantity: 10 }
     ],
-    isreissued: true
+    isreissued: false
   },
   {
     id: "REQ-2025-0514",
@@ -46,7 +46,7 @@ const requests = [
     requestedDate: "2025-05-05",
     acceptedDate: "2025-05-06",
     requestedDays: 3,
-    status: "pending",
+    status: "accepted",
     referenceStaff: {
       name: 'Prof. Michael Johnson',
       email: 'michael.johnson@university.edu'
@@ -57,7 +57,7 @@ const requests = [
       { id: 1, name: 'Widget C', quantity: 1 },
       { id: 2, name: 'Widget Z', quantity: 2 }
     ],
-    isreissued: false
+    isreissued: true
   },
   {
     id: "REQ-2025-0515",
@@ -69,7 +69,28 @@ const requests = [
     requestedDate: "2025-05-06",
     acceptedDate: "2025-05-07",
     requestedDays: 7,
-    status: "accepted",
+    status: "rejected",
+    referenceStaff: {
+      name: 'Dr. Lisa Chen',
+      email: 'lisa.chen@university.edu'
+    },
+    description: "For AI project, For data analysis",
+    components: [
+      { id: 1, name: 'Widget D', quantity: 5 }
+    ],
+    isreissued: false
+  },
+  {
+    id: "REQ-2025-0516",
+    name: "James Cameron",
+    rollNo: "12345",
+    phoneNo: "9123456789",
+    email: "rahul@example.com",
+    isFaculty: false,
+    requestedDate: "2025-09-06",
+    acceptedDate: "2025-05-07",
+    requestedDays: 7,
+    status: "returned",
     referenceStaff: {
       name: 'Dr. Lisa Chen',
       email: 'lisa.chen@university.edu'
@@ -79,12 +100,12 @@ const requests = [
       { id: 1, name: 'Widget D', quantity: 5 }
     ],
     isreissued: true
-  }
+  },
 ];
 
 const reissue = [
   { 
-    requestId: "REQ-2025-0513", 
+    requestId: "REQ-2025-0514", 
     acceptedDate: "2023-10-06", 
     requestdate: "2023-10-05", 
     requestdays: 5, 
@@ -100,7 +121,7 @@ const reissue = [
     isreissued: true
   },
   {
-    requestId: "REQ-2025-0515",
+    requestId: "REQ-2025-0516",
     acceptedDate: "2025-05-12",
     requestdate: "2025-05-11",
     requestdays: 3,
@@ -731,6 +752,42 @@ const handleReturnSubmit = (componentIndex) => {
 
     return acc;
   }, []);
+  const issueStatus = requestData.status;
+
+let statusIcon, statusText, bgColor, textColor;
+
+switch (issueStatus) {
+  case 'accepted':
+    statusIcon = <CheckCircle size={16} className="text-green-700" />;
+    bgColor = 'bg-green-100';
+    textColor = 'text-green-700';
+    statusText = 'Accepted';
+    break;
+  case 'returned':
+    statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
+    bgColor = 'bg-blue-100';
+    textColor = 'text-blue-700';
+    statusText = 'Returned';
+    break;
+  case 'rejected':
+    statusIcon = <XCircle size={16} className="text-red-700" />;
+    bgColor = 'bg-red-100';
+    textColor = 'text-red-700';
+    statusText = 'Rejected';
+    break;
+  case 'closed':
+    statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
+    bgColor = 'bg-amber-100';
+    textColor = 'text-amber-700';
+    statusText = 'Closed';
+    break;
+  default:
+    statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
+    bgColor = 'bg-gray-100';
+    textColor = 'text-gray-700';
+    statusText = 'Unknown';
+}
+
 
 
   return (
@@ -746,7 +803,13 @@ const handleReturnSubmit = (componentIndex) => {
                 <ArrowLeft size={20} className="text-gray-700" />
               </button>
               <FileText className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-800">Issued Details</h1>
+              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                Issued Details
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${bgColor} ${textColor}`}>
+                  {statusIcon}
+                  <span className="text-sm font-medium">{statusText}</span>
+                </span>
+              </h1>
             </div>
           </div>
 
@@ -905,7 +968,7 @@ const handleReturnSubmit = (componentIndex) => {
           {/* Components Tables Section */}
           <div className="p-6">
             <div className={`grid ${isLargeScreen ? 'grid-cols-2 gap-6' : 'grid-cols-1 gap-8'} mb-8`}>
-              {/* Requested Components Table */}
+              {/* Requested Components Table - Always shown */}
               <div className="bg-white shadow rounded-lg">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex justify-between items-center mb-4">
@@ -947,51 +1010,86 @@ const handleReturnSubmit = (componentIndex) => {
                 </div>
               </div>
               
-              {/* Admin Issue Components Table */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
-                      <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      Admin Issued Components
-                    </h2>
-                    <div className="mb-2">
-                    <div className="flex gap-4">
-                      <div className="flex items-center">
-                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                        <h4 className="font-medium text-gray-700">Issued Days</h4>
+              {/* Admin Issue Components Table - Show for accepted, returned, and closed status */}
+              {(requestData.status === 'accepted' || requestData.status === 'returned' || requestData.status === 'closed') && (
+                <div className="bg-white shadow rounded-lg">
+                  <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Admin Issued Components
+                      </h2>
+                      <div className="mb-2">
+                      <div className="flex gap-4">
+                        <div className="flex items-center">
+                          <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                          <h4 className="font-medium text-gray-700">Issued Days</h4>
+                        </div>
+                        <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>{requestData.requestedDays || "N/A"} Days</span>
+                        </div>
                       </div>
-                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                        <Clock className="w-4 h-4 mr-1" />
-                        <span>{requestData.requestedDays || "N/A"} Days</span>
-                      </div>
-                    </div>
-                </div>
                   </div>
-                  <Table 
-                    columns={adminComponentsColumns} 
-                    rows={requestedComponentsRows.slice(
-                      (adminPage - 1) * itemsPerPage,
-                      adminPage * itemsPerPage
-                    )}  
-                    currentPage={adminPage} 
-                    itemsPerPage={itemsPerPage}
-                  />
-                  {adminComponentsRows.length > 0 && (
-                    <Pagination 
-                      currentPage={adminPage}
-                      totalPages={Math.ceil(adminComponentsRows.length / itemsPerPage)}
-                      setCurrentPage={setAdminPage}
+                    </div>
+                    <Table 
+                      columns={adminComponentsColumns} 
+                      rows={requestedComponentsRows.slice(
+                        (adminPage - 1) * itemsPerPage,
+                        adminPage * itemsPerPage
+                      )}  
+                      currentPage={adminPage} 
+                      itemsPerPage={itemsPerPage}
                     />
+                    {adminComponentsRows.length > 0 && (
+                      <Pagination 
+                        currentPage={adminPage}
+                        totalPages={Math.ceil(requestedComponentsRows.length / itemsPerPage)}
+                        setCurrentPage={setAdminPage}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Status Messages for Rejected and Closed */}
+            {(requestData.status === 'rejected' || requestData.status === 'closed') && (
+              <div className={`mb-8 p-6 rounded-lg border ${
+                requestData.status === 'rejected' 
+                  ? 'bg-red-50 border-red-200' 
+                  : 'bg-amber-50 border-amber-500'
+              }`}>
+                <div className="flex items-center">
+                  {requestData.status === 'rejected' ? (
+                    <>
+                      <svg className="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                      <div>
+                        <h3 className="text-lg font-semibold text-red-800">Request Rejected</h3>
+                        <p className="text-red-700 mt-1">This component request has been rejected by the Lab Incharge.</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                      </svg>
+                      <div>
+                        <h3 className="text-lg font-semibold text-amber-800">Request Closed</h3>
+                        <p className="text-amber-700 mt-1">This component request has been closed and is no longer active.</p>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
-            </div>
+            )}
             
-            {/* Re-requested Components Tables Section */}
-            {requestData.isreissued && (
+            {/* Re-requested Components Tables Section - Only show for accepted and returned */}
+            {(requestData.status === 'accepted' || requestData.status === 'returned') && requestData.isreissued && (
               <div className="col-span-1 md:col-span-2 bg-white shadow rounded-lg px-3 my-6">
                 <div className="p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-700 flex items-center">
@@ -1098,63 +1196,67 @@ const handleReturnSubmit = (componentIndex) => {
               </div>
             )}
           
-            {/* Return Tracking Table */}
-            <div className="bg-white shadow rounded-lg mb-8">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                  <RefreshCw className="w-5 h-5 mr-2 text-amber-600" />
-                  Component Return Tracking
-                </h2>
-                {returnTrackingComponents.length > 0 ? (
-                  <Table 
-                    columns={returnTrackingColumns} 
-                    rows={returnTrackingRows} 
-                    currentPage={returnTrackingPage} 
-                    itemsPerPage={itemsPerPage}
-                    setCurrentPage={setReturnTrackingPage}
-                  />
-
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    All components have been returned
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Return History Table */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                  Return History
-                </h2>
-                {returnHistory.length > 0 ? (
-                  <>
+            {/* Return Tracking Table - Only show for accepted and returned */}
+            {(requestData.status === 'accepted' || requestData.status === 'returned') && (
+              <div className="bg-white shadow rounded-lg mb-8">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                    <RefreshCw className="w-5 h-5 mr-2 text-amber-600" />
+                    Component Return Tracking
+                  </h2>
+                  {returnTrackingComponents.length > 0 ? (
                     <Table 
-                      columns={returnHistoryColumns} 
-                      rows={returnHistoryRows.slice(
-                        (returnHistoryPage - 1) * itemsPerPage,
-                        returnHistoryPage * itemsPerPage
-                      )}
-                      currentPage={returnHistoryPage} 
+                      columns={returnTrackingColumns} 
+                      rows={returnTrackingRows} 
+                      currentPage={returnTrackingPage} 
                       itemsPerPage={itemsPerPage}
+                      setCurrentPage={setReturnTrackingPage}
                     />
-                    {returnHistoryRows.length > 0 && (
-                      <Pagination 
-                        currentPage={returnHistoryPage}
-                        totalPages={Math.ceil(returnHistoryRows.length / itemsPerPage)}
-                        setCurrentPage={setReturnHistoryPage}
-                      />
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    No return history available yet
-                  </div>
-                )}
+
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      All components have been returned
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Return History Table - Only show for accepted and returned */}
+            {(requestData.status === 'accepted' || requestData.status === 'returned') && (
+              <div className="bg-white shadow rounded-lg">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                    Return History
+                  </h2>
+                  {returnHistory.length > 0 ? (
+                    <>
+                      <Table 
+                        columns={returnHistoryColumns} 
+                        rows={returnHistoryRows.slice(
+                          (returnHistoryPage - 1) * itemsPerPage,
+                          returnHistoryPage * itemsPerPage
+                        )}
+                        currentPage={returnHistoryPage} 
+                        itemsPerPage={itemsPerPage}
+                      />
+                      {returnHistoryRows.length > 0 && (
+                        <Pagination 
+                          currentPage={returnHistoryPage}
+                          totalPages={Math.ceil(returnHistoryRows.length / itemsPerPage)}
+                          setCurrentPage={setReturnHistoryPage}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      No return history available yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

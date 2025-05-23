@@ -2,7 +2,7 @@
 
 // app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -20,7 +20,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-10",
     requestedDays: 5,
-    status: "pending",
+    status: "closed",
     isExtended: false,
     referenceStaff: {
       name: 'Dr. Sarah Johnson',
@@ -43,7 +43,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-05",
     requestedDays: 3,
-    status: "pending",
+    status: "accepted",
     isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
@@ -65,7 +65,28 @@ const requests = [
     isFaculty: true,
     requestedDate: "2025-05-06",
     requestedDays: 7,
-    status: "accepted",
+    status: "rejected",
+    isExtended: false,
+    referenceStaff: {
+      name: 'Dr. Lisa Chen',
+      email: 'lisa.chen@university.edu'
+    },
+    description: "For robotics project",
+    components: [
+      { id: 1, name: 'Motors', quantity: 5 }
+    ]
+  },
+  {
+    id: 4, // Added id property
+    requestId: "REQ-2025-0516",
+    name: "James Cameron",
+    rollNo: "2026969",
+    phoneNo: "9123456789",
+    email: "jamie@example.com",
+    isFaculty: true,
+    requestedDate: "2025-07-06",
+    requestedDays: 7,
+    status: "returned",
     isExtended: false,
     referenceStaff: {
       name: 'Dr. Lisa Chen',
@@ -164,7 +185,7 @@ export default function RequestsPage() {
 
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Returned', 'Rejected',"Closed"], value: filters.status },
   ];
 
   const columns = [
@@ -187,17 +208,23 @@ export default function RequestsPage() {
         textColor = 'text-green-700';
         statusText = 'Accepted';
         break;
-      case 'pending':
-        statusIcon = <Clock size={16} className="text-yellow-700" />;
-        bgColor = 'bg-yellow-100';
-        textColor = 'text-yellow-700';
-        statusText = 'Pending';
+      case 'returned':
+        statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
+        bgColor = 'bg-blue-100';
+        textColor = 'text-blue-700';
+        statusText = 'Returned';
         break;
       case 'rejected':
         statusIcon = <XCircle size={16} className="text-red-700" />;
         bgColor = 'bg-red-100';
         textColor = 'text-red-700';
         statusText = 'Rejected';
+        break;
+      case 'closed':
+        statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
+        bgColor = 'bg-amber-100';
+        textColor = 'text-amber-700';
+        statusText = 'Closed';
         break;
     }
     return {
