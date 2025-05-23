@@ -10,7 +10,7 @@ import { Suspense } from 'react';
 
 const requests = [
   {
-    requestId: "REQ-2025-0513",
+    requestId: "REQ-S-250001",
     name: "John Doe",
     rollNo: "CS21B054",
     phoneNo: "9876543210",
@@ -36,7 +36,7 @@ const requests = [
     // No reIssueRequest yet
   },
   {
-    requestId: "REQ-2025-0512",
+    requestId: "REQ-S-250002",
     name: "Jane Smith",
     rollNo: "CS21B055",
     phoneNo: "9876543211",
@@ -70,7 +70,7 @@ const requests = [
     }
   },
   {
-    requestId: "REQ-2025-0511",
+    requestId: "REQ-S-250003",
     name: "Alice Kumar",
     rollNo: "2023123",
     phoneNo: "9876543210",

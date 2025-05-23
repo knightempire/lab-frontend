@@ -38,7 +38,12 @@ useEffect(() => {
         },
       });
 
-      if (!res.ok) throw new Error('Failed to fetch products');
+      if (!res.ok){
+        console.error('Failed to fetch products:', res.statusText);
+        localStorage.removeItem('token');
+        router.push('/auth/login');
+        return;
+      } 
 
       const data = await res.json();
       const fetchedProducts = data.products.map(p => ({
