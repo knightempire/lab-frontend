@@ -402,19 +402,82 @@ function UserReviewContent() {
   const [extensionMessage, setExtensionMessage] = useState('');
   const [extensionSent, setExtensionSent] = useState(false);
 
+
+
+
   useEffect(() => {
     const requestId = searchParams.get('requestId');
-    const req = requests.find(r => r.requestId === requestId);
-    if (!req) {
-      router.push('/user/request');
+    console.log('requestId:', requestId);
+
+    const fetchRequestData = async () => {
+      try {
+        const token = localStorage.getItem('token'); // Get token from local storage
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const apiResponse = await response.json();
+        const data = apiResponse.request; // Access the request object from the response
+        // Map the API response to the expected structure
+        const mappedData = {
+          requestId: data.requestId,
+          name: data.userId.name,
+          rollNo: data.userId.rollNo,
+          phoneNo: data.userId.phoneNo, // Assuming you have this in your API response
+          email: data.userId.email,
+          isFaculty: false, // Set this based on your logic
+          requestedDate: data.requestDate,
+          requestedDays: data.requestedDays,
+          adminApprovedDays: data.adminApprovedDays,
+          status: data.requestStatus, // Use the correct status field
+          referenceStaff: {
+            name: data.referenceId.name,
+            email: data.referenceId.email,
+          },
+          userMessage: data.description,
+          adminMessage: data.adminReturnMessage || "",
+          components: data.requestedProducts.map(product => ({
+            name: product.p, 
+            quantity: product.quantity,
+          })),
+          adminIssueComponents: data.issued.map(issued => ({
+            name: issued.issuedProductId, 
+            quantity: issued.issuedQuantity,
+            replacedQuantity: 0, 
+          })),
+          returnedComponents: [], 
+          reIssueRequest: null, 
+        };
+
+        setRequestData(mappedData);
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+        // router.push('/user/request'); // Redirect if there's an error
+      }
+    };
+
+    if (requestId) {
+      fetchRequestData();
     } else {
-      setRequestData(req);
+      // router.push('/user/request');
     }
   }, [searchParams, router]);
 
   if (!requestData) {
     return <LoadingScreen />;
   }
+
+
+
+
 
   function StatusBadge({ status }) {
     const statusConfig = {
