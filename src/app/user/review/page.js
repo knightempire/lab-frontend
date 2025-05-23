@@ -8,386 +8,6 @@ import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
 import { Suspense } from 'react';
 
-const requests = [
-  {
-    requestId: "REQ-S-250001",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10T09:30:00",
-    requestedDays: 5,
-    adminApprovedDays: 3,
-    status: "pending",
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    userMessage: "I need these for my IoT project, to display indicators.",
-    adminMessage: "",
-    components: [
-      { name: "Arduino Kit", quantity: 1 },
-      { name: "Breadboard", quantity: 2 },
-      { name: "LED Pack", quantity: 10 }
-    ],
-    adminIssueComponents: [],
-    returnedComponents: [],
-    // No reIssueRequest yet
-  },
-  {
-    requestId: "REQ-S-250002",
-    name: "Jane Smith",
-    rollNo: "CS21B055",
-    phoneNo: "9876543211",
-    email: "jane.smith@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-09T14:15:00",
-    requestedDays: 3,
-    adminApprovedDays: 3,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. Alan Turing',
-      email: 'alan.turing@university.edu'
-    },
-    userMessage: "Required for ML project demo.",
-    adminMessage: "Approved. Please return the Raspberry Pi by the due date.",
-    components: [
-      { name: "Raspberry Pi", quantity: 1 },
-      { name: "HDMI Cable", quantity: 1 }
-    ],
-    adminIssueComponents: [   
-      { name: "Raspberry Pi", quantity: 1 , replacedQuantity: 1 },
-    ],
-    returnedComponents: [
-      { name: "Raspberry Pi", quantity: 1 }
-    ],
-    reIssueRequest: {
-      status: "pending", 
-      userExtensionMessage: "Need more time for final testing.",
-      adminExtensionMessage: "",
-      extensionDays: 4,
-    }
-  },
-  {
-    requestId: "REQ-S-250003",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05T11:00:00",
-    requestedDays: 3,
-    adminApprovedDays: 3,
-    status: "rejected",
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    userMessage: "For embedded project, for circuit prototyping.",
-    adminMessage: "Rejected due to insufficient stock of jumper wires.",
-    components: [
-      { name: "Jumper Wires", quantity: 5 },
-      { name: "Breadboard", quantity: 1 }
-    ],
-    adminIssueComponents: [],
-    returnedComponents: [],
-  },
-  {
-    requestId: "REQ-2025-0510",
-    name: "Priya Singh",
-    rollNo: "EE20B123",
-    phoneNo: "9876543222",
-    email: "priya.singh@university.edu",
-    isFaculty: true,
-    requestedDate: "2025-05-19T16:45:00",
-    requestedDays: 7,
-    adminApprovedDays: 3,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. Ramesh Gupta',
-      email: 'ramesh.gupta@university.edu'
-    },
-    userMessage: "For faculty workshop on IoT.",
-    adminMessage: "Issued as per faculty request.",
-    components: [
-      { name: "ESP32 Module", quantity: 2 },
-      { name: "Sensor Kit", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "ESP32 Module", quantity: 2 , replacedQuantity: 1},
-      { name: "Sensor Kit", quantity: 1 }
-    ],
-    returnedComponents: [],
-    // Example: re-issue was accepted
-    reIssueRequest: {
-      status: "accepted",
-      userExtensionMessage: "Workshop extended, need 2 more days.",
-      adminExtensionMessage: "Extension granted.",
-      extensionDays: 2,
-      adminApprovedDays : 1
-    }
-  },
-  {
-    requestId: "REQ-2025-0509",
-    name: "Rahul Verma",
-    rollNo: "ME19B007",
-    phoneNo: "9876543233",
-    email: "rahul.verma@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-04-20T10:00:00",
-    requestedDays: 2,
-    adminApprovedDays: 1,
-    status: "pending",
-    referenceStaff: {
-      name: 'Dr. Anita Desai',
-      email: 'anita.desai@university.edu'
-    },
-    userMessage: "Need for robotics club event.",
-    adminMessage: "",
-    components: [],
-    adminIssueComponents: [],
-    returnedComponents: []
-    // No reIssueRequest
-  },
-  {
-    requestId: "REQ-2025-0514",
-    name: "Suresh Raina",
-    rollNo: "ME20B101",
-    phoneNo: "9876543244",
-    email: "suresh.raina@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-01T10:00:00",
-    requestedDays: 2,
-    adminApprovedDays: 2,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. Kavita Rao',
-      email: 'kavita.rao@university.edu'
-    },
-    userMessage: "Need for mechanical project testing.",
-    adminMessage: "Approved for 2 days.",
-    components: [
-      { name: "Stepper Motor", quantity: 2 }
-    ],
-    adminIssueComponents: [
-      { name: "Stepper Motor", quantity: 2 }
-    ],
-    returnedComponents: [],
-    reIssueRequest: {
-      status: "rejected",
-      userExtensionMessage: "Project delayed, need 2 more days.",
-      adminExtensionMessage: "Cannot extend due to upcoming lab maintenance.",
-      extensionDays: 2
-    }
-  },
-    // Pending request, no extension
-  {
-    requestId: "REQ-2025-0515",
-    name: "Vikram Patel",
-    rollNo: "CS22B001",
-    phoneNo: "9876543255",
-    email: "vikram.patel@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-20T09:00:00",
-    requestedDays: 4,
-    adminApprovedDays: null,
-    status: "pending",
-    referenceStaff: {
-      name: 'Dr. Leena Shah',
-      email: 'leena.shah@university.edu'
-    },
-    userMessage: "Need for AI project.",
-    adminMessage: "",
-    components: [
-      { name: "Jetson Nano", quantity: 1 }
-    ],
-    adminIssueComponents: [],
-    returnedComponents: []
-  },
-
-  // Accepted, not extended yet (extension button should show)
-  {
-    requestId: "REQ-2025-0516",
-    name: "Meera Nair",
-    rollNo: "EE21B045",
-    phoneNo: "9876543266",
-    email: "meera.nair@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-18T10:30:00",
-    requestedDays: 3,
-    adminApprovedDays: 3,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. S. Krishnan',
-      email: 'krishnan@university.edu'
-    },
-    userMessage: "For circuit design lab.",
-    adminMessage: "Approved.",
-    components: [
-      { name: "Oscilloscope", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "Oscilloscope", quantity: 1 }
-    ],
-    returnedComponents: [],
-    // No reIssueRequest yet
-  },
-
-  // Accepted, extension pending
-  {
-    requestId: "REQ-2025-0517",
-    name: "Arjun Rao",
-    rollNo: "ME21B099",
-    phoneNo: "9876543277",
-    email: "arjun.rao@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-15T11:00:00",
-    requestedDays: 2,
-    adminApprovedDays: 2,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. P. Suresh',
-      email: 'psuresh@university.edu'
-    },
-    userMessage: "For mechanical prototype.",
-    adminMessage: "Approved.",
-    components: [
-      { name: "3D Printer", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "3D Printer", quantity: 1 }
-    ],
-    returnedComponents: [],
-    reIssueRequest: {
-      status: "pending",
-      userExtensionMessage: "Need 1 more day for print completion.",
-      adminExtensionMessage: "",
-      extensionDays: 1
-    }
-  },
-
-  // Accepted, extension accepted
-  {
-    requestId: "REQ-2025-0518",
-    name: "Fatima Khan",
-    rollNo: "CE20B021",
-    phoneNo: "9876543288",
-    email: "fatima.khan@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10T14:00:00",
-    requestedDays: 5,
-    adminApprovedDays: 5,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. R. Menon',
-      email: 'rmenon@university.edu'
-    },
-    userMessage: "For concrete testing.",
-    adminMessage: "Approved.",
-    components: [
-      { name: "Compression Machine", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "Compression Machine", quantity: 1 }
-    ],
-    returnedComponents: [],
-    reIssueRequest: {
-      status: "accepted",
-      userExtensionMessage: "Need 2 more days for final test.",
-      adminExtensionMessage: "Extension granted.",
-      extensionDays: 2,
-      adminApprovedDays : 1
-    }
-  },
-
-  // Accepted, extension rejected
-  {
-    requestId: "REQ-2025-0519",
-    name: "Rohit Sharma",
-    rollNo: "CS20B077",
-    phoneNo: "9876543299",
-    email: "rohit.sharma@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-05T13:00:00",
-    requestedDays: 2,
-    adminApprovedDays: 2,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. A. Iyer',
-      email: 'aiyer@university.edu'
-    },
-    userMessage: "For coding contest.",
-    adminMessage: "Approved.",
-    components: [
-      { name: "Laptop", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "Laptop", quantity: 1 }
-    ],
-    returnedComponents: [],
-    reIssueRequest: {
-      status: "rejected",
-      userExtensionMessage: "Contest extended, need 1 more day.",
-      adminExtensionMessage: "Extension denied due to high demand.",
-      extensionDays: 1
-    }
-  },
-
-  // Rejected request
-  {
-    requestId: "REQ-2025-0520",
-    name: "Sneha Das",
-    rollNo: "EE22B011",
-    phoneNo: "9876543300",
-    email: "sneha.das@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-02T15:00:00",
-    requestedDays: 3,
-    adminApprovedDays: null,
-    status: "rejected",
-    referenceStaff: {
-      name: 'Dr. V. Rao',
-      email: 'vrao@university.edu'
-    },
-    userMessage: "For electronics mini project.",
-    adminMessage: "Rejected due to insufficient stock.",
-    components: [
-      { name: "Multimeter", quantity: 2 }
-    ],
-    adminIssueComponents: [],
-    returnedComponents: []
-  },
-
-  // Accepted, all components returned (no extension possible)
-  {
-    requestId: "REQ-2025-0521",
-    name: "Kiran Joshi",
-    rollNo: "ME22B055",
-    phoneNo: "9876543311",
-    email: "kiran.joshi@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-04-28T10:00:00",
-    requestedDays: 2,
-    adminApprovedDays: 2,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Dr. S. Nair',
-      email: 'snair@university.edu'
-    },
-    userMessage: "For lab experiment.",
-    adminMessage: "Approved.",
-    components: [
-      { name: "Vernier Caliper", quantity: 1 }
-    ],
-    adminIssueComponents: [
-      { name: "Vernier Caliper", quantity: 1 }
-    ],
-    returnedComponents: [
-      { name: "Vernier Caliper", quantity: 1 }
-    ]
-  }
-];
 
 function UserReviewContent() {
   const router = useRouter();
@@ -411,7 +31,12 @@ function UserReviewContent() {
 
     const fetchRequestData = async () => {
       try {
-        const token = localStorage.getItem('token'); // Get token from local storage
+        const token = localStorage.getItem('token'); 
+        if (!token) {
+          console.error('No token found in localStorage');
+          router.push('/auth/login'); 
+          return;
+        } 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
           method: 'GET',
           headers: {
@@ -421,23 +46,24 @@ function UserReviewContent() {
         });
 
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          localStorage.remove('token'); 
+          router.push('/auth/login');
         }
 
         const apiResponse = await response.json();
-        const data = apiResponse.request; // Access the request object from the response
-        // Map the API response to the expected structure
+        const data = apiResponse.request; 
+
         const mappedData = {
           requestId: data.requestId,
           name: data.userId.name,
           rollNo: data.userId.rollNo,
-          phoneNo: data.userId.phoneNo, // Assuming you have this in your API response
+          phoneNo: data.userId.phoneNo, 
           email: data.userId.email,
-          isFaculty: false, // Set this based on your logic
+          isFaculty: false, 
           requestedDate: data.requestDate,
           requestedDays: data.requestedDays,
           adminApprovedDays: data.adminApprovedDays,
-          status: data.requestStatus, // Use the correct status field
+          status: data.requestStatus,
           referenceStaff: {
             name: data.referenceId.name,
             email: data.referenceId.email,
@@ -445,11 +71,11 @@ function UserReviewContent() {
           userMessage: data.description,
           adminMessage: data.adminReturnMessage || "",
           components: data.requestedProducts.map(product => ({
-            name: product.p, 
+            name: product.productId.product_name, 
             quantity: product.quantity,
           })),
           adminIssueComponents: data.issued.map(issued => ({
-            name: issued.issuedProductId, 
+            name: issued.issuedProductId.product_name, 
             quantity: issued.issuedQuantity,
             replacedQuantity: 0, 
           })),
@@ -460,14 +86,14 @@ function UserReviewContent() {
         setRequestData(mappedData);
       } catch (error) {
         console.error('Error fetching request data:', error);
-        // router.push('/user/request'); // Redirect if there's an error
+        router.push('/user/request');
       }
     };
 
     if (requestId) {
       fetchRequestData();
     } else {
-      // router.push('/user/request');
+      router.push('/user/request');
     }
   }, [searchParams, router]);
 

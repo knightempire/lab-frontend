@@ -101,29 +101,20 @@ export default function UserRequestsPage() {
   const rows = paginatedRequests.map((req) => {
     let icon, bg, text;
     switch (req.status) {
-   case 'accepted':
-        statusIcon = <CheckCircle size={16} className="text-green-700" />;
-        bgColor = 'bg-green-100';
-        textColor = 'text-green-700';
-        statusText = 'Accepted';
+      case 'Approved':
+        icon = <CheckCircle size={16} className="text-green-700" />;
+        bg = 'bg-green-100';
+        text = 'text-green-700';
         break;
-      case 'returned':
-        statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
-        bgColor = 'bg-blue-100';
-        textColor = 'text-blue-700';
-        statusText = 'Returned';
+      case 'Pending':
+        icon = <Clock size={16} className="text-yellow-700" />;
+        bg = 'bg-yellow-100';
+        text = 'text-yellow-700';
         break;
-      case 'rejected':
-        statusIcon = <XCircle size={16} className="text-red-700" />;
-        bgColor = 'bg-red-100';
-        textColor = 'text-red-700';
-        statusText = 'Rejected';
-        break;
-      case 'closed':
-        statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
-        bgColor = 'bg-amber-100';
-        textColor = 'text-amber-700';
-        statusText = 'Closed';
+      case 'Rejected':
+        icon = <XCircle size={16} className="text-red-700" />;
+        bg = 'bg-red-100';
+        text = 'text-red-700';
         break;
     }
 
