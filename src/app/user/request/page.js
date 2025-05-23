@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
+import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,RefreshCcw} from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
@@ -100,6 +100,7 @@ export default function UserRequestsPage() {
 
   const rows = paginatedRequests.map((req) => {
     let icon, bg, text;
+    
     switch (req.status) {
       case 'Approved':
         icon = <CheckCircle size={16} className="text-green-700" />;
@@ -115,6 +116,16 @@ export default function UserRequestsPage() {
         icon = <XCircle size={16} className="text-red-700" />;
         bg = 'bg-red-100';
         text = 'text-red-700';
+        break;
+      case 'returned':
+        icon = <RefreshCcw size={16} className="text-blue-700" />;
+        bg = 'bg-blue-100';
+        text = 'text-blue-700';
+        break;
+      case 'Closed':
+       icon = <AlertTriangle size={16} className="text-amber-700" />;
+        bg = 'bg-amber-100';
+        text = 'text-amber-700';
         break;
     }
 
