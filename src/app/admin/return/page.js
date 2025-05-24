@@ -6,7 +6,7 @@ import Pagination from '../../../components/pagination';
 import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat, XCircle, RefreshCcw } from 'lucide-react';
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
-
+import RequestTimeline from '../../../components/RequestTimeline';``
 const requests = [
   {
     id: "REQ-2025-0513",
@@ -819,7 +819,7 @@ switch (issueStatus) {
             <div className="bg-blue-50 p-6 border-b border-blue-100">
               <div className="flex flex-col md:flex-row justify-between">
                 <div>
-                  <div className="flex items-center gap-4 mb-4">  
+                  <div className="flex items-center gap-4">  
                     <h2 className="text-xl font-semibold text-blue-800">
                       Request #{requestData.id}
                     </h2>
@@ -831,25 +831,11 @@ switch (issueStatus) {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {/* Original request button */}
-                    <div 
-                      className={'px-3 text-center text-sm rounded-md font-medium '}
-                    >
-                      <div>Request Date: {formatDate(requestData.requestedDate)}</div>
-                      <div>Accepted Date: {formatDate(requestData.acceptedDate)}</div>
-                    </div>
-
-                    {requestData.isreissued && reissue.map((item, index) => (
-                      <div
-                        key={index}
-                        className="px-3 text-center text-sm rounded"
-                      >
-                        <div>Re-request Date: {formatDate(item.requestdate)}</div>
-                        <div>Accepted Date: {formatDate(item.acceptedDate)}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <RequestTimeline 
+                    requestData={requestData}
+                    reissue={reissue}
+                    formatDate={formatDate}
+                  />
                 </div>
                 
                 <div className="mt-4 md:mt-0 flex flex-col gap-4">
