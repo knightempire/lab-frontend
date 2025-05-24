@@ -17,6 +17,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-10",
     acceptedDate: "2025-05-11",
+    issueDate: "2025-05-12",
     requestedDays: 5,
     status: "closed",
     referenceStaff: {
@@ -45,6 +46,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-05",
     acceptedDate: "2025-05-06",
+    issueDate: "2025-05-07",
     requestedDays: 3,
     status: "accepted",
     referenceStaff: {
@@ -68,6 +70,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-06",
     acceptedDate: "2025-05-07",
+    issueDate: "2025-05-08",
     requestedDays: 7,
     status: "rejected",
     referenceStaff: {
@@ -89,6 +92,8 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-09-06",
     acceptedDate: "2025-05-07",
+    issueDate: "2025-05-08",
+    returnedDate : "2025-12-24",
     requestedDays: 7,
     status: "returned",
     referenceStaff: {
@@ -108,6 +113,7 @@ const reissue = [
     requestId: "REQ-2025-0514", 
     acceptedDate: "2023-10-06", 
     requestdate: "2023-10-05", 
+    issueDate: "2023-10-07",
     requestdays: 5, 
     issuedays: 5, 
     description: "Reissued description 1", 
@@ -121,9 +127,10 @@ const reissue = [
     isreissued: true
   },
   {
-    requestId: "REQ-2025-0516",
+    requestId: "REQ-2025-0514",
     acceptedDate: "2025-05-12",
     requestdate: "2025-05-11",
+    issueDate: "2025-05-13",
     requestdays: 3,
     issuedays: 3,
     description: "Additional components needed",
@@ -817,8 +824,9 @@ switch (issueStatus) {
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             {/* Request header */}
             <div className="bg-blue-50 p-6 border-b border-blue-100">
-              <div className="flex flex-col md:flex-row justify-between">
-                <div>
+              <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+                {/* Left Section */}
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-4">  
                     <h2 className="text-xl font-semibold text-blue-800">
                       Request #{requestData.id}
@@ -831,33 +839,36 @@ switch (issueStatus) {
                     )}
                   </div>
 
-                  <RequestTimeline 
-                    requestData={requestData}
-                    reissue={reissue}
-                    formatDate={formatDate}
-                  />
+                  <div className="w-full">
+                    <RequestTimeline 
+                      requestData={requestData}
+                      reissue={reissue}
+                      formatDate={formatDate}
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-4 md:mt-0 flex flex-col gap-4">
+                {/* Right Section */}
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
                   {/* Request Type Box */}
-                  <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-sm font-medium text-gray-800">
+                  <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200 min-w-fit">
+                    <div className="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
+                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
                       {requestData.isFaculty ? 'Faculty' : 'Student'} Request
                     </span>
                   </div>
 
                   {/* Request Status Box */}
-                  <div className={`flex items-center gap-3 px-5 py-3 rounded-full shadow-sm border 
+                  <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
                     ${requestStatus === 'Done' 
                       ? 'bg-green-100 border-green-200' 
                       : 'bg-yellow-100 border-yellow-200'
                     }`}>
                     {requestStatus === 'Done' 
-                      ? <CheckCircle size={16} className="text-green-700" />
-                      : <Clock size={16} className="text-yellow-700" />
+                      ? <CheckCircle size={16} className="text-green-700 shrink-0" />
+                      : <Clock size={16} className="text-yellow-700 shrink-0" />
                     }
-                    <span className={`text-sm font-medium ${
+                    <span className={`text-sm font-medium whitespace-nowrap ${
                       requestStatus === 'Done' ? 'text-green-700' : 'text-yellow-700'
                     }`}>
                       Request {requestStatus}
