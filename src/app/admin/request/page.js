@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, Repeat } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -42,7 +42,7 @@ const requests = [
     isFaculty: false,
     requestedDate: "2025-05-05",
     requestedDays: 3,
-    status: "pending",
+    status: "extension",
     isExtended: true,
     referenceStaff: {
       name: 'Prof. Michael Johnson',
@@ -194,6 +194,11 @@ export default function RequestsPage() {
         bgColor = 'bg-red-100';
         textColor = 'text-red-700';
         statusText = 'Rejected';
+      case 'extension':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
         break;
     }
     return {

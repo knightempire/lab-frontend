@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
+import SuccessAlert from '../../../components/SuccessAlert';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const simplifiedProducts = [
@@ -103,32 +104,6 @@ const requests = [
   }
 ];
 
-const ConfirmModal = ({ open, onClose, onConfirm }) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Confirm Issue</h2>
-        <p className="mb-6 text-gray-600">Are you sure you want to mark this request as <span className="font-semibold text-green-700">Issued</span>? This action cannot be undone.</p>
-        <div className="flex justify-end gap-3">
-          <button
-            className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-            onClick={onConfirm}
-          >
-            Confirm & Issue
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -150,7 +125,11 @@ const AdminRequestViewContent = () => {
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
 
-  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleSave = () => {
+    setShowSuccess(true);
+  };
 
   useEffect(() => {
       const reqid = searchParams.get('requestId');
@@ -789,7 +768,17 @@ const AdminRequestViewContent = () => {
                     </div>
                   </div>
                 </div>
+                  {requestData.status === "accepted" && requestData.originalAdminMessage && (
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                        <h4 className="font-medium text-green-700">Admin Approval Message</h4>
+                      </div>
+                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
+                    </div>
+                  )}
               </div>
+
               {/* --- Admin Issue Components --- */}
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
@@ -831,18 +820,25 @@ const AdminRequestViewContent = () => {
                   )}
                 </div>
                 {/* Submit Button for Admin Issued Components */}
-                <div className="flex justify-end mt-4">
-                  <button
-                    className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                    onClick={() => {
-                      // You can add your submit logic here
-                      alert('Admin issued components saved!');
-                    }}
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Save Issued Components
-                  </button>
-                </div>
+                  <>
+                    <div className="flex justify-end mt-4">
+                      <button
+                        className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                        onClick={handleSave}
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Save Issued Components
+                      </button>
+                    </div>
+
+                    {showSuccess && (
+                      <SuccessAlert
+                        message="Issued components saved!"
+                        description="Changes have been successfully recorded."
+                        onClose={() => setShowSuccess(false)}
+                      />
+                    )}
+                  </>
                 {/* Issuable days */}
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
                   <div className="flex items-center mb-2">
@@ -888,60 +884,96 @@ const AdminRequestViewContent = () => {
           {/* --- Take Action Section --- */}
           {requestData.status === 'accepted' && requestData.CollectedDate === null ? (
           <div className="p-6 border-t border-gray-200 flex flex-col items-start">
-            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-              Status: <span className="ml-2 text-green-700">Accepted</span>
-            </h3>
+              <div className="flex items-center mb-4">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-base font-medium text-green-800">
+                Request is <span className="font-semibold">approved</span> and pending issuance.
+              </h3>
+            </div>
             {!action ? (
               <button
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
                 onClick={() => setAction('issued')}
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
-                Issued
+                Mark as Issued
               </button>
             ) : (
-              <div className="bg-blue-50 rounded-lg p-6 border border-blue-100 w-full max-w-lg">
-                <div className="mb-4">
-                  <div className="mb-2 flex items-center">
-                    <div className="h-10 w-10 rounded-full flex items-center justify-center mr-3 bg-indigo-100 text-indigo-600">
+              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+                <div className="mb-5">
+                  <div className="flex items-center mb-4">
+                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
                       <CheckCircle className="w-6 h-6" />
                     </div>
-                    <h4 className="text-lg font-medium">
-                      You are about to mark this request as <span className="text-indigo-700 font-semibold">Issued</span>
-                    </h4>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">
+                        Issue Request
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-sm mb-2">This action cannot be undone.</p>
                 </div>
-                <div className="flex space-x-4">
+
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
                     onClick={async () => {
                       setIsSubmitting(true);
                       setTimeout(() => {
-                        setRequestData({ ...requestData, CollectedDate: new Date().toISOString() });
+                        setRequestData({
+                          ...requestData,
+                          CollectedDate: new Date().toISOString(),
+                          ResponseMessage: responseMessage 
+                        });
                         setAction(null);
                         setIsSubmitting(false);
                       }, 1000);
                     }}
-                   >
+                    disabled={isSubmitting}
+                  >
                     {isSubmitting ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                          Processing...
-                        </>
-                      ) : (
-                        "Confirm & Issue"
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      'Confirm & Issue'
                     )}
                   </button>
+
                   <button
-                    className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
                     onClick={() => setAction(null)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
+
             )}
           </div>
         ) : requestData.status === 'pending' ? (
@@ -954,45 +986,51 @@ const AdminRequestViewContent = () => {
             </h3>
             {!action ? (
               <>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Admin Available Date</label>
-                    <input
-                      type="date"
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={adminAvailableDate}
-                      onChange={e => setAdminAvailableDate(e.target.value)}
-                    />
+                <div className="p-6 pt-0">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Availability</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                      <input
+                        type="date"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableDate}
+                        onChange={e => setAdminAvailableDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
+                      <input
+                        type="time"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableTime}
+                        onChange={e => setAdminAvailableTime(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-1">Admin Available Time</label>
-                    <input
-                      type="time"
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={adminAvailableTime}
-                      onChange={e => setAdminAvailableTime(e.target.value)}
-                    />
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('accept')}
+                      aria-label="Accept Request"
+                      title="Accept this request"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Accept
+                    </button>
+
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('decline')}
+                      aria-label="Decline Request"
+                      title="Decline this request"
+                    >
+                      <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Reject
+                    </button>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <button
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
-                    onClick={() => handleActionClick('accept')}
-                    aria-label="Accept Request"
-                    title="Accept this request"
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                    Accept
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
-                    onClick={() => handleActionClick('decline')}
-                    aria-label="Decline Request"
-                    title="Decline this request"
-                  >
-                    <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                    Reject
-                  </button>
                 </div>
               </>
             ) : (
