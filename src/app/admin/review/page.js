@@ -35,11 +35,7 @@ const AdminRequestViewContent = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSave = () => {
-      console.log("Total components issued:", adminIssueComponents.length);
-  console.log("Issued components detail:", adminIssueComponents);
-    setShowSuccess(true);
-  };
+
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -89,13 +85,16 @@ const AdminRequestViewContent = () => {
             email: data.referenceId.email,
           },
           userMessage: data.description ,
+          
           adminMessage: data.adminReturnMessage || "",
           components: data.requestedProducts.map(product => ({
-            name: product.productId.product_name, 
+            id: product.productId._id,
+          name: product.productId?.product_name || "Unknown Product",
             quantity: product.quantity,
           })),
           adminIssueComponents: data.issued.map(issued => ({
-            name: issued.issuedProductId.product_name, 
+              id: issued.issuedProductId._id,
+            name: issued.issuedProductId.product_name,
             quantity: issued.issuedQuantity,
             replacedQuantity: 0, 
           })),
@@ -110,7 +109,7 @@ const AdminRequestViewContent = () => {
          setAdminIssueComponents(prev =>
       !prev || prev.length === 0
         ? mappedData.components.map((c, idx) => ({
-            id: idx + 1,
+            id: c.id , // Use index as fallback ID
             name: c.name,
             quantity: c.quantity,
             description: c.description || ''
@@ -119,14 +118,14 @@ const AdminRequestViewContent = () => {
     );
       } catch (error) {
         console.error('Error fetching request data:', error);
-        router.push('/user/request');
+        router.push('/admin/request');
       }
     };
 
     if (requestId) {
       fetchRequestData();
     } else {
-      router.push('/user/request');
+      router.push('/admin/request');
     }
   }, [searchParams, router]);
 
@@ -170,6 +169,23 @@ const AdminRequestViewContent = () => {
     });
   };
 
+const handleSave = () => {
+  console.log("Total components issued:", adminIssueComponents.length);
+
+  // Print each issued component with product ID and details
+  adminIssueComponents.forEach(component => {
+    console.log(`Product ID: ${component.id}, Name: ${component.name}, Quantity: ${component.quantity}`);
+  });
+
+  const currentstatus = requestData.status;
+  if (currentstatus === 'pending') {
+    console.log("Request is pending, proceeding to save.");
+  }
+  
+  setShowSuccess(true);
+};
+
+  
   // --- Admin Issue Table Handlers ---
   const handleQuantityChange = (id, newQuantity) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
