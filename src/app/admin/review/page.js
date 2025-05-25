@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
+import SuccessAlert from '../../../components/SuccessAlert';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const simplifiedProducts = [
@@ -47,7 +48,8 @@ const requests = [
       { id: 1, name: 'Widget A', quantity: 2 },
       { id: 2, name: 'Widget B', quantity: 10 },
       { id: 3, name: 'Widget C', quantity: 20 }
-    ]
+    ],
+    CollectedDate: null
   },
   {
     requestId: "REQ-2025-0514",
@@ -72,7 +74,8 @@ const requests = [
     components: [
       { id: 1, name: 'Widget C', quantity: 1 },
       { id: 2, name: 'Widget Z', quantity: 2 }
-    ]
+    ],
+    CollectedDate: null
   },
   {
     requestId: "REQ-2025-0515",
@@ -96,7 +99,8 @@ const requests = [
     description: "For robotics project",
     components: [
       { id: 1, name: 'Widget D', quantity: 5 }
-    ]
+    ],
+    CollectedDate: null
   }
 ];
 
@@ -117,6 +121,15 @@ const AdminRequestViewContent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [validationMessage, setValidationMessage] = useState('');
+
+  const [adminAvailableDate, setAdminAvailableDate] = useState('');
+  const [adminAvailableTime, setAdminAvailableTime] = useState('');
+
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleSave = () => {
+    setShowSuccess(true);
+  };
 
   useEffect(() => {
       const reqid = searchParams.get('requestId');
@@ -755,7 +768,17 @@ const AdminRequestViewContent = () => {
                     </div>
                   </div>
                 </div>
+                  {requestData.status === "accepted" && requestData.originalAdminMessage && (
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                        <h4 className="font-medium text-green-700">Admin Approval Message</h4>
+                      </div>
+                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
+                    </div>
+                  )}
               </div>
+
               {/* --- Admin Issue Components --- */}
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
@@ -796,6 +819,26 @@ const AdminRequestViewContent = () => {
                     </div>
                   )}
                 </div>
+                {/* Submit Button for Admin Issued Components */}
+                  <>
+                    <div className="flex justify-end mt-4">
+                      <button
+                        className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                        onClick={handleSave}
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Save Issued Components
+                      </button>
+                    </div>
+
+                    {showSuccess && (
+                      <SuccessAlert
+                        message="Issued components saved!"
+                        description="Changes have been successfully recorded."
+                        onClose={() => setShowSuccess(false)}
+                      />
+                    )}
+                  </>
                 {/* Issuable days */}
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
                   <div className="flex items-center mb-2">
@@ -839,6 +882,101 @@ const AdminRequestViewContent = () => {
             </>
           )}
           {/* --- Take Action Section --- */}
+          {requestData.status === 'accepted' && requestData.CollectedDate === null ? (
+          <div className="p-6 border-t border-gray-200 flex flex-col items-start">
+              <div className="flex items-center mb-4">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-base font-medium text-green-800">
+                Request is <span className="font-semibold">approved</span> and pending issuance.
+              </h3>
+            </div>
+            {!action ? (
+              <button
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+                onClick={() => setAction('issued')}
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Mark as Issued
+              </button>
+            ) : (
+              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+                <div className="mb-5">
+                  <div className="flex items-center mb-4">
+                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">
+                        Issue Request
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                    onClick={async () => {
+                      setIsSubmitting(true);
+                      setTimeout(() => {
+                        setRequestData({
+                          ...requestData,
+                          CollectedDate: new Date().toISOString(),
+                          ResponseMessage: responseMessage 
+                        });
+                        setAction(null);
+                        setIsSubmitting(false);
+                      }, 1000);
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      'Confirm & Issue'
+                    )}
+                  </button>
+
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
+                    onClick={() => setAction(null)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+            )}
+          </div>
+        ) : requestData.status === 'pending' ? (
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
               <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -847,41 +985,77 @@ const AdminRequestViewContent = () => {
               Take Action
             </h3>
             {!action ? (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
-                  onClick={() => handleActionClick('accept')}
-                  aria-label="Accept Request"
-                  title="Accept this request"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Accept Request
-                </button>
-                <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
-                  onClick={() => handleActionClick('decline')}
-                  aria-label="Decline Request"
-                  title="Decline this request"
-                >
-                  <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Decline Request
-                </button>
-              </div>
+              <>
+                <div className="p-6 pt-0">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Availability</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                      <input
+                        type="date"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableDate}
+                        onChange={e => setAdminAvailableDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
+                      <input
+                        type="time"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableTime}
+                        onChange={e => setAdminAvailableTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('accept')}
+                      aria-label="Accept Request"
+                      title="Accept this request"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Accept
+                    </button>
+
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('decline')}
+                      aria-label="Decline Request"
+                      title="Decline this request"
+                    >
+                      <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                 <div className="mb-4">
                   <div className="mb-2 flex items-center">
                     <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-                      action === 'accept' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                      action === 'accept' ? 'bg-green-100 text-green-600'
+                        : action === 'decline' ? 'bg-red-100 text-red-600'
+                        : 'bg-indigo-100 text-indigo-600'
                     }`}>
                       {action === 'accept' ? (
                         <CheckCircle className="w-6 h-6" />
-                      ) : (
+                      ) : action === 'decline' ? (
                         <XCircle className="w-6 h-6" />
+                      ) : (
+                        <CheckCircle className="w-6 h-6" />
                       )}
                     </div>
                     <h4 className="text-lg font-medium">
-                      You are about to {action === 'accept' ? 'accept' : 'decline'} this request
+                      You are about to {action === 'accept'
+                        ? 'accept'
+                        : action === 'decline'
+                        ? 'decline'
+                        : 'issue'} this request
                     </h4>
                   </div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Response Message</label>
@@ -902,7 +1076,9 @@ const AdminRequestViewContent = () => {
                 <div className="flex space-x-4">
                   <button
                     className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-                      action === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                      action === 'accept' ? 'bg-green-600 hover:bg-green-700'
+                        : action === 'decline' ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700'
                     } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
                     onClick={handleSubmit}
                     disabled={isSubmitting}
@@ -917,7 +1093,11 @@ const AdminRequestViewContent = () => {
                       </>
                     ) : (
                       <>
-                        {action === 'accept' ? 'Confirm & Accept' : 'Confirm & Decline'}
+                        {action === 'accept'
+                          ? 'Confirm & Accept'
+                          : action === 'decline'
+                          ? 'Confirm & Decline'
+                          : 'Confirm & Issue'}
                       </>
                     )}
                   </button>
@@ -932,6 +1112,7 @@ const AdminRequestViewContent = () => {
               </div>
             )}
           </div>
+        ) : null}
         </div>
       </div>
     </div>
