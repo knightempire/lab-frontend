@@ -36,6 +36,8 @@ const AdminRequestViewContent = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSave = () => {
+      console.log("Total components issued:", adminIssueComponents.length);
+  console.log("Issued components detail:", adminIssueComponents);
     setShowSuccess(true);
   };
 
