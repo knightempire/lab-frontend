@@ -9,7 +9,7 @@ import LoadingScreen from '../../../components/loading/loadingscreen';
 import RequestTimeline from '../../../components/RequestTimeline';``
 const requests = [
   {
-    id: "REQ-2025-0513",
+    id: "REQ-S-250001",
     name: "John Doe",
     rollNo: "CS21B054",
     phoneNo: "9876543210",
@@ -38,7 +38,7 @@ const requests = [
     isreissued: false
   },
   {
-    id: "REQ-2025-0514",
+    id: "REQ-S-250002",
     name: "Alice Kumar",
     rollNo: "2023123",
     phoneNo: "9876543210",
@@ -62,7 +62,7 @@ const requests = [
     isreissued: true
   },
   {
-    id: "REQ-2025-0515",
+    id: "REQ-S-250003",
     name: "Rahul Mehta",
     rollNo: "12345",
     phoneNo: "9123456789",
