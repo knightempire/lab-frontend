@@ -10,22 +10,11 @@ import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
-const simplifiedProducts = [
-  { name: "Widget A", inStock: 90 },
-  { name: "Widget B", inStock: 45 },
-  { name: "Widget C", inStock: 65 },
-  { name: "Widget D", inStock: 85 },
-  { name: "Widget E", inStock: 90 },
-  { name: "Widget F", inStock: 45 },
-  { name: "Widget G", inStock: 65 },
-  { name: "Widget H", inStock: 85 },
-  { name: "Widget I", inStock: 90 },
-  { name: "Widget J", inStock: 45 },
-];
+
 
 const requests = [
   {
-    requestId: "REQ-2025-0513",
+    requestId: "REQ-S-250001",
     name: "John Doe",
     rollNo: "CS21B054",
     phoneNo: "9876543210",
@@ -52,7 +41,7 @@ const requests = [
     CollectedDate: null
   },
   {
-    requestId: "REQ-2025-0514",
+    requestId: "REQ-S-250002",
     name: "Alice Kumar",
     rollNo: "2023123",
     phoneNo: "9876543210",
@@ -78,7 +67,7 @@ const requests = [
     CollectedDate: null
   },
   {
-    requestId: "REQ-2025-0515",
+    requestId: "REQ-S-250003",
     name: "Rahul Mehta",
     rollNo: "2023456",
     phoneNo: "9123456789",
@@ -108,7 +97,7 @@ const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
-
+  const [products, setProducts] = useState([]);
   // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
   const [issuableDays, setIssuableDays] = useState(7);
@@ -140,12 +129,48 @@ const AdminRequestViewContent = () => {
           setAdminIssueComponents([...req.components]);
           setIssuableDays(req.requestedDays || 7);
         } else {
-          router.push('/admin/requests');
+          router.push('/admin/request');
         }
       } else {
-        router.push('/admin/requests');
+        router.push('/admin/request');
       }
     }, [router, searchParams]);
+
+
+      useEffect(() => {
+            const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found in localStorage');
+      }
+
+    fetchProducts();
+  }, []);
+
+
+      const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.products) {
+          // Transform API data to simplified format used in component
+          const simplified = data.products.map(item => ({
+            name: item.product.product_name,
+            inStock: item.product.inStock
+          }));
+          setProducts(simplified);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -163,7 +188,7 @@ const AdminRequestViewContent = () => {
   const handleQuantityChange = (id, newQuantity) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
         return { ...component, quantity: limitedQuantity };
@@ -174,7 +199,7 @@ const AdminRequestViewContent = () => {
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const newQuantity = Math.min(component.quantity + 1, maxStock);
         return { ...component, quantity: newQuantity };
@@ -194,7 +219,7 @@ const AdminRequestViewContent = () => {
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === newName);
+        const product = products.find(p => p.name === newName);
         const initialQty = product && product.inStock > 0 ? 1 : 0;
         return { ...component, name: newName, quantity: initialQty };
       }
@@ -296,11 +321,11 @@ const AdminRequestViewContent = () => {
     const existingComponentNames = adminIssueComponents
       .filter(component => component.id !== id && component.name)
       .map(component => component.name);
-    const filteredProducts = simplifiedProducts
-      .filter(product =>
-        !existingComponentNames.includes(product.name) &&
-        product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
-      );
+  const filteredProducts = products
+    .filter(product =>
+      !existingComponentNames.includes(product.name) &&
+      product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
+    );
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (
@@ -394,7 +419,7 @@ const AdminRequestViewContent = () => {
     { key: 'actions', label: 'Actions' }
   ];
   const adminComponentsRows = adminIssueComponents.map(component => {
-    const product = simplifiedProducts.find(p => p.name === component.name);
+    const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
     return {
       ...component,
