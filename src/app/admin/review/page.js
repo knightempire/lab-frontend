@@ -12,87 +12,6 @@ import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Mi
 
 
 
-const requests = [
-  {
-    requestId: "REQ-S-250001",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    requestedDays: 5,
-    status: "pending",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    description: "For IoT project, Display indicators",
-    components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 }
-    ],
-    CollectedDate: null
-  },
-  {
-    requestId: "REQ-S-250002",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    requestedDays: 3,
-    status: "pending",
-    isExtended: true,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
-    ],
-    CollectedDate: null
-  },
-  {
-    requestId: "REQ-S-250003",
-    name: "Rahul Mehta",
-    rollNo: "2023456",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: true,
-    requestedDate: "2025-05-06",
-    requestedDays: 7,
-    status: "accepted",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-04-29",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
-    ],
-    CollectedDate: null
-  }
-];
-
 const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,7 +19,7 @@ const AdminRequestViewContent = () => {
   const [products, setProducts] = useState([]);
   // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
-  const [issuableDays, setIssuableDays] = useState(7);
+  const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
 
@@ -121,30 +40,95 @@ const AdminRequestViewContent = () => {
   };
 
   useEffect(() => {
-      const reqid = searchParams.get('requestId');
-      if (reqid) {
-        const req = requests.find(r => r.requestId === reqid);
-        if (req) {
-          setRequestData(req);
-          setAdminIssueComponents([...req.components]);
-          setIssuableDays(req.requestedDays || 7);
-        } else {
-          router.push('/admin/request');
-        }
-      } else {
-        router.push('/admin/request');
-      }
-    }, [router, searchParams]);
+    const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
 
-
-      useEffect(() => {
-            const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found in localStorage');
-      }
+         const token = localStorage.getItem('token'); 
+        if (!token) {
+          console.error('No token found in localStorage');
+          router.push('/auth/login'); 
+          return;
+        } 
 
     fetchProducts();
-  }, []);
+
+    const fetchRequestData = async () => {
+      try {
+   
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          localStorage.remove('token'); 
+          router.push('/auth/login');
+        }
+
+        const apiResponse = await response.json();
+        const data = apiResponse.request; 
+
+        const mappedData = {
+          requestId: data.requestId,
+          name: data.userId.name,
+          rollNo: data.userId.rollNo,
+          phoneNo: data.userId.phoneNo, 
+          email: data.userId.email,
+          isFaculty: false, 
+          requestedDate: data.requestDate,
+          requestedDays: data.requestedDays,
+          adminApprovedDays: data.adminApprovedDays,
+          status: data.requestStatus,
+          referenceStaff: {
+            name: data.referenceId.name,
+            email: data.referenceId.email,
+          },
+          userMessage: data.description ,
+          adminMessage: data.adminReturnMessage || "",
+          components: data.requestedProducts.map(product => ({
+            name: product.productId.product_name, 
+            quantity: product.quantity,
+          })),
+          adminIssueComponents: data.issued.map(issued => ({
+            name: issued.issuedProductId.product_name, 
+            quantity: issued.issuedQuantity,
+            replacedQuantity: 0, 
+          })),
+          returnedComponents: [], 
+          reIssueRequest: null, 
+        };
+
+        setRequestData(mappedData);
+        setIssuableDays(mappedData.requestedDays);
+        console.log('Request Data:', mappedData);
+        console.log('usermessage:', mappedData.userMessage);
+         setAdminIssueComponents(prev =>
+      !prev || prev.length === 0
+        ? mappedData.components.map((c, idx) => ({
+            id: idx + 1,
+            name: c.name,
+            quantity: c.quantity,
+            description: c.description || ''
+          }))
+        : prev
+    );
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+        router.push('/user/request');
+      }
+    };
+
+    if (requestId) {
+      fetchRequestData();
+    } else {
+      router.push('/user/request');
+    }
+  }, [searchParams, router]);
+
+
 
 
       const fetchProducts = async () => {
@@ -251,11 +235,11 @@ const AdminRequestViewContent = () => {
     }
   };
   const handleIssuableDaysChange = (value) => {
-    const newDays = Math.min(Math.max(0, parseInt(value) || 0), 30);
+    const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
     setIssuableDays(newDays);
   };
   const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
-  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 0));
+  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 1));
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
@@ -693,7 +677,7 @@ const AdminRequestViewContent = () => {
                     <FileText className="w-5 h-5 mr-2 text-blue-600" />
                     <h4 className="font-medium text-gray-700">User Note / Reason</h4>
                   </div>
-                  <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                  <p className="text-gray-600">{requestData.userMessage  || "No description provided."}</p>
                 </div>
               </div>
 
@@ -778,7 +762,7 @@ const AdminRequestViewContent = () => {
                       </svg>
                       <h4 className="font-medium text-gray-700">Request Description</h4>
                     </div>
-                    <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                    <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-end gap-4">
