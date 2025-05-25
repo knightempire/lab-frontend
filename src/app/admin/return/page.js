@@ -839,7 +839,7 @@ switch (issueStatus) {
                     )}
                   </div>
 
-                  <div className="w-full">
+                  <div className="w-full mt-5">
                     <RequestTimeline 
                       requestData={requestData}
                       reissue={reissue}

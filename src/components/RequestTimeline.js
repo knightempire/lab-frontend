@@ -194,22 +194,23 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
 
   return (
     <div className="overflow-x-auto w-full px-4">
-      <div className="relative w-full min-w-fit">
-        {/* Horizontal line */}
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300 z-0 transform -translate-y-1/2"></div>
+      <div className="relative inline-flex min-w-fit">
+        {/* Horizontal line that spans from first to last dot */}
+        {timelineItems.length > 1 && (
+          <div className="absolute top-2 left-2 right-2 h-0.5 bg-gray-300 z-0"></div>
+        )}
 
         {/* Timeline items */}
         <div className="flex space-x-8 items-start relative z-10">
           {timelineItems.map((item, index) => (
             <div key={index} className="relative flex flex-col items-center w-24 sm:w-28 md:w-32">
-              
-              {/* Dot aligned on the line */}
-              <div className={`absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 z-10 flex items-center justify-center ${getItemColor(item)}`}>
+              {/* Dot */}
+              <div className={`w-4 h-4 rounded-full border-2 z-10 flex items-center justify-center ${getItemColor(item)}`}>
                 {getIcon(item)}
               </div>
 
-              {/* Label and Date below the line */}
-              <div className="mt-14 text-center">
+              {/* Label and Date */}
+              <div className="mt-2 text-center">
                 <div className={`text-sm font-medium ${item.isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
                   {item.label}
                 </div>
