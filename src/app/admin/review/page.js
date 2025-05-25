@@ -41,18 +41,71 @@ const AdminRequestViewContent = () => {
     const requestId = searchParams.get('requestId');
     console.log('requestId:', requestId);
 
+    if (!requestId) {
+      console.error('No requestId found in search params');
+           router.push('/auth/login'); 
+    }
+ 
+     const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+          router.push('/auth/login'); 
+      }
+
+      console.log('User is admin, proceeding with request data fetch');
+          if (requestId) {
+      fetchRequestData();
+    } else {
+      router.push('/admin/request');
+    }
+
+    fetchProducts();
+    }
+      }
+
+
+verifyadmin();
+
+  }, [searchParams, router]);
+
+
+
+    const fetchRequestData = async () => {
+      try {
+
+            const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
+
          const token = localStorage.getItem('token'); 
         if (!token) {
           console.error('No token found in localStorage');
           router.push('/auth/login'); 
           return;
         } 
-
-    fetchProducts();
-
-    const fetchRequestData = async () => {
-      try {
-   
+        if (!requestId) {
+           router.push('/admin/request');
+        }
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
           method: 'GET',
           headers: {
@@ -106,31 +159,24 @@ const AdminRequestViewContent = () => {
         setIssuableDays(mappedData.requestedDays);
         console.log('Request Data:', mappedData);
         console.log('usermessage:', mappedData.userMessage);
-         setAdminIssueComponents(prev =>
-      !prev || prev.length === 0
-        ? mappedData.components.map((c, idx) => ({
-            id: c.id , // Use index as fallback ID
-            name: c.name,
-            quantity: c.quantity,
-            description: c.description || ''
-          }))
-        : prev
-    );
+setAdminIssueComponents(() => {
+  const isIssuedEmpty = !mappedData.adminIssueComponents || mappedData.adminIssueComponents.length === 0;
+
+  return isIssuedEmpty
+    ? mappedData.components.map((c, idx) => ({
+        id: c.id || idx + 1, // Fallback ID if needed
+        name: c.name,
+        quantity: c.quantity,
+        description: c.description || ''
+      }))
+    : mappedData.adminIssueComponents;
+});
+
       } catch (error) {
         console.error('Error fetching request data:', error);
         router.push('/admin/request');
       }
     };
-
-    if (requestId) {
-      fetchRequestData();
-    } else {
-      router.push('/admin/request');
-    }
-  }, [searchParams, router]);
-
-
-
 
       const fetchProducts = async () => {
       try {
@@ -169,20 +215,58 @@ const AdminRequestViewContent = () => {
     });
   };
 
-const handleSave = () => {
-  console.log("Total components issued:", adminIssueComponents.length);
 
-  // Print each issued component with product ID and details
-  adminIssueComponents.forEach(component => {
-    console.log(`Product ID: ${component.id}, Name: ${component.name}, Quantity: ${component.quantity}`);
-  });
 
-  const currentstatus = requestData.status;
+const handleSave = async () => {
+  const requestId = searchParams.get('requestId');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    console.error('No token found in localStorage');
+    router.push('/auth/login');
+    return;
+  }
+
+  console.log('Saving admin issued components:', adminIssueComponents);
+    const currentstatus = requestData.status;
+    console.log('Current request status:', currentstatus);
   if (currentstatus === 'pending') {
     console.log("Request is pending, proceeding to save.");
+
+      const payload = {
+    issued: adminIssueComponents.map(component => ({
+      issuedProductId: component.id,
+      issuedQuantity: component.quantity
+    }))
+  };
+
+  console.log('Payload for update:', payload);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    if (!response.ok) {
+      console.error('Failed:', data.message || 'Unknown error');
+    } else {
+      console.log('Success:', data);
+      
+      setShowSuccess(true);
+      fetchRequestData(); 
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
   }
-  
-  setShowSuccess(true);
+  }
+
 };
 
   
