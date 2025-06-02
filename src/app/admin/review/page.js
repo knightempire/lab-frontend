@@ -352,37 +352,85 @@ const handleSave = async () => {
         : 'Due to component shortage, your request has been declined.'
     );
   };
+
   const handleSubmit = async () => {
-    if (!requestData.isExtended && action === 'accept') {
-      if (adminIssueComponents.length === 0) {
-        setValidationMessage('Please add at least one component before accepting the request.');
-        return;
-      }
-      const invalidComponents = adminIssueComponents.filter(
-        component => !component.name || component.quantity <= 0
-      );
-      if (invalidComponents.length > 0) {
-        setValidationMessage('Please fill in all component details (name and quantity) before accepting the request.');
-        return;
-      }
+  if (action === 'accept') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.error('No token found in localStorage');
+      router.push('/auth/login');
+      return;
     }
-    setValidationMessage('');
-    setIsSubmitting(true);
+
+    const payload = {
+      adminApprovedDays: issuableDays, // Set the number of approved days
+      issued: adminIssueComponents.map(component => ({
+        issuedProductId: component.id,
+        issuedQuantity: component.quantity
+      })),
+      adminReturnMessage: responseMessage,
+      scheduledCollectionDate: new Date().toISOString() // Set the current date/time
+    };
+
     try {
-      setTimeout(() => {
-        alert(`Request ${action === 'accept' ? 'approved' : 'declined'} successfully!`);
-        setRequestData({
-          ...requestData,
-          status: action === 'accept' ? 'accepted' : 'rejected'
-        });
-        setAction(null);
-        setIsSubmitting(false);
-      }, 1000);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to approve request:', errorData.message);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Request approved successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'accepted' }));
+      setShowSuccess(true);
     } catch (error) {
-      alert('Failed to process request. Please try again.');
-      setIsSubmitting(false);
+      console.error('Error during API call:', error);
     }
-  };
+  }
+
+  if (action === 'decline') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+      const payload = {
+      adminReturnMessage: responseMessage || "Insufficient amount of products" 
+    };
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/reject/${requestId}`, {
+        method: 'POST', // Use POST for rejecting
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to reject request:', errorData.message);
+        return;
+      }
+      const data = await response.json();
+      console.log('Request rejected successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'rejected' }));
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Error during API call:', error);
+    }
+  }
+};
+
 
   // --- Status Badge ---
   const StatusBadge = ({ status }) => {
@@ -712,6 +760,7 @@ const handleSave = async () => {
                   </div>
 
                   {/* Admin Issue Components Table (Read-only) */}
+                  
                   <div className="bg-white shadow rounded-lg">
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex justify-between items-center mb-4">
@@ -891,6 +940,7 @@ const handleSave = async () => {
               </div>
 
               {/* --- Admin Issue Components --- */}
+
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-700 flex items-center">
