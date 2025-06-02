@@ -1,5 +1,5 @@
 'use client';
-
+import Notifications from './Notifications';
 import { useRouter } from 'next/navigation';
 import { Menu, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
@@ -32,10 +32,7 @@ export default function Navbar({ toggleSidebar }) {
       </div>
       
       <div className="flex items-center space-x-4">
-        <button className="p-2 rounded-md text-gray-700 hover:bg-gray-100 relative">
-          <Bell size={20} />
-          <span className="absolute top-1 right-1 bg-red-500 rounded-full w-2 h-2"></span>
-        </button>
+          <Notifications isAdmin={isAdmin} />
         
         <div className="relative">
           <button 
