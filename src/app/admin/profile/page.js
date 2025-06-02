@@ -6,6 +6,8 @@ import DropdownFilter from '../../../components/DropdownFilter';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 import Link from 'next/link';
 
 const columns = [
@@ -16,7 +18,7 @@ const columns = [
   { key: 'viewMore', label: 'View More' }
 ];
 
-export default function UserProfilePage() {
+const UserProfilePageView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -648,5 +650,12 @@ verifyToken();
         </div>
       )}
     </div>
+  );
+}
+export default function UserProfilePage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <UserProfilePageView />
+    </Suspense>
   );
 }
