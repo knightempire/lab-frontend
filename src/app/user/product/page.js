@@ -46,13 +46,18 @@ useEffect(() => {
       } 
 
       const data = await res.json();
-      const fetchedProducts = data.products.map(p => ({
-        id: p.id,
-        name: p.product_name,
-        inStock: p.inStock,
-        selected: false,
-        selectedQuantity: 0
-      }));
+      console.log('Fetched products:', data.products);
+const fetchedProducts = data.products.map(p => {
+  const prod = p.product;
+  return {
+    id: prod._id,
+    name: prod.product_name,
+    inStock: prod.inStock - prod.yetToGive,
+    selected: false,
+    selectedQuantity: 0
+  };
+});
+
 
       // Load previous selections from localStorage
       const storedProducts = localStorage.getItem('selectedProducts');

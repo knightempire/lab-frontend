@@ -10,108 +10,16 @@ import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
-const simplifiedProducts = [
-  { name: "Widget A", inStock: 90 },
-  { name: "Widget B", inStock: 45 },
-  { name: "Widget C", inStock: 65 },
-  { name: "Widget D", inStock: 85 },
-  { name: "Widget E", inStock: 90 },
-  { name: "Widget F", inStock: 45 },
-  { name: "Widget G", inStock: 65 },
-  { name: "Widget H", inStock: 85 },
-  { name: "Widget I", inStock: 90 },
-  { name: "Widget J", inStock: 45 },
-];
 
-const requests = [
-  {
-    requestId: "REQ-2025-0513",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    requestedDays: 5,
-    status: "pending",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    description: "For IoT project, Display indicators",
-    components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 }
-    ],
-    CollectedDate: null
-  },
-  {
-    requestId: "REQ-2025-0514",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    requestedDays: 3,
-    status: "pending",
-    isExtended: true,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
-    ],
-    CollectedDate: null
-  },
-  {
-    requestId: "REQ-2025-0515",
-    name: "Rahul Mehta",
-    rollNo: "2023456",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: true,
-    requestedDate: "2025-05-06",
-    requestedDays: 7,
-    status: "accepted",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-04-29",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
-    ],
-    CollectedDate: null
-  }
-];
 
 const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
-
+  const [products, setProducts] = useState([]);
   // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
-  const [issuableDays, setIssuableDays] = useState(7);
+  const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
 
@@ -127,25 +35,173 @@ const AdminRequestViewContent = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSave = () => {
-    setShowSuccess(true);
-  };
+
 
   useEffect(() => {
-      const reqid = searchParams.get('requestId');
-      if (reqid) {
-        const req = requests.find(r => r.requestId === reqid);
-        if (req) {
-          setRequestData(req);
-          setAdminIssueComponents([...req.components]);
-          setIssuableDays(req.requestedDays || 7);
-        } else {
-          router.push('/admin/requests');
-        }
-      } else {
-        router.push('/admin/requests');
+    const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
+
+    if (!requestId) {
+      console.error('No requestId found in search params');
+           router.push('/auth/login'); 
+    }
+ 
+     const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    }, [router, searchParams]);
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+          router.push('/auth/login'); 
+      }
+
+      console.log('User is admin, proceeding with request data fetch');
+          if (requestId) {
+      fetchRequestData();
+    } else {
+      router.push('/admin/request');
+    }
+
+    fetchProducts();
+    }
+      }
+
+
+verifyadmin();
+
+  }, [searchParams, router]);
+
+
+
+    const fetchRequestData = async () => {
+      try {
+
+            const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
+
+         const token = localStorage.getItem('token'); 
+        if (!token) {
+          console.error('No token found in localStorage');
+          router.push('/auth/login'); 
+          return;
+        } 
+        if (!requestId) {
+           router.push('/admin/request');
+        }
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          localStorage.remove('token'); 
+          router.push('/auth/login');
+        }
+
+        const apiResponse = await response.json();
+        const data = apiResponse.request; 
+
+        const mappedData = {
+          requestId: data.requestId,
+          name: data.userId.name,
+          rollNo: data.userId.rollNo,
+          phoneNo: data.userId.phoneNo, 
+          email: data.userId.email,
+          isFaculty: false, 
+          requestedDate: data.requestDate,
+          requestedDays: data.requestedDays,
+          adminApprovedDays: data.adminApprovedDays,
+          status: data.requestStatus,
+          referenceStaff: {
+            name: data.referenceId.name,
+            email: data.referenceId.email,
+          },
+          userMessage: data.description ,
+          
+          adminMessage: data.adminReturnMessage || "",
+          components: data.requestedProducts.map(product => ({
+            id: product.productId._id,
+          name: product.productId?.product_name || "Unknown Product",
+            quantity: product.quantity,
+          })),
+          adminIssueComponents: data.issued.map(issued => ({
+              id: issued.issuedProductId._id,
+            name: issued.issuedProductId.product_name,
+            quantity: issued.issuedQuantity,
+            replacedQuantity: 0, 
+          })),
+          returnedComponents: [], 
+          reIssueRequest: null, 
+        };
+
+        setRequestData(mappedData);
+        setIssuableDays(mappedData.requestedDays);
+        console.log('Request Data:', mappedData);
+        console.log('usermessage:', mappedData.userMessage);
+setAdminIssueComponents(() => {
+  const isIssuedEmpty = !mappedData.adminIssueComponents || mappedData.adminIssueComponents.length === 0;
+
+  return isIssuedEmpty
+    ? mappedData.components.map((c, idx) => ({
+        id: c.id || idx + 1, // Fallback ID if needed
+        name: c.name,
+        quantity: c.quantity,
+        description: c.description || ''
+      }))
+    : mappedData.adminIssueComponents;
+});
+
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+        router.push('/admin/request');
+      }
+    };
+
+      const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.products) {
+          // Transform API data to simplified format used in component
+          const simplified = data.products.map(item => ({
+            name: item.product.product_name,
+            inStock: item.product.inStock
+          }));
+          setProducts(simplified);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -159,11 +215,66 @@ const AdminRequestViewContent = () => {
     });
   };
 
+
+
+const handleSave = async () => {
+  const requestId = searchParams.get('requestId');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    console.error('No token found in localStorage');
+    router.push('/auth/login');
+    return;
+  }
+
+  console.log('Saving admin issued components:', adminIssueComponents);
+    const currentstatus = requestData.status;
+    console.log('Current request status:', currentstatus);
+  if (currentstatus === 'pending') {
+    console.log("Request is pending, proceeding to save.");
+
+      const payload = {
+    issued: adminIssueComponents.map(component => ({
+      issuedProductId: component.id,
+      issuedQuantity: component.quantity
+    }))
+  };
+
+  console.log('Payload for update:', payload);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    if (!response.ok) {
+      console.error('Failed:', data.message || 'Unknown error');
+    } else {
+      console.log('Success:', data);
+      
+      setShowSuccess(true);
+      fetchRequestData(); 
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  }
+
+};
+
+  
   // --- Admin Issue Table Handlers ---
   const handleQuantityChange = (id, newQuantity) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
         return { ...component, quantity: limitedQuantity };
@@ -174,7 +285,7 @@ const AdminRequestViewContent = () => {
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const newQuantity = Math.min(component.quantity + 1, maxStock);
         return { ...component, quantity: newQuantity };
@@ -194,7 +305,7 @@ const AdminRequestViewContent = () => {
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === newName);
+        const product = products.find(p => p.name === newName);
         const initialQty = product && product.inStock > 0 ? 1 : 0;
         return { ...component, name: newName, quantity: initialQty };
       }
@@ -226,11 +337,11 @@ const AdminRequestViewContent = () => {
     }
   };
   const handleIssuableDaysChange = (value) => {
-    const newDays = Math.min(Math.max(0, parseInt(value) || 0), 30);
+    const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
     setIssuableDays(newDays);
   };
   const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
-  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 0));
+  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 1));
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
@@ -241,37 +352,85 @@ const AdminRequestViewContent = () => {
         : 'Due to component shortage, your request has been declined.'
     );
   };
+
   const handleSubmit = async () => {
-    if (!requestData.isExtended && action === 'accept') {
-      if (adminIssueComponents.length === 0) {
-        setValidationMessage('Please add at least one component before accepting the request.');
-        return;
-      }
-      const invalidComponents = adminIssueComponents.filter(
-        component => !component.name || component.quantity <= 0
-      );
-      if (invalidComponents.length > 0) {
-        setValidationMessage('Please fill in all component details (name and quantity) before accepting the request.');
-        return;
-      }
+  if (action === 'accept') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.error('No token found in localStorage');
+      router.push('/auth/login');
+      return;
     }
-    setValidationMessage('');
-    setIsSubmitting(true);
+
+    const payload = {
+      adminApprovedDays: issuableDays, // Set the number of approved days
+      issued: adminIssueComponents.map(component => ({
+        issuedProductId: component.id,
+        issuedQuantity: component.quantity
+      })),
+      adminReturnMessage: responseMessage,
+      scheduledCollectionDate: new Date().toISOString() // Set the current date/time
+    };
+
     try {
-      setTimeout(() => {
-        alert(`Request ${action === 'accept' ? 'approved' : 'declined'} successfully!`);
-        setRequestData({
-          ...requestData,
-          status: action === 'accept' ? 'accepted' : 'rejected'
-        });
-        setAction(null);
-        setIsSubmitting(false);
-      }, 1000);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to approve request:', errorData.message);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Request approved successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'accepted' }));
+      setShowSuccess(true);
     } catch (error) {
-      alert('Failed to process request. Please try again.');
-      setIsSubmitting(false);
+      console.error('Error during API call:', error);
     }
-  };
+  }
+
+  if (action === 'decline') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+      const payload = {
+      adminReturnMessage: responseMessage || "Insufficient amount of products" 
+    };
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/reject/${requestId}`, {
+        method: 'POST', // Use POST for rejecting
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to reject request:', errorData.message);
+        return;
+      }
+      const data = await response.json();
+      console.log('Request rejected successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'rejected' }));
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Error during API call:', error);
+    }
+  }
+};
+
 
   // --- Status Badge ---
   const StatusBadge = ({ status }) => {
@@ -296,11 +455,11 @@ const AdminRequestViewContent = () => {
     const existingComponentNames = adminIssueComponents
       .filter(component => component.id !== id && component.name)
       .map(component => component.name);
-    const filteredProducts = simplifiedProducts
-      .filter(product =>
-        !existingComponentNames.includes(product.name) &&
-        product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
-      );
+  const filteredProducts = products
+    .filter(product =>
+      !existingComponentNames.includes(product.name) &&
+      product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
+    );
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (
@@ -394,7 +553,7 @@ const AdminRequestViewContent = () => {
     { key: 'actions', label: 'Actions' }
   ];
   const adminComponentsRows = adminIssueComponents.map(component => {
-    const product = simplifiedProducts.find(p => p.name === component.name);
+    const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
     return {
       ...component,
@@ -601,6 +760,7 @@ const AdminRequestViewContent = () => {
                   </div>
 
                   {/* Admin Issue Components Table (Read-only) */}
+                  
                   <div className="bg-white shadow rounded-lg">
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex justify-between items-center mb-4">
@@ -668,7 +828,7 @@ const AdminRequestViewContent = () => {
                     <FileText className="w-5 h-5 mr-2 text-blue-600" />
                     <h4 className="font-medium text-gray-700">User Note / Reason</h4>
                   </div>
-                  <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                  <p className="text-gray-600">{requestData.userMessage  || "No description provided."}</p>
                 </div>
               </div>
 
@@ -753,7 +913,7 @@ const AdminRequestViewContent = () => {
                       </svg>
                       <h4 className="font-medium text-gray-700">Request Description</h4>
                     </div>
-                    <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                    <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-end gap-4">
@@ -780,6 +940,7 @@ const AdminRequestViewContent = () => {
               </div>
 
               {/* --- Admin Issue Components --- */}
+
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-700 flex items-center">

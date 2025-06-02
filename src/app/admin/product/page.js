@@ -61,28 +61,31 @@ useEffect(() => {
   fetchProducts();
 }, []);
 
-  const fetchProducts = async () => {
-    try {
-      const token = localStorage.getItem('token'); // adjust key if needed
+const fetchProducts = async () => {
+  try {
+    const token = localStorage.getItem('token');
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.products) {
-        setProducts(data.products);
-      } else {
-        console.error('Failed to fetch products:', data.message || res.statusText);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('Error fetching products:', error);
+    });
+
+    const data = await res.json();
+    console.log('Fetched products:', data);
+
+    if (res.ok && data.products) {
+      const flattened = data.products.map(p => p.product || p); // <-- FIX HERE
+      setProducts(flattened);
+    } else {
+      console.error('Failed to fetch products:', data.message || res.statusText);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+};
+
 
 
   const handleChange = (e) => {
@@ -110,6 +113,7 @@ const validateProduct = (product) => {
   const quantity = parseInt(product.quantity);
   const damagedQuantity = parseInt(product.damagedQuantity);
   const inStock = parseInt(product.inStock);
+
 
   if (isNaN(quantity) || quantity < 0) {
     errors.quantity = 'Quantity must be a non-negative number.';
@@ -285,6 +289,7 @@ setSuccessMessage(result.message || 'Product updated successfully');
     { key: 'issued', label: 'Issued Quantity' },
     { key: 'damagedQuantity', label: 'Damaged Quantity' },
     { key: 'inStock', label: 'In Stock' },
+    { key: 'yetToGive', label: 'On Hold' },
     { key: 'actions', label: 'Actions' },
   ];
 

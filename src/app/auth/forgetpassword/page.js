@@ -144,7 +144,7 @@ const handleSubmit = async (e) => {
 
       <h3 className="text-xl font-semibold">Email Sent</h3>
       <p className="text-sm mt-2">An email has been sent to {email}. Please verify your account.</p>
-{/* <p className="text-sm mt-1 text-gray-600">Check your spam folder if you don&rsquo;t see it.</p> */}
+<p className="text-sm mt-1 text-gray-600">Check your spam folder if you don&rsquo;t see it.</p>
 
       <div className="mt-4">
         <button
