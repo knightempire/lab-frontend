@@ -2,20 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,RefreshCcw} from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
-import { Eye } from 'lucide-react';
-
-
-const userRequests = [
-  { requestId: "REQ-2025-0513", date: "2025-05-12", items: "Arduino Kit, Breadboard", status: "Pending" },
-  { requestId: "REQ-2025-0512", date: "2025-05-10", items: "Raspberry Pi", status: "Approved" },
-  { requestId: "REQ-2025-0511", date: "2025-05-08", items: "Jumper Wires", status: "Rejected" },
-  { requestId: "REQ-2025-0510", date: "2025-05-01", items: "ESP32 Module", status: "Approved" },
-];
-
 
 const columns = [
   { key: 'requestId', label: 'Request ID' },
@@ -27,28 +17,67 @@ const columns = [
 
 export default function UserRequestsPage() {
   const router = useRouter();
+  const [requests, setRequests] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
-
   const itemsPerPage = 10;
 
-  const handleReset = () => {
-    setStatusFilter('');
-  };
+  const handleReset = () => setStatusFilter('');
 
   const handleViewRequest = (request) => {
-    const params = new URLSearchParams({ requestId: request.requestId});
+    const params = new URLSearchParams({ requestId: request.requestId });
     router.push(`/user/review?${params.toString()}`);
   };
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found in localStorage');
+        router.push('/auth/login');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/user`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.requests) {
+          const formatted = data.requests.map(req => ({
+            requestId: req.requestId,
+            date: new Date(req.requestDate).toISOString().split('T')[0],
+            items: `${req.requestedProducts.length} items`,
+            status: req.requestStatus.charAt(0).toUpperCase() + req.requestStatus.slice(1),
+            raw: req,
+          }));
+
+          setRequests(formatted);
+        } else {
+          console.error('Failed to fetch requests', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching requests:', error);
+      }
+    };
+
+    fetchRequests();
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
   const getFilteredRequests = () => {
-    return userRequests
-      .filter(req => 
+    return requests
+      .filter(req =>
         statusFilter === '' || req.status.toLowerCase() === statusFilter.toLowerCase()
       )
       .filter(req =>
@@ -66,11 +95,12 @@ export default function UserRequestsPage() {
   );
 
   const filterList = [
-    { label: 'Status', key: 'status', options: ['', 'Pending', 'Approved', 'Rejected'], value: statusFilter },
+    { label: 'Status', key: 'status', options: ['', 'Pending', 'Approved', 'Rejected','Returned','Closed'], value: statusFilter },
   ];
 
   const rows = paginatedRequests.map((req) => {
     let icon, bg, text;
+    
     switch (req.status) {
       case 'Approved':
         icon = <CheckCircle size={16} className="text-green-700" />;
@@ -87,52 +117,60 @@ export default function UserRequestsPage() {
         bg = 'bg-red-100';
         text = 'text-red-700';
         break;
+      case 'returned':
+        icon = <RefreshCcw size={16} className="text-blue-700" />;
+        bg = 'bg-blue-100';
+        text = 'text-blue-700';
+        break;
+      case 'Closed':
+       icon = <AlertTriangle size={16} className="text-amber-700" />;
+        bg = 'bg-amber-100';
+        text = 'text-amber-700';
+        break;
     }
 
- return {
-    ...req,
-    requestId: (
-        <span className="text-xs text-gray-700">{req.requestId}</span>
+    return {
+      ...req,
+      requestId: <span className="text-xs text-gray-700">{req.requestId}</span>,
+      status: (
+        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
+          {icon}
+          {req.status}
+        </div>
       ),
-    status: (
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
-        {icon}
-        {req.status}
-      </div>
-    ),
-    actions: (
-      <div className="flex gap-2 justify-center">
-        <button
-          className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-          onClick={() => handleViewRequest(req)}
-        >
-          <Eye size={14} />
-          View Request
-        </button>
-      </div>
-    )
-  };
-});
+      actions: (
+        <div className="flex gap-2 justify-center">
+          <button
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+            onClick={() => handleViewRequest(req.raw)}
+          >
+            <Eye size={14} />
+            View Request
+          </button>
+        </div>
+      ),
+    };
+  });
 
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">
       <div className="flex items-center gap-2 mb-6">
         <ClipboardList size={28} className="text-blue-600" />
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
-            My Requests
-            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-            Requests: {userRequests.length}
-            </span>
+          My Requests
+          <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
+            Requests: {requests.length}
+          </span>
         </h1>
-       </div>
+      </div>
 
       <div className="mb-4 mt-6">
-      <FiltersPanel
-        filters={filterList}
-        onChange={(key, value) => setStatusFilter(value)}
-        onReset={handleReset}
-        Text="All Requests"
-      />
+        <FiltersPanel
+          filters={filterList}
+          onChange={(key, value) => setStatusFilter(value)}
+          onReset={handleReset}
+          Text="All Requests"
+        />
       </div>
 
       <div className="mb-6 w-full relative bg-white">

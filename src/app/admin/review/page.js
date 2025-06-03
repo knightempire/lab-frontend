@@ -7,107 +7,19 @@ import { Suspense } from 'react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
+import SuccessAlert from '../../../components/SuccessAlert';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
-const simplifiedProducts = [
-  { name: "Widget A", inStock: 90 },
-  { name: "Widget B", inStock: 45 },
-  { name: "Widget C", inStock: 65 },
-  { name: "Widget D", inStock: 85 },
-  { name: "Widget E", inStock: 90 },
-  { name: "Widget F", inStock: 45 },
-  { name: "Widget G", inStock: 65 },
-  { name: "Widget H", inStock: 85 },
-  { name: "Widget I", inStock: 90 },
-  { name: "Widget J", inStock: 45 },
-];
 
-const requests = [
-  {
-    requestId: "REQ-2025-0513",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    requestedDays: 5,
-    status: "pending",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    description: "For IoT project, Display indicators",
-    components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 }
-    ]
-  },
-  {
-    requestId: "REQ-2025-0514",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    requestedDays: 3,
-    status: "pending",
-    isExtended: true,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-05-01",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
-    ]
-  },
-  {
-    requestId: "REQ-2025-0515",
-    name: "Rahul Mehta",
-    rollNo: "2023456",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: true,
-    requestedDate: "2025-05-06",
-    requestedDays: 7,
-    status: "accepted",
-    isExtended: false,
-    originalRequestedDays: 2,
-    originalRequestDate: "2025-04-28",
-    originalApprovedDate: "2025-04-29",
-    originalAdminMessage: "Approved for initial borrowing. Please return on time.",
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
-    ]
-  }
-];
 
 const AdminRequestViewContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
-
+  const [products, setProducts] = useState([]);
   // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
-  const [issuableDays, setIssuableDays] = useState(7);
+  const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
 
@@ -118,21 +30,178 @@ const AdminRequestViewContent = () => {
 
   const [validationMessage, setValidationMessage] = useState('');
 
+  const [adminAvailableDate, setAdminAvailableDate] = useState('');
+  const [adminAvailableTime, setAdminAvailableTime] = useState('');
+
+  const [showSuccess, setShowSuccess] = useState(false);
+
+
+
   useEffect(() => {
-      const reqid = searchParams.get('requestId');
-      if (reqid) {
-        const req = requests.find(r => r.requestId === reqid);
-        if (req) {
-          setRequestData(req);
-          setAdminIssueComponents([...req.components]);
-          setIssuableDays(req.requestedDays || 7);
-        } else {
-          router.push('/admin/requests');
-        }
-      } else {
-        router.push('/admin/requests');
+    const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
+
+    if (!requestId) {
+      console.error('No requestId found in search params');
+           router.push('/auth/login'); 
+    }
+ 
+     const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    }, [router, searchParams]);
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+          router.push('/auth/login'); 
+      }
+
+      console.log('User is admin, proceeding with request data fetch');
+          if (requestId) {
+      fetchRequestData();
+    } else {
+      router.push('/admin/request');
+    }
+
+    fetchProducts();
+    }
+      }
+
+
+verifyadmin();
+
+  }, [searchParams, router]);
+
+
+
+    const fetchRequestData = async () => {
+      try {
+
+            const requestId = searchParams.get('requestId');
+    console.log('requestId:', requestId);
+
+         const token = localStorage.getItem('token'); 
+        if (!token) {
+          console.error('No token found in localStorage');
+          router.push('/auth/login'); 
+          return;
+        } 
+        if (!requestId) {
+           router.push('/admin/request');
+        }
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          localStorage.remove('token'); 
+          router.push('/auth/login');
+        }
+
+        const apiResponse = await response.json();
+        const data = apiResponse.request; 
+
+        const mappedData = {
+          requestId: data.requestId,
+          name: data.userId.name,
+          rollNo: data.userId.rollNo,
+          phoneNo: data.userId.phoneNo, 
+          email: data.userId.email,
+          isFaculty: false, 
+          requestedDate: data.requestDate,
+          requestedDays: data.requestedDays,
+          adminApprovedDays: data.adminApprovedDays,
+          status: data.requestStatus,
+          referenceStaff: {
+            name: data.referenceId.name,
+            email: data.referenceId.email,
+          },
+          userMessage: data.description ,
+          
+          adminMessage: data.adminReturnMessage || "",
+          components: data.requestedProducts.map(product => ({
+            id: product.productId._id,
+          name: product.productId?.product_name || "Unknown Product",
+            quantity: product.quantity,
+          })),
+          adminIssueComponents: data.issued.map(issued => ({
+              id: issued.issuedProductId._id,
+            name: issued.issuedProductId.product_name,
+            quantity: issued.issuedQuantity,
+            replacedQuantity: 0, 
+          })),
+          returnedComponents: [], 
+          reIssueRequest: null, 
+        };
+
+        setRequestData(mappedData);
+        setIssuableDays(mappedData.requestedDays);
+        console.log('Request Data:', mappedData);
+        console.log('usermessage:', mappedData.userMessage);
+setAdminIssueComponents(() => {
+  const isIssuedEmpty = !mappedData.adminIssueComponents || mappedData.adminIssueComponents.length === 0;
+
+  return isIssuedEmpty
+    ? mappedData.components.map((c, idx) => ({
+        id: c.id || idx + 1, // Fallback ID if needed
+        name: c.name,
+        quantity: c.quantity,
+        description: c.description || ''
+      }))
+    : mappedData.adminIssueComponents;
+});
+
+      } catch (error) {
+        console.error('Error fetching request data:', error);
+        router.push('/admin/request');
+      }
+    };
+
+      const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.products) {
+          // Transform API data to simplified format used in component
+          const simplified = data.products.map(item => ({
+            name: item.product.product_name,
+            inStock: item.product.inStock
+          }));
+          setProducts(simplified);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -146,11 +215,66 @@ const AdminRequestViewContent = () => {
     });
   };
 
+
+
+const handleSave = async () => {
+  const requestId = searchParams.get('requestId');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    console.error('No token found in localStorage');
+    router.push('/auth/login');
+    return;
+  }
+
+  console.log('Saving admin issued components:', adminIssueComponents);
+    const currentstatus = requestData.status;
+    console.log('Current request status:', currentstatus);
+  if (currentstatus === 'pending') {
+    console.log("Request is pending, proceeding to save.");
+
+      const payload = {
+    issued: adminIssueComponents.map(component => ({
+      issuedProductId: component.id,
+      issuedQuantity: component.quantity
+    }))
+  };
+
+  console.log('Payload for update:', payload);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    if (!response.ok) {
+      console.error('Failed:', data.message || 'Unknown error');
+    } else {
+      console.log('Success:', data);
+      
+      setShowSuccess(true);
+      fetchRequestData(); 
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  }
+
+};
+
+  
   // --- Admin Issue Table Handlers ---
   const handleQuantityChange = (id, newQuantity) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
         return { ...component, quantity: limitedQuantity };
@@ -161,7 +285,7 @@ const AdminRequestViewContent = () => {
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === component.name);
+        const product = products.find(p => p.name === component.name);
         const maxStock = product ? product.inStock : 0;
         const newQuantity = Math.min(component.quantity + 1, maxStock);
         return { ...component, quantity: newQuantity };
@@ -181,7 +305,7 @@ const AdminRequestViewContent = () => {
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
-        const product = simplifiedProducts.find(p => p.name === newName);
+        const product = products.find(p => p.name === newName);
         const initialQty = product && product.inStock > 0 ? 1 : 0;
         return { ...component, name: newName, quantity: initialQty };
       }
@@ -213,11 +337,11 @@ const AdminRequestViewContent = () => {
     }
   };
   const handleIssuableDaysChange = (value) => {
-    const newDays = Math.min(Math.max(0, parseInt(value) || 0), 30);
+    const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
     setIssuableDays(newDays);
   };
   const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
-  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 0));
+  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 1));
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
@@ -228,37 +352,85 @@ const AdminRequestViewContent = () => {
         : 'Due to component shortage, your request has been declined.'
     );
   };
+
   const handleSubmit = async () => {
-    if (!requestData.isExtended && action === 'accept') {
-      if (adminIssueComponents.length === 0) {
-        setValidationMessage('Please add at least one component before accepting the request.');
-        return;
-      }
-      const invalidComponents = adminIssueComponents.filter(
-        component => !component.name || component.quantity <= 0
-      );
-      if (invalidComponents.length > 0) {
-        setValidationMessage('Please fill in all component details (name and quantity) before accepting the request.');
-        return;
-      }
+  if (action === 'accept') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.error('No token found in localStorage');
+      router.push('/auth/login');
+      return;
     }
-    setValidationMessage('');
-    setIsSubmitting(true);
+
+    const payload = {
+      adminApprovedDays: issuableDays, // Set the number of approved days
+      issued: adminIssueComponents.map(component => ({
+        issuedProductId: component.id,
+        issuedQuantity: component.quantity
+      })),
+      adminReturnMessage: responseMessage,
+      scheduledCollectionDate: new Date().toISOString() // Set the current date/time
+    };
+
     try {
-      setTimeout(() => {
-        alert(`Request ${action === 'accept' ? 'approved' : 'declined'} successfully!`);
-        setRequestData({
-          ...requestData,
-          status: action === 'accept' ? 'accepted' : 'rejected'
-        });
-        setAction(null);
-        setIsSubmitting(false);
-      }, 1000);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to approve request:', errorData.message);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Request approved successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'accepted' }));
+      setShowSuccess(true);
     } catch (error) {
-      alert('Failed to process request. Please try again.');
-      setIsSubmitting(false);
+      console.error('Error during API call:', error);
     }
-  };
+  }
+
+  if (action === 'decline') {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token');
+      const payload = {
+      adminReturnMessage: responseMessage || "Insufficient amount of products" 
+    };
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/reject/${requestId}`, {
+        method: 'POST', // Use POST for rejecting
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to reject request:', errorData.message);
+        return;
+      }
+      const data = await response.json();
+      console.log('Request rejected successfully:', data);
+      // Update the request data state or perform any other actions needed
+      setRequestData(prev => ({ ...prev, status: 'rejected' }));
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Error during API call:', error);
+    }
+  }
+};
+
 
   // --- Status Badge ---
   const StatusBadge = ({ status }) => {
@@ -283,11 +455,11 @@ const AdminRequestViewContent = () => {
     const existingComponentNames = adminIssueComponents
       .filter(component => component.id !== id && component.name)
       .map(component => component.name);
-    const filteredProducts = simplifiedProducts
-      .filter(product =>
-        !existingComponentNames.includes(product.name) &&
-        product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
-      );
+  const filteredProducts = products
+    .filter(product =>
+      !existingComponentNames.includes(product.name) &&
+      product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
+    );
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (
@@ -381,7 +553,7 @@ const AdminRequestViewContent = () => {
     { key: 'actions', label: 'Actions' }
   ];
   const adminComponentsRows = adminIssueComponents.map(component => {
-    const product = simplifiedProducts.find(p => p.name === component.name);
+    const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
     return {
       ...component,
@@ -588,6 +760,7 @@ const AdminRequestViewContent = () => {
                   </div>
 
                   {/* Admin Issue Components Table (Read-only) */}
+                  
                   <div className="bg-white shadow rounded-lg">
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex justify-between items-center mb-4">
@@ -655,7 +828,7 @@ const AdminRequestViewContent = () => {
                     <FileText className="w-5 h-5 mr-2 text-blue-600" />
                     <h4 className="font-medium text-gray-700">User Note / Reason</h4>
                   </div>
-                  <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                  <p className="text-gray-600">{requestData.userMessage  || "No description provided."}</p>
                 </div>
               </div>
 
@@ -740,7 +913,7 @@ const AdminRequestViewContent = () => {
                       </svg>
                       <h4 className="font-medium text-gray-700">Request Description</h4>
                     </div>
-                    <p className="text-gray-600">{requestData.description || "No description provided."}</p>
+                    <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-end gap-4">
@@ -755,8 +928,19 @@ const AdminRequestViewContent = () => {
                     </div>
                   </div>
                 </div>
+                  {requestData.status === "accepted" && requestData.originalAdminMessage && (
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                        <h4 className="font-medium text-green-700">Admin Approval Message</h4>
+                      </div>
+                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
+                    </div>
+                  )}
               </div>
+
               {/* --- Admin Issue Components --- */}
+
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-700 flex items-center">
@@ -796,6 +980,26 @@ const AdminRequestViewContent = () => {
                     </div>
                   )}
                 </div>
+                {/* Submit Button for Admin Issued Components */}
+                  <>
+                    <div className="flex justify-end mt-4">
+                      <button
+                        className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                        onClick={handleSave}
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Save Issued Components
+                      </button>
+                    </div>
+
+                    {showSuccess && (
+                      <SuccessAlert
+                        message="Issued components saved!"
+                        description="Changes have been successfully recorded."
+                        onClose={() => setShowSuccess(false)}
+                      />
+                    )}
+                  </>
                 {/* Issuable days */}
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
                   <div className="flex items-center mb-2">
@@ -839,6 +1043,101 @@ const AdminRequestViewContent = () => {
             </>
           )}
           {/* --- Take Action Section --- */}
+          {requestData.status === 'accepted' && requestData.CollectedDate === null ? (
+          <div className="p-6 border-t border-gray-200 flex flex-col items-start">
+              <div className="flex items-center mb-4">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-base font-medium text-green-800">
+                Request is <span className="font-semibold">approved</span> and pending issuance.
+              </h3>
+            </div>
+            {!action ? (
+              <button
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+                onClick={() => setAction('issued')}
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Mark as Issued
+              </button>
+            ) : (
+              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+                <div className="mb-5">
+                  <div className="flex items-center mb-4">
+                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">
+                        Issue Request
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                    onClick={async () => {
+                      setIsSubmitting(true);
+                      setTimeout(() => {
+                        setRequestData({
+                          ...requestData,
+                          CollectedDate: new Date().toISOString(),
+                          ResponseMessage: responseMessage 
+                        });
+                        setAction(null);
+                        setIsSubmitting(false);
+                      }, 1000);
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      'Confirm & Issue'
+                    )}
+                  </button>
+
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
+                    onClick={() => setAction(null)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+            )}
+          </div>
+        ) : requestData.status === 'pending' ? (
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
               <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -847,41 +1146,77 @@ const AdminRequestViewContent = () => {
               Take Action
             </h3>
             {!action ? (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
-                  onClick={() => handleActionClick('accept')}
-                  aria-label="Accept Request"
-                  title="Accept this request"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Accept Request
-                </button>
-                <button
-                  className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
-                  onClick={() => handleActionClick('decline')}
-                  aria-label="Decline Request"
-                  title="Decline this request"
-                >
-                  <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Decline Request
-                </button>
-              </div>
+              <>
+                <div className="p-6 pt-0">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Availability</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                      <input
+                        type="date"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableDate}
+                        onChange={e => setAdminAvailableDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
+                      <input
+                        type="time"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={adminAvailableTime}
+                        onChange={e => setAdminAvailableTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('accept')}
+                      aria-label="Accept Request"
+                      title="Accept this request"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Accept
+                    </button>
+
+                    <button
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      onClick={() => handleActionClick('decline')}
+                      aria-label="Decline Request"
+                      title="Decline this request"
+                    >
+                      <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                 <div className="mb-4">
                   <div className="mb-2 flex items-center">
                     <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-                      action === 'accept' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                      action === 'accept' ? 'bg-green-100 text-green-600'
+                        : action === 'decline' ? 'bg-red-100 text-red-600'
+                        : 'bg-indigo-100 text-indigo-600'
                     }`}>
                       {action === 'accept' ? (
                         <CheckCircle className="w-6 h-6" />
-                      ) : (
+                      ) : action === 'decline' ? (
                         <XCircle className="w-6 h-6" />
+                      ) : (
+                        <CheckCircle className="w-6 h-6" />
                       )}
                     </div>
                     <h4 className="text-lg font-medium">
-                      You are about to {action === 'accept' ? 'accept' : 'decline'} this request
+                      You are about to {action === 'accept'
+                        ? 'accept'
+                        : action === 'decline'
+                        ? 'decline'
+                        : 'issue'} this request
                     </h4>
                   </div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Response Message</label>
@@ -902,7 +1237,9 @@ const AdminRequestViewContent = () => {
                 <div className="flex space-x-4">
                   <button
                     className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-                      action === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                      action === 'accept' ? 'bg-green-600 hover:bg-green-700'
+                        : action === 'decline' ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700'
                     } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
                     onClick={handleSubmit}
                     disabled={isSubmitting}
@@ -917,7 +1254,11 @@ const AdminRequestViewContent = () => {
                       </>
                     ) : (
                       <>
-                        {action === 'accept' ? 'Confirm & Accept' : 'Confirm & Decline'}
+                        {action === 'accept'
+                          ? 'Confirm & Accept'
+                          : action === 'decline'
+                          ? 'Confirm & Decline'
+                          : 'Confirm & Issue'}
                       </>
                     )}
                   </button>
@@ -932,6 +1273,7 @@ const AdminRequestViewContent = () => {
               </div>
             )}
           </div>
+        ) : null}
         </div>
       </div>
     </div>

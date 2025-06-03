@@ -1,95 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays } from 'lucide-react';
+import {
+  Users,
+  Search,
+  Eye,
+  CheckCircle,
+  Clock,
+  XCircle,
+  CalendarDays,
+  Repeat
+} from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 
-const requests = [
-  {
-    id: 1, // Added id property
-    requestId: "REQ-2025-0513",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    requestedDays: 5,
-    status: "pending",
-    isExtended: false,
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    description: "For IoT project, Display indicators",
-    components: [
-      { id: 1, name: 'Arduino', quantity: 2 },
-      { id: 2, name: 'LEDs', quantity: 10 },
-      { id: 3, name: 'Sensors', quantity: 20 }
-    ]
-  },
-  {
-    id: 2, // Added id property
-    requestId: "REQ-2025-0514",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    requestedDays: 3,
-    status: "pending",
-    isExtended: true,
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    components: [
-      { id: 1, name: 'Raspberry Pi', quantity: 1 },
-      { id: 2, name: 'Breadboards', quantity: 2 }
-    ]
-  },
-  {
-    id: 3, // Added id property
-    requestId: "REQ-2025-0515",
-    name: "Rahul Mehta",
-    rollNo: "2023456",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: true,
-    requestedDate: "2025-05-06",
-    requestedDays: 7,
-    status: "accepted",
-    isExtended: false,
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Motors', quantity: 5 }
-    ]
-  }
-];
-
-// Extract unique component names from the requests data
-const getUniqueComponents = () => {
-  const componentSet = new Set();
-  requests.forEach(request => {
-    request.components.forEach(component => {
-      componentSet.add(component.name);
-    });
-  });
-  return Array.from(componentSet);
-};
-
 export default function RequestsPage() {
   const router = useRouter();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -99,7 +31,63 @@ export default function RequestsPage() {
   const [selectedComponents, setSelectedComponents] = useState([]);
 
   const itemsPerPage = 10;
-  const uniqueComponents = getUniqueComponents();
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        console.log('Fetched requests:', data);
+
+        if (response.ok && data?.requests) {
+          const transformedRequests = data.requests.map((req, index) => ({
+            id: req._id,
+            requestId: req.requestId || `REQ-${index + 1}`,
+            name: req.userId?.name || 'Unknown',
+            rollNo: req.userId?.rollNo || 'N/A',
+            phoneNo: req.userId?.phoneNo || 'N/A', // Not provided
+            email: req.userId?.email || 'N/A',
+            isFaculty: req.userId?.role === 'faculty', // Update if role is not present
+            requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
+            requestedDays: req.requestedDays,
+            status: req.requestStatus.toLowerCase(),
+            isExtended: false, // Assuming not in response
+            referenceStaff: {
+              name: req.referenceId?.name || 'N/A',
+              email: req.referenceId?.email || 'N/A'
+            },
+            description: req.description || '',
+            components: req.requestedProducts.map(product => ({
+              id: product._id,
+              name: product.productName,
+              quantity: product.quantity
+            }))
+          }));
+
+          setRequests(transformedRequests);
+        } else {
+          setError(data.message || 'Failed to fetch requests.');
+        }
+      } catch (err) {
+        setError('Something went wrong while fetching requests.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters, selectedComponents]);
 
   const handleReset = () => {
     setFilters({
@@ -109,35 +97,38 @@ export default function RequestsPage() {
     setSelectedComponents([]);
   };
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filters, selectedComponents]);
-  
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
-  
+
   const handleComponentsChange = (components) => {
     setSelectedComponents(components);
   };
 
+  const getUniqueComponents = () => {
+    const componentSet = new Set();
+    requests.forEach(request => {
+      request.components.forEach(component => {
+        componentSet.add(component.name);
+      });
+    });
+    return Array.from(componentSet);
+  };
+
   const getFilteredResults = () => {
     return requests.filter(req => {
-      // Filter by role
-      const matchesRole = filters.role === '' || 
+      const matchesRole = filters.role === '' ||
         (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
-      
-      // Filter by status
-      const matchesStatus = filters.status === '' || 
+
+      const matchesStatus = filters.status === '' ||
         req.status.toLowerCase() === filters.status.toLowerCase();
-      
-      // Filter by selected components
+
       const matchesComponents =
         selectedComponents.length === 0 ||
         selectedComponents.every(product =>
           req.components.some(component => component.name === product)
         );
-      
+
       return matchesRole && matchesStatus && matchesComponents;
     }).filter(req =>
       req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -151,6 +142,7 @@ export default function RequestsPage() {
     router.push(`/admin/review?${params.toString()}`);
   };
 
+  const uniqueComponents = getUniqueComponents();
   const filteredRequests = getFilteredResults();
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const paginatedRequests = filteredRequests.slice(
@@ -160,7 +152,7 @@ export default function RequestsPage() {
 
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected'], value: filters.status },
+    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Pending', 'Rejected', 'Extension'], value: filters.status },
   ];
 
   const columns = [
@@ -178,6 +170,7 @@ export default function RequestsPage() {
 
     switch (item.status) {
       case 'accepted':
+      case 'approved':
         statusIcon = <CheckCircle size={16} className="text-green-700" />;
         bgColor = 'bg-green-100';
         textColor = 'text-green-700';
@@ -195,7 +188,20 @@ export default function RequestsPage() {
         textColor = 'text-red-700';
         statusText = 'Rejected';
         break;
+      case 'extension':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
+        break;
+      default:
+        statusIcon = <Clock size={16} className="text-gray-500" />;
+        bgColor = 'bg-gray-100';
+        textColor = 'text-gray-700';
+        statusText = 'Unknown';
+        break;
     }
+
     return {
       ...item,
       nameAndRoll: (
@@ -209,9 +215,7 @@ export default function RequestsPage() {
           </div>
         </div>
       ),
-      requestId: (
-        <span className="text-xs text-gray-700">{item.requestId}</span>
-      ),
+      requestId: <span className="text-xs text-gray-700">{item.requestId}</span>,
       emailAndPhone: (
         <div className="flex flex-col items-center text-center">
           <span className="font-medium">{item.email}</span>
@@ -233,7 +237,7 @@ export default function RequestsPage() {
       ),
       actions: (
         <div className="flex gap-2 justify-center">
-          <button 
+          <button
             className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
             onClick={() => handleViewRequest(item)}
           >
@@ -244,15 +248,32 @@ export default function RequestsPage() {
       )
     };
   });
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <p className="text-gray-500">Loading requests...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50 ">
+    <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Users size={28} className="text-blue-600" />
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
             Request Management
             <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-              Request Received: {requests.length}
+              Requests Received: {requests.length}
             </span>
           </h1>
         </div>
@@ -283,8 +304,17 @@ export default function RequestsPage() {
 
       {filteredRequests.length > 0 ? (
         <>
-          <Table columns={columns} rows={rows} currentPage={currentPage} itemsPerPage={itemsPerPage}/>
-          <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
+          <Table
+            columns={columns}
+            rows={rows}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+          />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+          />
         </>
       ) : (
         <div className="text-center py-12 bg-white rounded-lg shadow-inner">

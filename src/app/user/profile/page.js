@@ -1,32 +1,73 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Save, X, CheckCircle, History, AlertTriangle, BarChart2, GraduationCap, ArrowLeft, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useRouter } from "next/navigation";
+import LoadingScreen from "../../../components/loading/loadingscreen";
+
+const dummyUserDetails = {
+  name: "Akshay KS",
+  rollNo: "CB.SC.U4CSE23104",
+  email: "akshay@gmail.com",
+  phoneNo: "9876543210",
+  isFaculty: false,
+  damageCount: 3,
+  totalHistoryCount: 15,
+  status: "active",
+  requests: [
+    { requestId: "REQ123", totalComponents: 3, status: "pending", isReturned: false },
+    { requestId: "REQ124", totalComponents: 1, status: "accepted", isReturned: true },
+    { requestId: "REQ125", totalComponents: 5, status: "accepted", isReturned: false },
+    { requestId: "REQ126", totalComponents: 2, status: "rejected", isReturned: false },
+    { requestId: "REQ127", totalComponents: 4, status: "accepted", isReturned: true },
+  ]
+};
 
 const UserProfile = () => {
-  const [userDetails, setUserDetails] = useState({
-    name: "Akshay KS",
-    rollNo: "CB.SC.U4CSE23104",
-    email: "akshay@gmail.com",
-    phoneNo: "9876543210",
-    isFaculty: false,
-    damageCount: 3,
-    totalHistoryCount: 15,
-    status: "active",
-    requests: [
-      { requestId: "REQ123", totalComponents: 3, status: "pending", isReturned: false },
-      { requestId: "REQ124", totalComponents: 1, status: "accepted", isReturned: true },
-      { requestId: "REQ125", totalComponents: 5, status: "accepted", isReturned: false },
-      { requestId: "REQ126", totalComponents: 2, status: "rejected", isReturned: false },
-      { requestId: "REQ127", totalComponents: 4, status: "accepted", isReturned: true },
-    ]
-  });
   const router = useRouter();
-
+  const [userDetails, setUserDetails] = useState(dummyUserDetails);
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({ name: userDetails.name, phoneNo: userDetails.phoneNo });
+  const [editData, setEditData] = useState({ name: dummyUserDetails.name, phoneNo: dummyUserDetails.phoneNo });
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // router.push('/auth/login');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/endpoint`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) {
+          localStorage.removeItem('token');
+          // router.push('/auth/login');
+          return;
+        }
+
+        const data = await res.json();
+        // Merge API data with dummy data as fallback
+        const merged = {
+          ...dummyUserDetails,
+          ...data,
+          requests: Array.isArray(data.requests) && data.requests.length > 0 ? data.requests : dummyUserDetails.requests,
+        };
+        setUserDetails(merged);
+        setEditData({ name: merged.name, phoneNo: merged.phoneNo });
+      } catch (e) {
+        // On error, fallback to dummy data
+        setUserDetails(dummyUserDetails);
+        setEditData({ name: dummyUserDetails.name, phoneNo: dummyUserDetails.phoneNo });
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleEdit = () => setIsEditing(true);
   const handleCancel = () => setIsEditing(false);
@@ -35,10 +76,33 @@ const UserProfile = () => {
     setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setUserDetails({ ...userDetails, ...editData });
     setIsEditing(false);
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update/${userDetails.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userName: editData.name,
+          userPhoneNo: editData.phoneNo,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
   };
+
+  if (!userDetails) {
+    return <LoadingScreen />;
+  }
 
   // Prepare data for charts
   const requestStatusData = [

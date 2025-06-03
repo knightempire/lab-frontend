@@ -24,6 +24,13 @@ useEffect(() => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('No token found in localStorage');
+        router.push('/auth/login');
+        return;
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -31,16 +38,26 @@ useEffect(() => {
         },
       });
 
-      if (!res.ok) throw new Error('Failed to fetch products');
+      if (!res.ok){
+        console.error('Failed to fetch products:', res.statusText);
+        localStorage.removeItem('token');
+        router.push('/auth/login');
+        return;
+      } 
 
       const data = await res.json();
-      const fetchedProducts = data.products.map(p => ({
-        id: p.id,
-        name: p.product_name,
-        inStock: p.inStock,
-        selected: false,
-        selectedQuantity: 0
-      }));
+      console.log('Fetched products:', data.products);
+const fetchedProducts = data.products.map(p => {
+  const prod = p.product;
+  return {
+    id: prod._id,
+    name: prod.product_name,
+    inStock: prod.inStock - prod.yetToGive,
+    selected: false,
+    selectedQuantity: 0
+  };
+});
+
 
       // Load previous selections from localStorage
       const storedProducts = localStorage.getItem('selectedProducts');

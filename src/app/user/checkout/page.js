@@ -31,7 +31,7 @@ export default function CheckoutPage() {
   const [acknowledged, setAcknowledged] = useState(false);
   const [referenceStaff, setReferenceStaff] = useState('');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
-const [referenceStaffId, setReferenceStaffId] = useState('')
+  const [referenceStaffId, setReferenceStaffId] = useState('')
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
   
   // Custom faculty state
@@ -113,17 +113,42 @@ const filteredStaffOptions = referenceStaffOptions.filter((staff) =>
     const updated = [...selectedProducts];
     const product = updated[index];
     
-
-    const quantity = Math.max(1, Math.min(parseInt(newQuantity) || 1, product.inStock));
+    // Allow quantity to go to 0, but not below 0, and not above inStock
+    const quantity = Math.max(0, Math.min(parseInt(newQuantity) || 0, product.inStock));
+    
+    // If quantity is 0, remove the product
+    if (quantity === 0) {
+      const filteredProducts = updated.filter((_, i) => i !== index);
+      setSelectedProducts(filteredProducts);
+      localStorage.setItem('selectedProducts', JSON.stringify(filteredProducts));
+      
+      // Fix pagination after removal
+      const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / 3);
+      if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
+        setCurrentPage(totalPagesAfterRemoval);
+      } else if (filteredProducts.length === 0) {
+        setCurrentPage(1);
+      }
+      return;
+    }
     
     product.selectedQuantity = quantity;
     setSelectedProducts(updated);
+    localStorage.setItem('selectedProducts', JSON.stringify(updated));
   };
 
   const removeProduct = (index) => {
     const updated = selectedProducts.filter((_, i) => i !== index);
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
+    
+    // Fix pagination after removal
+    const totalPagesAfterRemoval = Math.ceil(updated.length / 3);
+    if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
+      setCurrentPage(totalPagesAfterRemoval);
+    } else if (updated.length === 0) {
+      setCurrentPage(1);
+    }
   };
 
 
@@ -184,7 +209,6 @@ const handleCustomFacultySubmit = async (e) => {
     });
    router.push('/auth/login'); 
   }
-
 
   const payload = {
     refName: customFacultyName,
@@ -363,7 +387,7 @@ const handleConfirmSubmit = async () => {
   const columns = [
     { key: 'name', label: 'Component' },
     { key: 'selectedQuantity', label: 'Quantity' },
-    { key: 'inStock', label: 'Stock' },
+    { key: 'inStock', label: 'InStock' },
     { key: 'action', label: 'Action' },
   ];
   
@@ -381,7 +405,6 @@ const handleConfirmSubmit = async () => {
                 type="button"
                 className="h-8 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600"
                 onClick={() => updateQuantity(index, product.selectedQuantity - 1)}
-                disabled={product.selectedQuantity <= 1}
               >
                 −
               </button>
