@@ -16,6 +16,7 @@ import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from "../../../components/loading/loadingscreen"; 
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -252,7 +253,7 @@ export default function RequestsPage() {
   if (loading) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow-inner">
-        <p className="text-gray-500">Loading requests...</p>
+       <LoadingScreen />;
       </div>
     );
   }
