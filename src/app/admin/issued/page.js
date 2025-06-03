@@ -2,7 +2,7 @@
 
 // app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -29,6 +29,44 @@ const [productOptions, setProductOptions] = useState([]);
 
 
 useEffect(() => {
+
+  
+      const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+               router.push('/auth/login'); 
+      }
+    }
+  }
+
+  verifyadmin();
+
+
+  fetchRequests();
+}, []);
+
+
   const fetchRequests = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -107,9 +145,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
-  fetchRequests();
-}, []);
 
 
 

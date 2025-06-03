@@ -33,6 +33,44 @@ const [productOptions, setProductOptions] = useState([]);
   const itemsPerPage = 10;
 
   useEffect(() => {
+
+      const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+               router.push('/auth/login'); 
+      }
+    }
+  }
+
+  verifyadmin();
+
+
+    fetchRequests();
+  }, []);
+
+
+  
     const fetchRequests = async () => {
       setLoading(true);
       try {
@@ -114,9 +152,6 @@ const [productOptions, setProductOptions] = useState([]);
         setLoading(false);
       }
     };
-
-    fetchRequests();
-  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
