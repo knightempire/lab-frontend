@@ -50,8 +50,8 @@ if (data?.requests) {
     // Skip pending
     if (status === 'pending') return false;
 
-    // If approved (accepted), skip if collectedDate is null/undefined
-    if (status === 'accepted' && !req.collectedDate) return false;
+    // Skip approved (not yet collected)
+    if (status === 'approved' && !req.collectedDate) return false;
 
     return true;
   });
@@ -63,7 +63,7 @@ if (data?.requests) {
     rollNo: req.userId.rollNo,
     phoneNo: req.userId.phoneNo,
     email: req.userId.email,
-    isFaculty: false, // Adjust this logic if needed
+    isFaculty: false, // Adjust if needed
     requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
     requestedDays: req.requestedDays,
     status: req.requestStatus?.toLowerCase() || 'pending',
@@ -75,13 +75,14 @@ if (data?.requests) {
     description: req.description,
     components: req.requestedProducts.map(prod => ({
       id: prod.productId,
-      name: prod.productId, // Replace with actual name if available
+      name: prod.productId, // Replace with product name if available
       quantity: prod.quantity
     }))
   }));
 
   setRequests(formattedRequests);
 }
+
 
     } catch (err) {
       console.error('Failed to fetch requests:', err);
@@ -135,8 +136,13 @@ const getUniqueProducts = () => {
         (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
       
       // Filter by status
-      const matchesStatus = filters.status === '' || 
-        req.status.toLowerCase() === filters.status.toLowerCase();
+const filterStatus = filters.status.toLowerCase();
+const requestStatus = req.status.toLowerCase();
+const matchesStatus =
+  filterStatus === '' ||
+  (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved')) ||
+  requestStatus === filterStatus;
+
       
       // Filter by selected products
       const matchesProducts =
@@ -147,10 +153,12 @@ const getUniqueProducts = () => {
 
       
       return matchesRole && matchesStatus && matchesProducts;
-    }).filter(req =>
-      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+}).filter(req =>
+  req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  req.requestId.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
   };
 
   const handleViewRequest = (request) => {
