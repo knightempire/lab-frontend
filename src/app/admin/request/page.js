@@ -71,7 +71,16 @@ const [productOptions, setProductOptions] = useState([]);
         console.log('Fetched requests:', data);
 
         if (response.ok && data?.requests) {
-          const transformedRequests = data.requests.map((req, index) => ({
+
+          const filtered = data.requests.filter(req => {
+          const status = req.requestStatus?.toLowerCase();
+          if (status === 'rejected') return false;
+          if (status === 'approved' && req.collectedDate) return false;
+          return true;
+        });
+
+        
+          const transformedRequests = filtered.map((req, index) => ({
             id: req._id,
             requestId: req.requestId || `REQ-${index + 1}`,
             name: req.userId?.name || 'Unknown',
