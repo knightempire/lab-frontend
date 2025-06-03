@@ -14,6 +14,7 @@ import {
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 
@@ -334,7 +335,7 @@ selectedProducts.every(productId =>
   if (loading) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow-inner">
-        <p className="text-gray-500">Loading requests...</p>
+      <LoadingScreen />;
       </div>
     );
   }
