@@ -34,7 +34,6 @@ const AdminRequestViewContent = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
 
-
   useEffect(() => {
     const requestId = searchParams.get('requestId');
     console.log('requestId:', requestId);
@@ -44,13 +43,13 @@ const AdminRequestViewContent = () => {
            router.push('/auth/login'); 
     }
  
-     const verifyadmin = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        router.push('/auth/login'); 
-    }
+    const verifyadmin = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+          router.push('/auth/login'); 
+      }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -72,7 +71,7 @@ const AdminRequestViewContent = () => {
       }
 
       console.log('User is admin, proceeding with request data fetch');
-          if (requestId) {
+    if (requestId) {
       fetchRequestData();
     } else {
       router.push('/admin/request');
@@ -80,14 +79,12 @@ const AdminRequestViewContent = () => {
 
     fetchProducts();
     }
-      }
+  }
 
 
 verifyadmin();
 
   }, [searchParams, router]);
-
-
 
     const fetchRequestData = async () => {
       try {
@@ -212,7 +209,6 @@ setAdminIssueComponents(() => {
       minute: '2-digit'
     });
   };
-
 
 
 const handleSave = async () => {
@@ -620,6 +616,8 @@ const handleSave = async () => {
 
   // --- Main Render ---
   const isReIssue = requestData.isExtended;
+  const isRejected = requestData.status === 'rejected';
+  const isAccepted = requestData.status === 'approved' || requestData.status === 'accepted';
 
   return (
     <div className="bg-gray-50">
@@ -792,7 +790,7 @@ const handleSave = async () => {
                   </div>
                 </div>
               </div>
-
+    
               {/* Dates and User Note */}
               <div className="p-6 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -887,7 +885,7 @@ const handleSave = async () => {
             </>
           ) : (
             <>
-              {/* --- Standard New Request UI --- */}
+              {/* --- New Request UI --- */}
               <div className="p-6 border-t border-gray-200">
                 <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -938,7 +936,7 @@ const handleSave = async () => {
               </div>
 
               {/* --- Admin Issue Components --- */}
-
+            {!isRejected && (
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-700 flex items-center">
@@ -1038,10 +1036,12 @@ const handleSave = async () => {
                   </div>
                 </div>
               </div>
+              )}
             </>
           )}
+
           {/* --- Take Action Section --- */}
-          {requestData.status === 'accepted' && requestData.CollectedDate === null ? (
+          {isAccepted && requestData.CollectedDate == null ? (
           <div className="p-6 border-t border-gray-200 flex flex-col items-start">
               <div className="flex items-center mb-4">
               <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
@@ -1272,6 +1272,27 @@ const handleSave = async () => {
             )}
           </div>
         ) : null}
+
+        {isRejected && (
+          <div className="px-6 pt-4 pb-6 border-t border-gray-200">
+            <div className="flex items-start gap-4 bg-red-50 border border-red-200 rounded-xl p-5 shadow-sm">
+              <div className="bg-red-100 p-2 rounded-full">
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex flex-col">
+                <h4 className="text-base sm:text-lg font-semibold text-red-700 leading-tight">
+                  Request Rejected
+                </h4>
+                <p className="text-sm text-red-700 mt-1">
+                  {requestData.adminMessage
+                    ? requestData.adminMessage
+                    : "This request was rejected by the admin."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         </div>
       </div>
     </div>
