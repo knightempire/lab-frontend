@@ -112,19 +112,8 @@ useEffect(() => {
 }, []);
 
 
-// Extract unique product names from the requests data
-const getUniqueProducts = () => {
-  const productSet = new Set();
-  requests.forEach(request => {
-    request.components.forEach(component => {
-      productSet.add(component.name);
-    });
-  });
-  return Array.from(productSet);
-};
 
   const itemsPerPage = 10;
-  const uniqueProducts = getUniqueProducts();
 
   const handleReset = () => {
     setFilters({
