@@ -24,11 +24,37 @@ export default function RequestsPage() {
 const [requests, setRequests] = useState([]);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState(null);
+const [productOptions, setProductOptions] = useState([]);
+
+
 
 useEffect(() => {
   const fetchRequests = async () => {
     try {
-      const token = localStorage.getItem('token'); // or get from cookies/session
+      const token = localStorage.getItem('token');
+
+      // Fetch products
+      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const productData = await productRes.json();
+
+      const productMap = {};
+      if (productData?.products) {
+        const displayable = productData.products.filter(p => p.product.isDisplay);
+        const mappedOptions = displayable.map(p => ({
+          id: p.product._id,
+          name: p.product.product_name
+        }));
+        setProductOptions(mappedOptions);
+
+        // Build id-to-name mapping
+        mappedOptions.forEach(p => {
+          productMap[p.id] = p.name;
+        });
+      }
+
+      // Fetch requests
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
         method: 'GET',
         headers: {
@@ -37,56 +63,46 @@ useEffect(() => {
         }
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
-      console.log('Fetched requests:', data);
-if (data?.requests) {
-  const filtered = data.requests.filter(req => {
-    const status = req.requestStatus?.toLowerCase();
 
-    // Skip pending
-    if (status === 'pending') return false;
+      if (data?.requests) {
+        const filtered = data.requests.filter(req => {
+          const status = req.requestStatus?.toLowerCase();
+          if (status === 'pending') return false;
+          if (status === 'approved' && !req.collectedDate) return false;
+          return true;
+        });
 
-    // Skip approved (not yet collected)
-    if (status === 'approved' && !req.collectedDate) return false;
+        const formattedRequests = filtered.map(req => ({
+          id: req._id,
+          requestId: req.requestId,
+          name: req.userId.name,
+          rollNo: req.userId.rollNo,
+          phoneNo: req.userId.phoneNo,
+          email: req.userId.email,
+          isFaculty: false,
+          requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
+          requestedDays: req.requestedDays,
+          status: req.requestStatus?.toLowerCase() || 'pending',
+          isExtended: req.reIssued?.length > 0,
+          referenceStaff: {
+            name: req.referenceId?.name || 'N/A',
+            email: req.referenceId?.email || 'N/A'
+          },
+          description: req.description,
+          components: req.requestedProducts.map(prod => ({
+            id: prod.productId,
+            name: productMap[prod.productId] || prod.productId,
+            quantity: prod.quantity
+          }))
+        }));
 
-    return true;
-  });
-
-  const formattedRequests = filtered.map(req => ({
-    id: req._id,
-    requestId: req.requestId,
-    name: req.userId.name,
-    rollNo: req.userId.rollNo,
-    phoneNo: req.userId.phoneNo,
-    email: req.userId.email,
-    isFaculty: false, // Adjust if needed
-    requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
-    requestedDays: req.requestedDays,
-    status: req.requestStatus?.toLowerCase() || 'pending',
-    isExtended: req.reIssued?.length > 0,
-    referenceStaff: {
-      name: req.referenceId?.name || 'N/A',
-      email: req.referenceId?.email || 'N/A'
-    },
-    description: req.description,
-    components: req.requestedProducts.map(prod => ({
-      id: prod.productId,
-      name: prod.productId, // Replace with product name if available
-      quantity: prod.quantity
-    }))
-  }));
-
-  setRequests(formattedRequests);
-}
-
-
+        setRequests(formattedRequests);
+      }
     } catch (err) {
-      console.error('Failed to fetch requests:', err);
-      setError('Failed to fetch requests.');
+      console.error('Failed to fetch requests or products:', err);
+      setError('Failed to fetch data.');
     } finally {
       setLoading(false);
     }
@@ -94,6 +110,7 @@ if (data?.requests) {
 
   fetchRequests();
 }, []);
+
 
 // Extract unique product names from the requests data
 const getUniqueProducts = () => {
@@ -145,11 +162,12 @@ const matchesStatus =
 
       
       // Filter by selected products
-      const matchesProducts =
-        selectedProducts.length === 0 ||
-        selectedProducts.every(product =>
-          req.components.some(component => component.name === product)
-        );
+const matchesProducts =
+  selectedProducts.length === 0 ||
+  selectedProducts.every(productId =>
+    req.components.some(component => component.id === productId)
+  );
+
 
       
       return matchesRole && matchesStatus && matchesProducts;
@@ -290,15 +308,15 @@ const matchesStatus =
       </div>
 
       <div className="mb-4 mt-6">
-        <FiltersPanel
-          filters={filterList}
-          onChange={handleFilterChange}
-          onReset={handleReset}
-          Text="All requests"
-          products={uniqueProducts}
-          onProductsChange={handleProductsChange}
-          selectedProducts={selectedProducts}
-        />
+<FiltersPanel
+  filters={filterList}
+  onChange={handleFilterChange}
+  onReset={handleReset}
+  Text="All requests"
+  products={productOptions}
+  onProductsChange={handleProductsChange}
+  selectedProducts={selectedProducts}
+/>
       </div>
 
       <div className="mb-6 w-full relative bg-white">
