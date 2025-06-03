@@ -9,95 +9,90 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 
-const requests = [
-  {
-    id: 1, // Added id property
-    requestId: "REQ-2025-0513",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    requestedDays: 5,
-    status: "closed",
-    isExtended: false,
+
+
+
+export default function RequestsPage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({
+    role: '',
+    status: ''
+  });
+  const [selectedProducts, setSelectedProducts] = useState([]);
+const [requests, setRequests] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+useEffect(() => {
+  const fetchRequests = async () => {
+    try {
+      const token = localStorage.getItem('token'); // or get from cookies/session
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log('Fetched requests:', data);
+if (data?.requests) {
+  const filtered = data.requests.filter(req => {
+    const status = req.requestStatus?.toLowerCase();
+
+    // Skip pending
+    if (status === 'pending') return false;
+
+    // If approved (accepted), skip if collectedDate is null/undefined
+    if (status === 'accepted' && !req.collectedDate) return false;
+
+    return true;
+  });
+
+  const formattedRequests = filtered.map(req => ({
+    id: req._id,
+    requestId: req.requestId,
+    name: req.userId.name,
+    rollNo: req.userId.rollNo,
+    phoneNo: req.userId.phoneNo,
+    email: req.userId.email,
+    isFaculty: false, // Adjust this logic if needed
+    requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
+    requestedDays: req.requestedDays,
+    status: req.requestStatus?.toLowerCase() || 'pending',
+    isExtended: req.reIssued?.length > 0,
     referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
+      name: req.referenceId?.name || 'N/A',
+      email: req.referenceId?.email || 'N/A'
     },
-    description: "For IoT project, Display indicators",
-    components: [
-      { id: 1, name: 'Arduino', quantity: 2 },
-      { id: 2, name: 'LEDs', quantity: 10 },
-      { id: 3, name: 'Sensors', quantity: 20 }
-    ]
-  },
-  {
-    id: 2, // Added id property
-    requestId: "REQ-2025-0514",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    requestedDays: 3,
-    status: "accepted",
-    isExtended: true,
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    components: [
-      { id: 1, name: 'Raspberry Pi', quantity: 1 },
-      { id: 2, name: 'Breadboards', quantity: 2 }
-    ]
-  },
-  {
-    id: 3, // Added id property
-    requestId: "REQ-2025-0515",
-    name: "Rahul Mehta",
-    rollNo: "2023456",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: true,
-    requestedDate: "2025-05-06",
-    requestedDays: 7,
-    status: "rejected",
-    isExtended: false,
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Motors', quantity: 5 }
-    ]
-  },
-  {
-    id: 4, // Added id property
-    requestId: "REQ-2025-0516",
-    name: "James Cameron",
-    rollNo: "2026969",
-    phoneNo: "9123456789",
-    email: "jamie@example.com",
-    isFaculty: true,
-    requestedDate: "2025-07-06",
-    requestedDays: 7,
-    status: "returned",
-    isExtended: false,
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For robotics project",
-    components: [
-      { id: 1, name: 'Motors', quantity: 5 }
-    ]
-  }
-];
+    description: req.description,
+    components: req.requestedProducts.map(prod => ({
+      id: prod.productId,
+      name: prod.productId, // Replace with actual name if available
+      quantity: prod.quantity
+    }))
+  }));
+
+  setRequests(formattedRequests);
+}
+
+    } catch (err) {
+      console.error('Failed to fetch requests:', err);
+      setError('Failed to fetch requests.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchRequests();
+}, []);
 
 // Extract unique product names from the requests data
 const getUniqueProducts = () => {
@@ -109,16 +104,6 @@ const getUniqueProducts = () => {
   });
   return Array.from(productSet);
 };
-
-export default function RequestsPage() {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState({
-    role: '',
-    status: ''
-  });
-  const [selectedProducts, setSelectedProducts] = useState([]);
 
   const itemsPerPage = 10;
   const uniqueProducts = getUniqueProducts();
@@ -201,18 +186,19 @@ export default function RequestsPage() {
   const rows = paginatedRequests.map((item) => {
     let statusIcon, statusText, bgColor, textColor;
 
-    switch (item.status) {
+   switch (item.status) {
       case 'accepted':
+      case 'approved':
         statusIcon = <CheckCircle size={16} className="text-green-700" />;
         bgColor = 'bg-green-100';
         textColor = 'text-green-700';
         statusText = 'Accepted';
         break;
-      case 'returned':
-        statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
-        bgColor = 'bg-blue-100';
-        textColor = 'text-blue-700';
-        statusText = 'Returned';
+      case 'pending':
+        statusIcon = <Clock size={16} className="text-yellow-700" />;
+        bgColor = 'bg-yellow-100';
+        textColor = 'text-yellow-700';
+        statusText = 'Pending';
         break;
       case 'rejected':
         statusIcon = <XCircle size={16} className="text-red-700" />;
@@ -220,11 +206,17 @@ export default function RequestsPage() {
         textColor = 'text-red-700';
         statusText = 'Rejected';
         break;
-      case 'closed':
-        statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
-        bgColor = 'bg-amber-100';
-        textColor = 'text-amber-700';
-        statusText = 'Closed';
+      case 'extension':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
+        break;
+      default:
+        statusIcon = <Clock size={16} className="text-gray-500" />;
+        bgColor = 'bg-gray-100';
+        textColor = 'text-gray-700';
+        statusText = 'Unknown';
         break;
     }
     return {
