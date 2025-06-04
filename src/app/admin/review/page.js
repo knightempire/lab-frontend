@@ -223,8 +223,9 @@ const handleSave = async () => {
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
+    const iscollected = requestData.collectedDate;
     console.log('Current request status:', currentstatus);
-  if (currentstatus === 'pending') {
+  if (currentstatus === 'pending' || (currentstatus === 'approved' || currentstatus === 'accepted' ) && !iscollected) {
     console.log("Request is pending, proceeding to save.");
 
       const payload = {
@@ -422,6 +423,37 @@ const handleSave = async () => {
     } catch (error) {
       console.error('Error during API call:', error);
     }
+  }
+};
+
+const issuing = async () => {
+  const requestId = searchParams.get('requestId'); // Make sure searchParams is defined
+  const token = localStorage.getItem('token');
+
+  if (!requestId || !token) {
+    console.error('Missing requestId or token');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/collect/${requestId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error:', errorData);
+    } else {
+      const data = await response.json();
+      console.log('API Success:', data);
+       setShowSuccess(true);
+    }
+  } catch (error) {
+    console.error('Network error:', error);
   }
 };
 
@@ -1081,6 +1113,7 @@ const handleSave = async () => {
                   <button
                     className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
                     onClick={async () => {
+                      issuing();
                       setIsSubmitting(true);
                       setTimeout(() => {
                         setRequestData({
