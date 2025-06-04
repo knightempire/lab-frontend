@@ -151,7 +151,11 @@ verifyadmin();
         };
 
         setRequestData(mappedData);
-        setIssuableDays(mappedData.requestedDays);
+      setIssuableDays(
+  mappedData.adminApprovedDays && mappedData.adminApprovedDays > 0
+    ? mappedData.adminApprovedDays
+    : mappedData.requestedDays
+);
         console.log('Request Data:', mappedData);
         console.log('usermessage:', mappedData.userMessage);
 setAdminIssueComponents(() => {
@@ -225,10 +229,11 @@ const handleSave = async () => {
     const currentstatus = requestData.status;
     const iscollected = requestData.collectedDate;
     console.log('Current request status:', currentstatus);
-  if (currentstatus === 'pending' || (currentstatus === 'approved' || currentstatus === 'accepted' ) && !iscollected) {
+  if (currentstatus === 'pending') {
     console.log("Request is pending, proceeding to save.");
 
       const payload = {
+        adminApprovedDays: issuableDays, 
     issued: adminIssueComponents.map(component => ({
       issuedProductId: component.id,
       issuedQuantity: component.quantity
@@ -261,7 +266,43 @@ const handleSave = async () => {
     console.error('Error:', error);
   }
   }
+  else if ((currentstatus === 'approved' || currentstatus === 'accepted' ) && !iscollected) {
+    console.log("Request is approved, proceeding to save.");
 
+      const payload = {
+        adminApprovedDays: issuableDays, 
+    issued: adminIssueComponents.map(component => ({
+      issuedProductId: component.id,
+      issuedQuantity: component.quantity
+    }))
+  };
+
+  console.log('Payload for update:', payload);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    if (!response.ok) {
+      console.error('Failed:', data.message || 'Unknown error');
+    } else {
+      console.log('Success:', data);
+      
+      setShowSuccess(true);
+      fetchRequestData(); 
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  }
 };
 
   
