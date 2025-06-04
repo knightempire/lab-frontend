@@ -279,7 +279,7 @@ const handleSave = async () => {
 
   console.log('Payload for update:', payload);
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update/${requestId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
