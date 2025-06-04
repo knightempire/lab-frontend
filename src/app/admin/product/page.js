@@ -218,8 +218,9 @@ const updateProduct = async (index) => {
 
   try {
 
-    const productId = products[index].id; 
+   const productId = products[index]._id;
   
+    console.log('Updating product with ID:', productId);
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${productId}`, {
       method: 'PUT',
