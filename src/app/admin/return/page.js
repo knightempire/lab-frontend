@@ -171,11 +171,18 @@ return {
         },
         description: req.description,
         admindescription: req.adminReturnMessage,
-        components: issued.map(item => ({
-          id: item.issuedProductId._id,
-          name: item.issuedProductId.product_name,
-          quantity: item.issuedQuantity
-        })),
+components: (req.issued && req.issued.length > 0
+    ? req.issued.map(item => ({
+        id: item.issuedProductId?._id || item._id,
+        name: item.issuedProductId?.product_name || item.product_name || item.name,
+        quantity: item.issuedQuantity || item.quantity
+      }))
+    : (req.requestedProducts || []).map(item => ({
+        id: item.productId?._id || item._id,
+        name: item.productId?.product_name || item.product_name || item.name,
+        quantity: item.quantity
+      }))
+  ),
         issued: req.issued, // <-- ADD THIS LINE
         isreissued: req.reIssued && req.reIssued.length > 0
       };
