@@ -398,7 +398,7 @@ verifyToken();
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Section: User Details */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 xl:col-span-1 relative">
+        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 xl:col-span-1 relative">
           <button
             onClick={handleEditProfile}
             className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors"
@@ -420,12 +420,12 @@ verifyToken();
 
           <div className="space-y-4">
             {/* Basic Information */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="space-y-2 flex-1 min-w-0">
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{userDetails.email || 'N/A'}</p>
+                <p className="font-medium text-sm break-all">{userDetails.email || 'N/A'}</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 flex-shrink-0 sm:text-right">
                 <p className="text-sm text-gray-500">Phone Number</p>
                 <p className="font-medium">{userDetails.phoneNo || 'N/A'}</p>
               </div>
