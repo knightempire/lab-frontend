@@ -67,28 +67,32 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
                   background: #94a3b8;
                 }
               `}</style>
-              {selectedValues.map(product => (
-                <div 
-                  key={product}
-                  className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs whitespace-nowrap flex-shrink-0"
-                >
-                  <span>{product}</span>
-                  <span 
-                    onClick={(e) => removeProduct(product, e)}
-                    className="text-blue-700 hover:text-blue-900 cursor-pointer flex items-center"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        removeProduct(product, e);
-                      }
-                    }}
-                  >
-                    <X size={12} />
-                  </span>
-                </div>
-              ))}
+   {selectedValues.map(productId => {
+  const product = options.find(p => p.id === productId);
+  return (
+    <div 
+      key={productId}
+      className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs whitespace-nowrap flex-shrink-0"
+    >
+      <span>{product?.name || productId}</span>
+      <span 
+        onClick={(e) => removeProduct(productId, e)}
+        className="text-blue-700 hover:text-blue-900 cursor-pointer flex items-center"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            removeProduct(productId, e);
+          }
+        }}
+      >
+        <X size={12} />
+      </span>
+    </div>
+  );
+})}
+
             </div>
           ) : (
             <span className="text-gray-500 text-sm">Select products...</span>
@@ -104,17 +108,19 @@ const CheckboxDropdown = ({ label, options, selectedValues, onChange }) => {
       {isOpen && (
         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
           <div className="p-2 max-h-60 overflow-auto">
-            {options.map((option) => (
-              <label key={option} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedValues.includes(option)}
-                  onChange={() => handleCheckboxChange(option)}
-                  className="h-4 w-4 text-blue-600 rounded"
-                />
-                <span className="text-gray-700">{option}</span>
-              </label>
-            ))}
+      {options.map((option) => (
+  <label key={option.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer">
+    <input
+      type="checkbox"
+      value={option.id}
+      checked={selectedValues.includes(option.id)}
+      onChange={() => handleCheckboxChange(option.id)}
+      className="h-4 w-4 text-blue-600 rounded"
+    />
+    <span className="text-gray-700">{option.name}</span>
+  </label>
+))}
+
           </div>
         </div>
       )}
