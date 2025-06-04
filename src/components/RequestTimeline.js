@@ -50,7 +50,7 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     });
 
     // Show issue date only if accepted (and not closed/rejected)
-    if (initialStatus === 'accepted') {
+    if (initialStatus === 'accepted' || initialStatus === 'approved') {
       timelineItems.push({
         type: 'issue',
         date: requestData.issueDate,
@@ -133,6 +133,7 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
   function getStatusLabel(status) {
     switch (status?.toLowerCase()) {
       case 'accepted': return 'Accepted';
+      case 'approved': return 'Accepted';
       case 'rejected': return 'Rejected';
       case 'closed': return 'Closed';
       case 'returned': return 'Returned';
