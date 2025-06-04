@@ -14,6 +14,7 @@ import {
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 
@@ -28,15 +29,77 @@ export default function RequestsPage() {
     role: '',
     status: ''
   });
-  const [selectedComponents, setSelectedComponents] = useState([]);
-
+  const [selectedProducts, setselectedProducts] = useState([]);
+const [productOptions, setProductOptions] = useState([]);
   const itemsPerPage = 10;
 
   useEffect(() => {
+
+      const verifyadmin = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        router.push('/auth/login'); 
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+               router.push('/auth/login'); 
+      }
+    }
+  }
+
+  verifyadmin();
+
+
+    fetchRequests();
+  }, []);
+
+
+  
     const fetchRequests = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
+
+              const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const productData = await productRes.json();
+
+      const productMap = {};
+      if (productData?.products) {
+        const displayable = productData.products.filter(p => p.product.isDisplay);
+        const mappedOptions = displayable.map(p => ({
+          id: p.product._id,
+          name: p.product.product_name
+        }));
+        setProductOptions(mappedOptions);
+
+        // Build id-to-name mapping
+        mappedOptions.forEach(p => {
+          productMap[p.id] = p.name;
+        });
+      }
+
+
+
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -47,7 +110,16 @@ export default function RequestsPage() {
         console.log('Fetched requests:', data);
 
         if (response.ok && data?.requests) {
-          const transformedRequests = data.requests.map((req, index) => ({
+
+          const filtered = data.requests.filter(req => {
+          const status = req.requestStatus?.toLowerCase();
+          if (status === 'rejected') return false;
+          if (status === 'approved' && req.collectedDate) return false;
+          return true;
+        });
+
+        
+          const transformedRequests = filtered.map((req, index) => ({
             id: req._id,
             requestId: req.requestId || `REQ-${index + 1}`,
             name: req.userId?.name || 'Unknown',
@@ -64,11 +136,11 @@ export default function RequestsPage() {
               email: req.referenceId?.email || 'N/A'
             },
             description: req.description || '',
-            components: req.requestedProducts.map(product => ({
-              id: product._id,
-              name: product.productName,
-              quantity: product.quantity
-            }))
+        components: req.requestedProducts.map(product => ({
+          id: product.productId, 
+          quantity: product.quantity
+        }))
+
           }));
 
           setRequests(transformedRequests);
@@ -82,19 +154,16 @@ export default function RequestsPage() {
       }
     };
 
-    fetchRequests();
-  }, []);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filters, selectedComponents]);
+  }, [searchQuery, filters, selectedProducts]);
 
   const handleReset = () => {
     setFilters({
       role: '',
       status: '',
     });
-    setSelectedComponents([]);
+    setselectedProducts([]);
   };
 
   const handleFilterChange = (key, value) => {
@@ -102,12 +171,14 @@ export default function RequestsPage() {
   };
 
   const handleComponentsChange = (components) => {
-    setSelectedComponents(components);
+    setselectedProducts(components);
   };
 
   const getUniqueComponents = () => {
     const componentSet = new Set();
+    console.log('Product options IDs:', mappedOptions.map(p => p.id));
     requests.forEach(request => {
+        console.log(`Request ${r.requestId} component IDs:`, r.components.map(c => c.id));
       request.components.forEach(component => {
         componentSet.add(component.name);
       });
@@ -115,26 +186,38 @@ export default function RequestsPage() {
     return Array.from(componentSet);
   };
 
-  const getFilteredResults = () => {
-    return requests.filter(req => {
-      const matchesRole = filters.role === '' ||
-        (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
+const getFilteredResults = () => {
+  return requests.filter(req => {
+    // Filter by role
+    const matchesRole = filters.role === '' || 
+      (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
 
-      const matchesStatus = filters.status === '' ||
-        req.status.toLowerCase() === filters.status.toLowerCase();
+    // Filter by status
+    const filterStatus = filters.status.toLowerCase();
+    const requestStatus = req.status.toLowerCase();
+    const matchesStatus =
+      filterStatus === '' ||
+      (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved')) ||
+      requestStatus === filterStatus;
 
-      const matchesComponents =
-        selectedComponents.length === 0 ||
-        selectedComponents.every(product =>
-          req.components.some(component => component.name === product)
-        );
+    // Filter by selected products
+    console.log(`\nChecking request ${req.requestId} components:`, req.components.map(c => c.id));
+    console.log('Selected product IDs:', selectedProducts);
 
-      return matchesRole && matchesStatus && matchesComponents;
-    }).filter(req =>
-      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
+const matchesProducts =
+  selectedProducts.length === 0 ||
+selectedProducts.every(productId =>
+  req.components.some(component => component.id === productId)
+)
+
+
+
+    console.log(`Request ${req.requestId} matchesProducts:`, matchesProducts);
+
+    return matchesRole && matchesStatus && matchesProducts;
+  });
+};
+
 
   const handleViewRequest = (request) => {
     const params = new URLSearchParams();
@@ -142,7 +225,7 @@ export default function RequestsPage() {
     router.push(`/admin/review?${params.toString()}`);
   };
 
-  const uniqueComponents = getUniqueComponents();
+
   const filteredRequests = getFilteredResults();
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const paginatedRequests = filteredRequests.slice(
@@ -252,7 +335,7 @@ export default function RequestsPage() {
   if (loading) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow-inner">
-        <p className="text-gray-500">Loading requests...</p>
+      <LoadingScreen />;
       </div>
     );
   }
@@ -285,9 +368,9 @@ export default function RequestsPage() {
           onChange={handleFilterChange}
           onReset={handleReset}
           Text="All requests"
-          products={uniqueComponents}
+            products={productOptions}
           onProductsChange={handleComponentsChange}
-          selectedProducts={selectedComponents}
+          selectedProducts={selectedProducts}
         />
       </div>
 
