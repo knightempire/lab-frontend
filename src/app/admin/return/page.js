@@ -7,6 +7,7 @@ import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, Arr
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import RequestTimeline from '../../../components/RequestTimeline';
+import SuccessAlert from '../../../components/SuccessAlert';
 
 const AdminRetrunViewContent = () => {
   const router = useRouter();
@@ -57,95 +58,145 @@ const AdminRetrunViewContent = () => {
   const [replacements, setReplacements] = useState({});
   const [reissue, setReissue] = useState([]);
 
+  const [showSuccess, setShowSuccess] = useState(false);
+
   // Fetch request data from API
-  useEffect(() => {
-    const fetchRequestData = async () => {
-      const token = localStorage.getItem('token');
-      if (!requestId || !token) return;
+useEffect(() => {
 
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const apiData = await response.json();
-        if (!response.ok || !apiData.request) {
-          router.back();
-          return;
+
+  fetchAllData();
+}, [requestId, router]);
+
+
+  const fetchAllData = async () => {
+    const token = localStorage.getItem('token');
+    if (!requestId || !token) return;
+
+    try {
+      // Fetch request details
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-        const req = apiData.request;
-        // Map API data to your local state shape
-// ...existing code...
-const mappedRequest = {
-  id: req.requestId,
-  name: req.userId?.name || '',
-  rollNo: req.userId?.rollNo || '',
-  phoneNo: req.userId?.phoneNo || '',
-  email: req.userId?.email || '',
-  isFaculty: req.userId?.role === 'faculty',
-  requestedDate: req.requestDate,
-  acceptedDate: req.issuedDate,
-  issueDate: req.issuedDate,
-  returnedDate: req.returnedDate,
-  requestedDays: req.requestedDays,
-  status: req.requestStatus,
-  referenceStaff: {
-    name: req.referenceId?.name || '',
-    email: req.referenceId?.email || ''
-  },
-  description: req.description,
-  admindescription: req.adminReturnMessage,
-  // Use requestedProducts for rejected, issued for others
-  components: (req.requestStatus === 'rejected'
-    ? (req.requestedProducts || []).map(item => ({
-        id: item.productId._id,
-        name: item.productId.product_name,
-        quantity: item.quantity
-      }))
-    : (req.issued || []).map(item => ({
-        id: item.issuedProductId._id,
-        name: item.issuedProductId.product_name,
-        quantity: item.issuedQuantity
-      }))
-  ),
-  isreissued: req.reIssued && req.reIssued.length > 0
-};
-// ...existing code...
-        setRequestData(mappedRequest);
-        setAdminIssueComponents(mappedRequest.components);
-
-        // Setup return tracking
-        const returnTracking = mappedRequest.components.map(component => ({
-          ...component,
-          totalIssued: component.quantity,
-          returned: 0,
-          remaining: component.quantity,
-        }));
-        setReturnTrackingComponents(returnTracking);
-        setReturnHistory([]);
-
-        // Setup damage state
-        const initialDamageState = {};
-        const initialDamageCount = {};
-        mappedRequest.components.forEach((component, index) => {
-          initialDamageState[index] = false;
-          initialDamageCount[index] = 0;
-        });
-        setHasDamage(initialDamageState);
-        setDamageCount(initialDamageCount);
-
-        // Optionally fetch reissue data if needed
-        setReissue(req.reIssued || []);
-      } catch (err) {
+      });
+      const apiData = await response.json();
+      if (!response.ok || !apiData.request) {
         router.back();
+        return;
       }
-    };
+      const req = apiData.request;
+      console.log(apiData)
+      // Fetch return details
+      const returnRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const returnData = await returnRes.json();
 
-    fetchRequestData();
-  }, [requestId, router]);
+      // Map issued components for return tracking
+      const issued = req.issued || [];
+      const returnMap = {};
+      (returnData.return || []).forEach(ret => {
+        returnMap[ret.issuedProductId] = ret;
+      });
+
+      // Build return tracking components
+      const tracking = issued.map(issuedItem => {
+        // Sum all replacedQuantity for this issued item
+        const replacedCount = (issuedItem.return || []).reduce(
+          (sum, ret) => sum + (ret.replacedQuantity || 0),
+          0
+        );
+        // Sum all returnedQuantity for this issued item
+        const returnedCount = (issuedItem.return || []).reduce(
+          (sum, ret) => sum + (ret.returnedQuantity || 0),
+          0
+        );
+        const totalIssued = issuedItem.issuedQuantity + replacedCount;
+        const remaining = totalIssued - returnedCount;
+return {
+  id: issuedItem.issuedProductId._id,
+  name: issuedItem.issuedProductId.product_name,
+  totalIssued,
+  returned: 0 // for input
+,
+  remaining: remaining > 0 ? remaining : 0,
+};
+      });
+
+      setReturnTrackingComponents(tracking);
+
+      // Build return history
+      let history = [];
+      (returnData.return || []).forEach(ret => {
+        (ret.returns || []).forEach(r => {
+          history.push({
+            id: r._id,
+            name: issued.find(i => i.issuedProductId._id === ret.issuedProductId)?.issuedProductId.product_name || '',
+            qtyReturned: r.returnedQuantity,
+            damagedCount: r.damagedQuantity,
+            dateReturned: r.returnDate,
+            damageDescription: '', // If you want to store description, add it to API and here
+            isUserDamaged: r.userDamagedQuantity > 0,
+            actionType: r.replacedQuantity > 0 ? 'replace' : 'return'
+          });
+        });
+      });
+      // Sort history by date (optional)
+      history = history.sort((a, b) => new Date(b.dateReturned) - new Date(a.dateReturned));
+      setReturnHistory(history);
+
+      // Set requestData as before
+      const mappedRequest = {
+        id: req.requestId,
+        name: req.userId?.name || '',
+        rollNo: req.userId?.rollNo || '',
+        phoneNo: req.userId?.phoneNo || '',
+        email: req.userId?.email || '',
+        isFaculty: req.userId?.role === 'faculty',
+        requestedDate: req.requestDate,
+        acceptedDate: req.issuedDate,
+        issueDate: req.issuedDate,
+        returnedDate: req.returnedDate,
+        requestedDays: req.requestedDays,
+        status: req.requestStatus,
+        referenceStaff: {
+          name: req.referenceId?.name || '',
+          email: req.referenceId?.email || ''
+        },
+        description: req.description,
+        admindescription: req.adminReturnMessage,
+        components: issued.map(item => ({
+          id: item.issuedProductId._id,
+          name: item.issuedProductId.product_name,
+          quantity: item.issuedQuantity
+        })),
+        issued: req.issued, // <-- ADD THIS LINE
+        isreissued: req.reIssued && req.reIssued.length > 0
+      };
+      setRequestData(mappedRequest);
+      setAdminIssueComponents(mappedRequest.components);
+
+      // Setup damage state
+      const initialDamageState = {};
+      const initialDamageCount = {};
+      mappedRequest.components.forEach((component, index) => {
+        initialDamageState[index] = false;
+        initialDamageCount[index] = 0;
+      });
+      setHasDamage(initialDamageState);
+      setDamageCount(initialDamageCount);
+
+      setReissue(req.reIssued || []);
+    } catch (err) {
+      router.back();
+    }
+  };
 
   useEffect(() => {
     // Check if all components have been returned
@@ -178,20 +229,20 @@ const mappedRequest = {
   };
 
   // Handle return quantity change
-  const handleReturnQtyChange = (index, value) => {
-    const newValue = parseInt(value) || 0;
-    const updatedComponents = [...returnTrackingComponents];
-    const component = updatedComponents[index];
-    const validValue = Math.min(newValue, component.remaining);
-    updatedComponents[index] = {
-      ...component,
-      returned: validValue,
-    };
-    setReturnTrackingComponents(updatedComponents);
-    if (hasDamage[index] && damageCount[index] > validValue) {
-      setDamageCount({ ...damageCount, [index]: validValue });
-    }
+const handleReturnQtyChange = (index, value) => {
+  const newValue = parseInt(value) || 0;
+  const updatedComponents = [...returnTrackingComponents];
+  const component = updatedComponents[index];
+  const validValue = Math.max(0, Math.min(newValue, component.remaining));
+  updatedComponents[index] = {
+    ...component,
+    returned: validValue,
   };
+  setReturnTrackingComponents(updatedComponents);
+  if (hasDamage[index] && damageCount[index] > validValue) {
+    setDamageCount({ ...damageCount, [index]: validValue });
+  }
+};
 
   // Handle damage modal submit
   const handleDamageModalSubmit = () => {
@@ -209,25 +260,19 @@ const mappedRequest = {
   };
 
   // Increment/decrement handlers
-  const incrementReturnQty = (index) => {
-    const component = returnTrackingComponents[index];
-    if (component.returned < component.remaining) {
-      handleReturnQtyChange(index, component.returned + 1);
-    }
-  };
-  const decrementReturnQty = (index) => {
-    const component = returnTrackingComponents[index];
-    if (component.returned > 0) {
-      handleReturnQtyChange(index, component.returned - 1);
-    }
-  };
-  const incrementDamageCount = (index) => {
-    const currentCount = damageCount[index] || 0;
-    const returnQty = returnTrackingComponents[index].returned;
-    if (currentCount < returnQty) {
-      handleDamageCountChange(index, currentCount + 1);
-    }
-  };
+const incrementReturnQty = (index) => {
+  const component = returnTrackingComponents[index];
+  if (component.returned < component.remaining) {
+    handleReturnQtyChange(index, component.returned + 1);
+  }
+};
+
+const decrementReturnQty = (index) => {
+  const component = returnTrackingComponents[index];
+  if (component.returned > 0) {
+    handleReturnQtyChange(index, component.returned - 1);
+  }
+};
   const decrementDamageCount = (index) => {
     const currentCount = damageCount[index] || 0;
     if (currentCount > 0) {
@@ -288,105 +333,48 @@ const mappedRequest = {
     setExpandedRows(newExpandedRows);
   };
 
-  // Handle component return submission
-  const handleReturnSubmit = (componentIndex) => {
-    const component = returnTrackingComponents[componentIndex];
-    if (component.returned > 0) {
-      const newReturnHistory = [];
-      let historyCounter = returnHistory.length + 1;
-      const userDamagedToReplace = Math.min(userDamagedCount, replacingCount);
-      const notUserDamagedToReplace = Math.min(notUserDamagedCount, replacingCount - userDamagedToReplace);
-      const userDamagedToReturn = userDamagedCount - userDamagedToReplace;
-      const notUserDamagedToReturn = notUserDamagedCount - notUserDamagedToReplace;
-      if (userDamagedToReplace > 0) {
-        newReturnHistory.push({
-          id: historyCounter++,
-          name: component.name,
-          qtyReturned: userDamagedToReplace,
-          damagedCount: userDamagedToReplace,
-          dateReturned: new Date().toISOString(),
-          damageDescription: damageDescription,
-          isUserDamaged: true,
-          actionType: 'replace'
-        });
+
+const handleReturnSubmit = async (componentIndex) => {
+  const component = returnTrackingComponents[componentIndex];
+  if (component.returned > 0) {
+    // Prepare API payload
+    const payload = {
+      productName: component.name,
+      returnQuantity: component.returned,
+      damagedQuantity: (damageCount[componentIndex] || 0),
+      userDamagedQuantity: userDamagedCount,
+      replacedQuantity: replacingCount
+    };
+
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestData.id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || 'Failed to return component');
+        return;
       }
-      if (notUserDamagedToReplace > 0) {
-        newReturnHistory.push({
-          id: historyCounter++,
-          name: component.name,
-          qtyReturned: notUserDamagedToReplace,
-          damagedCount: notUserDamagedToReplace,
-          dateReturned: new Date().toISOString(),
-          damageDescription: damageDescription,
-          isUserDamaged: false,
-          actionType: 'replace'
-        });
-      }
-      if (userDamagedToReturn > 0) {
-        newReturnHistory.push({
-          id: historyCounter++,
-          name: component.name,
-          qtyReturned: userDamagedToReturn,
-          damagedCount: userDamagedToReturn,
-          dateReturned: new Date().toISOString(),
-          damageDescription: damageDescription,
-          isUserDamaged: true,
-          actionType: 'return'
-        });
-      }
-      if (notUserDamagedToReturn > 0) {
-        newReturnHistory.push({
-          id: historyCounter++,
-          name: component.name,
-          qtyReturned: notUserDamagedToReturn,
-          damagedCount: notUserDamagedToReturn,
-          dateReturned: new Date().toISOString(),
-          damageDescription: damageDescription,
-          isUserDamaged: false,
-          actionType: 'return'
-        });
-      }
-      const undamagedCount = component.returned - (userDamagedCount + notUserDamagedCount);
-      if (undamagedCount > 0) {
-        newReturnHistory.push({
-          id: historyCounter++,
-          name: component.name,
-          qtyReturned: undamagedCount,
-          damagedCount: 0,
-          dateReturned: new Date().toISOString(),
-          damageDescription: '',
-          isUserDamaged: false,
-          actionType: 'return'
-        });
-      }
-      setReturnHistory([...newReturnHistory, ...returnHistory]);
-      const updatedComponents = [...returnTrackingComponents];
-      updatedComponents[componentIndex] = {
-        ...component,
-        returned: 0,
-        totalIssued: replacingCount > 0 
-          ? component.totalIssued + replacingCount
-          : component.totalIssued,
-        remaining: component.remaining - (component.returned - replacingCount)
-      };
-      if (replacingCount > 0) {
-        const currentReplacements = replacements[component.name] || 0;
-        setReplacements({
-          ...replacements,
-          [component.name]: currentReplacements + replacingCount
-        });
-      }
-      const filteredComponents = updatedComponents.filter((comp, idx) => {
-        return idx !== componentIndex || (idx === componentIndex && updatedComponents[idx].remaining > 0);
-      });
-      setReturnTrackingComponents(filteredComponents);
-      setDamageCount({ ...damageCount, [componentIndex]: 0 });
-      setDamageDescription('');
-      setUserDamagedCount(0);
-      setNotUserDamagedCount(0);
-      setReplacingCount(0);
+
+      // Show success and refresh data
+      setShowSuccess(true);
+      fetchAllData()
+
+    } catch (err) {
+      console.error('Error returning component:', err);
+  
     }
-  };
+  }
+};
 
   if (!requestData) {
     return (
@@ -408,7 +396,7 @@ const mappedRequest = {
   const requestedComponentsRows = requestData.components.map(component => ({
     ...component,
     name: component.name,
-    quantity: component.quantity,
+    quantity: component.quantity ,
     description: component.description || '-'
   }));
 
@@ -417,22 +405,28 @@ const mappedRequest = {
     { key: 'quantity', label: 'Quantity', className: 'text-center' },
   ];
 
-  const adminComponentsRows = requestData.components.map(component => {
-    const replacedCount = replacements[component.name] || 0;
-    return {
-      ...component,
-      name: component.name,
-      quantity: (
-        <div className="flex items-center justify-center">
-          <span>{component.quantity}</span>
-          {replacedCount > 0 && (
-            <span className="ml-1 text-red-600 font-medium">+{replacedCount}</span>
+const adminComponentsRows = (requestData.issued || []).map(component => {
+  const issuedQuantity = component.issuedQuantity;
+  const returns = component.return || [];
+  const totalReplacedQuantity = returns.reduce((total, ret) => total + (ret.replacedQuantity || 0), 0);
+
+  return {
+    id: component.issuedProductId._id,
+    name: component.issuedProductId.product_name,
+    quantity: (
+      <div className="flex items-center justify-center">
+        <span>
+          {issuedQuantity}
+          {totalReplacedQuantity > 0 && (
+            <> + {totalReplacedQuantity}</>
           )}
-        </div>
-      ),
-      description: component.description || '-'
-    };
-  });
+        </span>
+      </div>
+    ),
+    description: component.description || '-'
+  };
+});
+
 
   const reissueColumns = [
     { key: 'name', label: 'Component Name' },
@@ -457,76 +451,88 @@ const mappedRequest = {
     { key: 'actions', label: 'Actions', className: 'text-center' }
   ];
 
-  const returnTrackingRows = returnTrackingComponents.map((component, index) => ({
-    ...component,
-    name: <div className="text-center">{component.name}</div>,
-    totalIssued: <div className="text-center">{component.totalIssued}</div>,
-    remaining: <div className="text-center">{component.remaining}</div>,
-    returned: (
-      <div className="flex items-center justify-center">
-        <button 
-          onClick={() => decrementReturnQty(index)}
-          disabled={component.returned <= 0}
-          className={`p-1 rounded ${component.returned <= 0 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          <Minus size={16} />
-        </button>
-        <input
-          type="number"
-          min="0"
-          max={component.remaining}
-          value={component.returned}
-          onChange={(e) => handleReturnQtyChange(index, e.target.value)}
-          className="w-16 p-1 mx-1 border border-gray-300 rounded text-center"
-        />
-        <button 
-          onClick={() => incrementReturnQty(index)}
-          disabled={component.returned >= component.remaining}
-          className={`p-1 rounded ${component.returned >= component.remaining ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          <Plus size={16} />
-        </button>
-      </div>
-    ),
-    damage: (
-      <div className="flex items-center justify-center">
-        <button
-          onClick={() => {
-            setSelectedComponentIndex(index);
-            setDamageCount({ ...damageCount, [index]: 0 });
-            setDamageDescription('');
-            setIsUserDamaged(false);
-            setDamageAction('return');
-            setShowDamageModal(true);
-          }}
-          disabled={component.returned <= 0}
-          className={`px-3 py-1 rounded-md ${
-            component.returned > 0 
-              ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Report Damage
-        </button>
-      </div>
-    ),
-    actions: (
-      <div className="text-center">
-        <button
-          onClick={() => handleReturnSubmit(index)}
-          disabled={component.returned <= 0}
-          className={`px-3 py-1 rounded-md ${
-            component.returned > 0 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Return
-        </button>
-      </div>
-    )
-  }));
 
+
+
+const returnTrackingRows = returnTrackingComponents
+  .map((component, originalIndex) => ({ ...component, originalIndex }))
+  .filter(component => component.remaining > 0)
+  .map((component) => {
+    const index = component.originalIndex;
+    const returnedValue = returnTrackingComponents[index]?.returned ?? 0;
+
+    return {
+      ...component,
+      name: <div className="text-center">{component.name}</div>,
+      totalIssued: <div className="text-center">{component.totalIssued}</div>,
+      remaining: <div className="text-center">{component.remaining}</div>,
+      returned: (
+        <div className="flex items-center justify-center">
+          <button 
+            onClick={() => decrementReturnQty(index)}
+            disabled={returnedValue <= 0}
+            className={`p-1 rounded ${returnedValue <= 0 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            <Minus size={16} />
+          </button>
+          <input
+            type="number"
+            min="0"
+            max={component.remaining}
+            value={returnedValue}
+            onChange={(e) => handleReturnQtyChange(index, e.target.value)}
+            className="w-16 p-1 mx-1 border border-gray-300 rounded text-center"
+          />
+          <button 
+            onClick={() => incrementReturnQty(index)}
+            disabled={returnedValue >= component.remaining}
+            className={`p-1 rounded ${returnedValue >= component.remaining ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      ),
+      damage: (
+        <div className="flex items-center justify-center">
+          <button
+            onClick={() => {
+              setSelectedComponentIndex(index);
+              setDamageCount({ ...damageCount, [index]: 0 });
+              setDamageDescription('');
+              setIsUserDamaged(false);
+              setDamageAction('return');
+              setShowDamageModal(true);
+            }}
+            disabled={returnedValue <= 0}
+            className={`px-3 py-1 rounded-md ${
+              returnedValue > 0 
+                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Report Damage
+          </button>
+        </div>
+      ),
+      actions: (
+        <div className="text-center">
+          <button
+            onClick={() => handleReturnSubmit(index)}
+            disabled={returnedValue <= 0}
+            className={`px-3 py-1 rounded-md ${
+              returnedValue > 0 
+                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Return
+          </button>
+        </div>
+      )
+    };
+  });
+
+  
   // Return history table configuration
   const returnHistoryColumns = [
     { key: 'name', label: 'Component Name', className: 'text-center' },
@@ -878,7 +884,7 @@ const mappedRequest = {
                     </div>
                     <Table 
                       columns={adminComponentsColumns} 
-                      rows={requestedComponentsRows.slice(
+                      rows={adminComponentsRows.slice(
                         (adminPage - 1) * itemsPerPage,
                         adminPage * itemsPerPage
                       )}  
@@ -888,7 +894,7 @@ const mappedRequest = {
                     {adminComponentsRows.length > 0 && (
                       <Pagination 
                         currentPage={adminPage}
-                        totalPages={Math.ceil(requestedComponentsRows.length / itemsPerPage)}
+                        totalPages={Math.ceil(adminComponentsRows.length / itemsPerPage)}
                         setCurrentPage={setAdminPage}
                       />
                     )}
@@ -1259,6 +1265,13 @@ const mappedRequest = {
           </div>
         </div>
       </div>
+      )}
+      {showSuccess && (
+        <SuccessAlert
+          message="Component returned successfully!"
+          description="The return has been recorded."
+          onClose={() => setShowSuccess(false)}
+        />
       )}
     </div>
   );
