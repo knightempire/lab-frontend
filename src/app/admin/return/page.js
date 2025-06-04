@@ -6,142 +6,8 @@ import Pagination from '../../../components/pagination';
 import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat, XCircle, RefreshCcw } from 'lucide-react';
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
-import RequestTimeline from '../../../components/RequestTimeline';``
-const requests = [
-  {
-    id: "REQ-S-250001",
-    name: "John Doe",
-    rollNo: "CS21B054",
-    phoneNo: "9876543210",
-    email: "john.doe@university.edu",
-    isFaculty: false,
-    requestedDate: "2025-05-10",
-    acceptedDate: "2025-05-11",
-    issueDate: "2025-05-12",
-    requestedDays: 5,
-    status: "closed",
-    referenceStaff: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu'
-    },
-    description: "For IoT project, Display indicators",
-    admindescription : "Accepted for project",
-    components: [
-      { id: 1, name: 'Widget A', quantity: 2 },
-      { id: 2, name: 'Widget B', quantity: 10 },
-      { id: 3, name: 'Widget C', quantity: 20 },
-      { id: 4, name: 'Widget D', quantity: 2 },
-      { id: 5, name: 'Widget E', quantity: 10 },
-      { id: 6, name: 'Widget G', quantity: 2 },
-      { id: 7, name: 'Widget H', quantity: 10 }
-    ],
-    isreissued: false
-  },
-  {
-    id: "REQ-S-250002",
-    name: "Alice Kumar",
-    rollNo: "2023123",
-    phoneNo: "9876543210",
-    email: "alice@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-05",
-    acceptedDate: "2025-05-06",
-    issueDate: "2025-05-07",
-    requestedDays: 3,
-    status: "accepted",
-    referenceStaff: {
-      name: 'Prof. Michael Johnson',
-      email: 'michael.johnson@university.edu'
-    },
-    description: "For embedded project, For circuit prototyping",
-    admindescription : "Accepted for project",
-    components: [
-      { id: 1, name: 'Widget C', quantity: 1 },
-      { id: 2, name: 'Widget Z', quantity: 2 }
-    ],
-    isreissued: true
-  },
-  {
-    id: "REQ-S-250003",
-    name: "Rahul Mehta",
-    rollNo: "12345",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: false,
-    requestedDate: "2025-05-06",
-    acceptedDate: "2025-05-07",
-    issueDate: "2025-05-08",
-    requestedDays: 7,
-    status: "rejected",
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For AI project, For data analysis",
-    components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
-    ],
-    isreissued: false
-  },
-  {
-    id: "REQ-2025-0516",
-    name: "James Cameron",
-    rollNo: "12345",
-    phoneNo: "9123456789",
-    email: "rahul@example.com",
-    isFaculty: false,
-    requestedDate: "2025-09-06",
-    acceptedDate: "2025-05-07",
-    issueDate: "2025-05-08",
-    returnedDate : "2025-12-24",
-    requestedDays: 7,
-    status: "returned",
-    referenceStaff: {
-      name: 'Dr. Lisa Chen',
-      email: 'lisa.chen@university.edu'
-    },
-    description: "For AI project, For data analysis",
-    components: [
-      { id: 1, name: 'Widget D', quantity: 5 }
-    ],
-    isreissued: true
-  },
-];
-
-const reissue = [
-  { 
-    requestId: "REQ-2025-0514", 
-    acceptedDate: "2023-10-06", 
-    requestdate: "2023-10-05", 
-    issueDate: "2023-10-07",
-    requestdays: 5, 
-    issuedays: 5, 
-    description: "Reissued description 1", 
-    admindescription: "Re-request accepted", 
-    components: [
-      {name: "Widget D", quantity: 3},
-      {name: "Widget E", quantity: 2},
-      {name: "Widget F", quantity: 1},
-      {name: "Widget G", quantity: 3}
-    ],
-    isreissued: true
-  },
-  {
-    requestId: "REQ-2025-0514",
-    acceptedDate: "2025-05-12",
-    requestdate: "2025-05-11",
-    issueDate: "2025-05-13",
-    requestdays: 3,
-    issuedays: 3,
-    description: "Additional components needed",
-    admindescription: "Additional parts Rejected",
-    components: [
-      {name: "Widget A", quantity: 1},
-      {name: "Widget Z", quantity: 5}
-    ],
-    isreissued: false
-  }
-];
+import RequestTimeline from '../../../components/RequestTimeline';
+import SuccessAlert from '../../../components/SuccessAlert';
 
 const AdminRetrunViewContent = () => {
   const router = useRouter();
@@ -190,13 +56,152 @@ const AdminRetrunViewContent = () => {
   const [expandedRows, setExpandedRows] = useState(new Set());
 
   const [replacements, setReplacements] = useState({});
+  const [reissue, setReissue] = useState([]);
+
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Fetch request data from API
+useEffect(() => {
+
+
+  fetchAllData();
+}, [requestId, router]);
+
+
+  const fetchAllData = async () => {
+    const token = localStorage.getItem('token');
+    if (!requestId || !token) return;
+
+    try {
+      // Fetch request details
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const apiData = await response.json();
+      if (!response.ok || !apiData.request) {
+        router.back();
+        return;
+      }
+      const req = apiData.request;
+      console.log(apiData)
+      // Fetch return details
+      const returnRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const returnData = await returnRes.json();
+
+      // Map issued components for return tracking
+      const issued = req.issued || [];
+      const returnMap = {};
+      (returnData.return || []).forEach(ret => {
+        returnMap[ret.issuedProductId] = ret;
+      });
+
+      // Build return tracking components
+      const tracking = issued.map(issuedItem => {
+        // Sum all replacedQuantity for this issued item
+        const replacedCount = (issuedItem.return || []).reduce(
+          (sum, ret) => sum + (ret.replacedQuantity || 0),
+          0
+        );
+        // Sum all returnedQuantity for this issued item
+        const returnedCount = (issuedItem.return || []).reduce(
+          (sum, ret) => sum + (ret.returnedQuantity || 0),
+          0
+        );
+        const totalIssued = issuedItem.issuedQuantity + replacedCount;
+        const remaining = totalIssued - returnedCount;
+return {
+  id: issuedItem.issuedProductId._id,
+  name: issuedItem.issuedProductId.product_name,
+  totalIssued,
+  returned: 0 // for input
+,
+  remaining: remaining > 0 ? remaining : 0,
+};
+      });
+
+      setReturnTrackingComponents(tracking);
+
+      // Build return history
+      let history = [];
+      (returnData.return || []).forEach(ret => {
+        (ret.returns || []).forEach(r => {
+          history.push({
+            id: r._id,
+            name: issued.find(i => i.issuedProductId._id === ret.issuedProductId)?.issuedProductId.product_name || '',
+            qtyReturned: r.returnedQuantity,
+            damagedCount: r.damagedQuantity,
+            dateReturned: r.returnDate,
+            damageDescription: '', // If you want to store description, add it to API and here
+            isUserDamaged: r.userDamagedQuantity > 0,
+            actionType: r.replacedQuantity > 0 ? 'replace' : 'return'
+          });
+        });
+      });
+      // Sort history by date (optional)
+      history = history.sort((a, b) => new Date(b.dateReturned) - new Date(a.dateReturned));
+      setReturnHistory(history);
+
+      // Set requestData as before
+      const mappedRequest = {
+        id: req.requestId,
+        name: req.userId?.name || '',
+        rollNo: req.userId?.rollNo || '',
+        phoneNo: req.userId?.phoneNo || '',
+        email: req.userId?.email || '',
+        isFaculty: req.userId?.role === 'faculty',
+        requestedDate: req.requestDate,
+        acceptedDate: req.issuedDate,
+        issueDate: req.issuedDate,
+        returnedDate: req.returnedDate,
+        requestedDays: req.requestedDays,
+        status: req.requestStatus,
+        referenceStaff: {
+          name: req.referenceId?.name || '',
+          email: req.referenceId?.email || ''
+        },
+        description: req.description,
+        admindescription: req.adminReturnMessage,
+        components: issued.map(item => ({
+          id: item.issuedProductId._id,
+          name: item.issuedProductId.product_name,
+          quantity: item.issuedQuantity
+        })),
+        issued: req.issued, // <-- ADD THIS LINE
+        isreissued: req.reIssued && req.reIssued.length > 0
+      };
+      setRequestData(mappedRequest);
+      setAdminIssueComponents(mappedRequest.components);
+
+      // Setup damage state
+      const initialDamageState = {};
+      const initialDamageCount = {};
+      mappedRequest.components.forEach((component, index) => {
+        initialDamageState[index] = false;
+        initialDamageCount[index] = 0;
+      });
+      setHasDamage(initialDamageState);
+      setDamageCount(initialDamageCount);
+
+      setReissue(req.reIssued || []);
+    } catch (err) {
+      router.back();
+    }
+  };
 
   useEffect(() => {
     // Check if all components have been returned
     const allReturned = returnTrackingComponents.length === 0 || 
       returnTrackingComponents.every(component => component.remaining === 0);
-    
-    // Update the status accordingly
     setRequestStatus(allReturned ? 'Done' : 'Open');
   }, [returnTrackingComponents]);
 
@@ -205,52 +210,16 @@ const AdminRetrunViewContent = () => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-    
-    // Add event listener
     window.addEventListener('resize', handleResize);
-    // Set initial size
     handleResize();
-    // Clean up event listener
     return () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [router]);
 
-  
-  useEffect(() => {
-  if (!requestId || !Array.isArray(requests) || requests.length === 0) return;
-
-  const matchedRequest = requests.find(req => req.id === requestId);
-
-  if (matchedRequest) {
-    setRequestData(matchedRequest);
-    setAdminIssueComponents([...matchedRequest.components]);
-
-    const returnTracking = matchedRequest.components.map(component => ({
-      ...component,
-      totalIssued: component.quantity,
-      returned: 0,
-      remaining: component.quantity,
-    }));
-    setReturnTrackingComponents(returnTracking);
-    setReturnHistory([]);
-
-    const initialDamageState = {};
-    const initialDamageCount = {};
-    matchedRequest.components.forEach((component, index) => {
-      initialDamageState[index] = false;
-      initialDamageCount[index] = 0;
-    });
-    setHasDamage(initialDamageState);
-    setDamageCount(initialDamageCount);
-  } else {
-    router.back();
-  }
-}, [requestId, requests?.length]);
-
-
   // Format date function
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -258,76 +227,52 @@ const AdminRetrunViewContent = () => {
       day: 'numeric'
     });
   };
-  
+
   // Handle return quantity change
-  const handleReturnQtyChange = (index, value) => {
-    const newValue = parseInt(value) || 0;
-    const updatedComponents = [...returnTrackingComponents];
-    const component = updatedComponents[index];
-    
-    // Ensure return value doesn't exceed remaining quantity
-    // FIX #1 & #2: Make sure return qty doesn't exceed remaining amount
-    const validValue = Math.min(newValue, component.remaining);
-    
-    updatedComponents[index] = {
-      ...component,
-      returned: validValue,
-      // Keep the remaining value unchanged here, since we're just setting the "returning" value
-    };
-    
-    setReturnTrackingComponents(updatedComponents);
-
-    // If damage count is more than return quantity, adjust it
-    if (hasDamage[index] && damageCount[index] > validValue) {
-      setDamageCount({ ...damageCount, [index]: validValue });
-    }
+const handleReturnQtyChange = (index, value) => {
+  const newValue = parseInt(value) || 0;
+  const updatedComponents = [...returnTrackingComponents];
+  const component = updatedComponents[index];
+  const validValue = Math.max(0, Math.min(newValue, component.remaining));
+  updatedComponents[index] = {
+    ...component,
+    returned: validValue,
   };
+  setReturnTrackingComponents(updatedComponents);
+  if (hasDamage[index] && damageCount[index] > validValue) {
+    setDamageCount({ ...damageCount, [index]: validValue });
+  }
+};
 
-  // Handle damage checkbox change
+  // Handle damage modal submit
   const handleDamageModalSubmit = () => {
     const totalDamaged = userDamagedCount + notUserDamagedCount;
     setDamageCount({ ...damageCount, [selectedComponentIndex]: totalDamaged });
     setShowDamageModal(false);
   };
 
-
   // Handle damage count change
   const handleDamageCountChange = (index, value) => {
-    const newValue = parseInt(value) || 0;
+    let newValue = parseInt(value) || 0;
     const returnQty = returnTrackingComponents[index].returned;
-    
-    // Ensure damage count doesn't exceed return quantity
-    const validValue = Math.min(newValue, returnQty);
-    if (validValue<0){
-      validValue=0;
-    }
+    const validValue = Math.max(0, Math.min(newValue, returnQty));
     setDamageCount({ ...damageCount, [index]: validValue });
   };
-  
-  // New functions for incrementing and decrementing values
-  const incrementReturnQty = (index) => {
-    const component = returnTrackingComponents[index];
-    // FIX #2: Check against remaining instead of totalIssued
-    if (component.returned < component.remaining) {
-      handleReturnQtyChange(index, component.returned + 1);
-    }
-  };
-  
-  const decrementReturnQty = (index) => {
-    const component = returnTrackingComponents[index];
-    if (component.returned > 0) {
-      handleReturnQtyChange(index, component.returned - 1);
-    }
-  };
-  
-  const incrementDamageCount = (index) => {
-    const currentCount = damageCount[index] || 0;
-    const returnQty = returnTrackingComponents[index].returned;
-    if (currentCount < returnQty) {
-      handleDamageCountChange(index, currentCount + 1);
-    }
-  };
-  
+
+  // Increment/decrement handlers
+const incrementReturnQty = (index) => {
+  const component = returnTrackingComponents[index];
+  if (component.returned < component.remaining) {
+    handleReturnQtyChange(index, component.returned + 1);
+  }
+};
+
+const decrementReturnQty = (index) => {
+  const component = returnTrackingComponents[index];
+  if (component.returned > 0) {
+    handleReturnQtyChange(index, component.returned - 1);
+  }
+};
   const decrementDamageCount = (index) => {
     const currentCount = damageCount[index] || 0;
     if (currentCount > 0) {
@@ -336,199 +281,101 @@ const AdminRetrunViewContent = () => {
   };
 
   const incrementUserDamagedCount = () => {
-  const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
-  const currentTotal = userDamagedCount + notUserDamagedCount;
-  if (currentTotal < returnQty) {
-    setUserDamagedCount(userDamagedCount + 1);
-  }
-};
-
-const decrementUserDamagedCount = () => {
-  if (userDamagedCount > 0) {
-    setUserDamagedCount(userDamagedCount - 1);
-    // Ensure replacing count doesn't exceed total damaged count
-    if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
-      setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
+    const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
+    const currentTotal = userDamagedCount + notUserDamagedCount;
+    if (currentTotal < returnQty) {
+      setUserDamagedCount(userDamagedCount + 1);
     }
-  }
-};
-
-const incrementNotUserDamagedCount = () => {
-  const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
-  const currentTotal = userDamagedCount + notUserDamagedCount;
-  if (currentTotal < returnQty) {
-    setNotUserDamagedCount(notUserDamagedCount + 1);
-  }
-};
-
-const decrementNotUserDamagedCount = () => {
-  if (notUserDamagedCount > 0) {
-    setNotUserDamagedCount(notUserDamagedCount - 1);
-    // Ensure replacing count doesn't exceed total damaged count
-    if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
-      setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
+  };
+  const decrementUserDamagedCount = () => {
+    if (userDamagedCount > 0) {
+      setUserDamagedCount(userDamagedCount - 1);
+      if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
+        setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
+      }
     }
-  }
-};
-
-const incrementReplacingCount = () => {
-  const totalDamaged = userDamagedCount + notUserDamagedCount;
-  if (replacingCount < totalDamaged) {
-    setReplacingCount(replacingCount + 1);
-  }
-};
-
-const decrementReplacingCount = () => {
-  if (replacingCount > 0) {
-    setReplacingCount(replacingCount - 1);
-  }
-};
-
-// New function to handle viewing damage details
-const toggleRowExpansion = (itemId) => {
-  const newExpandedRows = new Set(expandedRows);
-  if (newExpandedRows.has(itemId)) {
-    newExpandedRows.delete(itemId);
-  } else {
-    newExpandedRows.add(itemId);
-  }
-  setExpandedRows(newExpandedRows);
-};
-
-// Handle component return submission
-const handleReturnSubmit = (componentIndex) => {
-  const component = returnTrackingComponents[componentIndex];
-  
-  // Only process if there's something to return
-  if (component.returned > 0) {
-    const newReturnHistory = [];
-    let historyCounter = returnHistory.length + 1;
-    
-    // Calculate how many of each type to replace
-    const userDamagedToReplace = Math.min(userDamagedCount, replacingCount);
-    const notUserDamagedToReplace = Math.min(notUserDamagedCount, replacingCount - userDamagedToReplace);
-    
-    // Calculate remainders for returning (not replacing)
-    const userDamagedToReturn = userDamagedCount - userDamagedToReplace;
-    const notUserDamagedToReturn = notUserDamagedCount - notUserDamagedToReplace;
-    
-    // 1. Create entry for REPLACED user damaged components
-    if (userDamagedToReplace > 0) {
-      const userDamagedReplaceEntry = {
-        id: historyCounter++,
-        name: component.name,
-        qtyReturned: userDamagedToReplace,
-        damagedCount: userDamagedToReplace,
-        dateReturned: new Date().toISOString(),
-        damageDescription: damageDescription,
-        isUserDamaged: true,
-        actionType: 'replace'
-      };
-      newReturnHistory.push(userDamagedReplaceEntry);
+  };
+  const incrementNotUserDamagedCount = () => {
+    const returnQty = returnTrackingComponents[selectedComponentIndex].returned;
+    const currentTotal = userDamagedCount + notUserDamagedCount;
+    if (currentTotal < returnQty) {
+      setNotUserDamagedCount(notUserDamagedCount + 1);
     }
-    
-    // 2. Create entry for REPLACED non-user damaged components
-    if (notUserDamagedToReplace > 0) {
-      const notUserDamagedReplaceEntry = {
-        id: historyCounter++,
-        name: component.name,
-        qtyReturned: notUserDamagedToReplace,
-        damagedCount: notUserDamagedToReplace,
-        dateReturned: new Date().toISOString(),
-        damageDescription: damageDescription,
-        isUserDamaged: false,
-        actionType: 'replace'
-      };
-      newReturnHistory.push(notUserDamagedReplaceEntry);
+  };
+  const decrementNotUserDamagedCount = () => {
+    if (notUserDamagedCount > 0) {
+      setNotUserDamagedCount(notUserDamagedCount - 1);
+      if (replacingCount > userDamagedCount + notUserDamagedCount - 1) {
+        setReplacingCount(userDamagedCount + notUserDamagedCount - 1);
+      }
     }
-    
-    // 3. Create entry for RETURNED user damaged components (no replacement)
-    if (userDamagedToReturn > 0) {
-      const userDamagedReturnEntry = {
-        id: historyCounter++,
-        name: component.name,
-        qtyReturned: userDamagedToReturn,
-        damagedCount: userDamagedToReturn,
-        dateReturned: new Date().toISOString(),
-        damageDescription: damageDescription,
-        isUserDamaged: true,
-        actionType: 'return'
-      };
-      newReturnHistory.push(userDamagedReturnEntry);
+  };
+  const incrementReplacingCount = () => {
+    const totalDamaged = userDamagedCount + notUserDamagedCount;
+    if (replacingCount < totalDamaged) {
+      setReplacingCount(replacingCount + 1);
     }
-    
-    // 4. Create entry for RETURNED non-user damaged components (no replacement)
-    if (notUserDamagedToReturn > 0) {
-      const notUserDamagedReturnEntry = {
-        id: historyCounter++,
-        name: component.name,
-        qtyReturned: notUserDamagedToReturn,
-        damagedCount: notUserDamagedToReturn,
-        dateReturned: new Date().toISOString(),
-        damageDescription: damageDescription,
-        isUserDamaged: false,
-        actionType: 'return'
-      };
-      newReturnHistory.push(notUserDamagedReturnEntry);
-    }
-    
-    // 5. If there are undamaged components to return
-    const undamagedCount = component.returned - (userDamagedCount + notUserDamagedCount);
-    if (undamagedCount > 0) {
-      const undamagedEntry = {
-        id: historyCounter++,
-        name: component.name,
-        qtyReturned: undamagedCount,
-        damagedCount: 0,
-        dateReturned: new Date().toISOString(),
-        damageDescription: '',
-        isUserDamaged: false,
-        actionType: 'return'
-      };
-      newReturnHistory.push(undamagedEntry);
-    }
-    
-    // Add new history entries to state
-    setReturnHistory([...newReturnHistory, ...returnHistory]);
-    
-    // Update component in the tracking list
-    const updatedComponents = [...returnTrackingComponents];
-    updatedComponents[componentIndex] = {
-      ...component,
-      returned: 0,
-      // Increment totalIssued if we're replacing damaged items
-      totalIssued: replacingCount > 0 
-        ? component.totalIssued + replacingCount
-        : component.totalIssued,
-      // Reduce the remaining count by the returned amount minus replacing amount
-      remaining: component.remaining - (component.returned - replacingCount)
-    };
-    
-    // Track replacements if there are any
+  };
+  const decrementReplacingCount = () => {
     if (replacingCount > 0) {
-      const currentReplacements = replacements[component.name] || 0;
-      setReplacements({
-        ...replacements,
-        [component.name]: currentReplacements + replacingCount
-      });
+      setReplacingCount(replacingCount - 1);
     }
-    
-    // Filter out components with no items remaining
-    const filteredComponents = updatedComponents.filter((comp, idx) => {
-      return idx !== componentIndex || (idx === componentIndex && updatedComponents[idx].remaining > 0);
-    });
-    
-    setReturnTrackingComponents(filteredComponents);
-    
-    // Reset damage states
-    setDamageCount({ ...damageCount, [componentIndex]: 0 });
-    setDamageDescription('');
-    setUserDamagedCount(0);
-    setNotUserDamagedCount(0);
-    setReplacingCount(0);
+  };
+
+  // Toggle row expansion for damage details
+  const toggleRowExpansion = (itemId) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(itemId)) {
+      newExpandedRows.delete(itemId);
+    } else {
+      newExpandedRows.add(itemId);
+    }
+    setExpandedRows(newExpandedRows);
+  };
+
+
+const handleReturnSubmit = async (componentIndex) => {
+  const component = returnTrackingComponents[componentIndex];
+  if (component.returned > 0) {
+    // Prepare API payload
+    const payload = {
+      productName: component.name,
+      returnQuantity: component.returned,
+      damagedQuantity: (damageCount[componentIndex] || 0),
+      userDamagedQuantity: userDamagedCount,
+      replacedQuantity: replacingCount
+    };
+
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestData.id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || 'Failed to return component');
+        return;
+      }
+
+      // Show success and refresh data
+      setShowSuccess(true);
+      fetchAllData()
+
+    } catch (err) {
+      console.error('Error returning component:', err);
+  
+    }
   }
 };
-  
+
   if (!requestData) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -549,7 +396,7 @@ const handleReturnSubmit = (componentIndex) => {
   const requestedComponentsRows = requestData.components.map(component => ({
     ...component,
     name: component.name,
-    quantity: component.quantity,
+    quantity: component.quantity ,
     description: component.description || '-'
   }));
 
@@ -558,34 +405,42 @@ const handleReturnSubmit = (componentIndex) => {
     { key: 'quantity', label: 'Quantity', className: 'text-center' },
   ];
 
-  const adminComponentsRows = requestData.components.map(component => {
-    const replacedCount = replacements[component.name] || 0;
-    
-    return {
-      ...component,
-      name: component.name,
-      quantity: (
-        <div className="flex items-center justify-center">
-          <span>{component.quantity}</span>
-          {replacedCount > 0 && (
-            <span className="ml-1 text-red-600 font-medium">+{replacedCount}</span>
+const adminComponentsRows = (requestData.issued || []).map(component => {
+  const issuedQuantity = component.issuedQuantity;
+  const returns = component.return || [];
+  const totalReplacedQuantity = returns.reduce((total, ret) => total + (ret.replacedQuantity || 0), 0);
+
+  return {
+    id: component.issuedProductId._id,
+    name: component.issuedProductId.product_name,
+    quantity: (
+      <div className="flex items-center justify-center">
+        <span>
+          {issuedQuantity}
+          {totalReplacedQuantity > 0 && (
+            <> + {totalReplacedQuantity}</>
           )}
-        </div>
-      ),
-      description: component.description || '-'
-    };
-  });
+        </span>
+      </div>
+    ),
+    description: component.description || '-'
+  };
+});
+
+
   const reissueColumns = [
     { key: 'name', label: 'Component Name' },
     { key: 'quantity', label: 'Quantity' }
   ];
-  const reissueRows = reissue
-  .find(item => item.requestId === requestId)?.components
-  .map(component => ({
-    name: component.name,
-    quantity: component.quantity
-  })) || [];
-    
+
+  // Map reissue data if available
+  const reissueRows = (reissue.length > 0 && reissue[0].components)
+    ? reissue[0].components.map(component => ({
+        name: component.product_name || component.name,
+        quantity: component.quantity
+      }))
+    : [];
+
   // Return tracking table configuration
   const returnTrackingColumns = [
     { key: 'name', label: 'Component Name', className: 'text-center' },
@@ -595,76 +450,88 @@ const handleReturnSubmit = (componentIndex) => {
     { key: 'damage', label: 'Damage', className: 'text-center' },
     { key: 'actions', label: 'Actions', className: 'text-center' }
   ];
-  
-  const returnTrackingRows = returnTrackingComponents.map((component, index) => ({
-    ...component,
-    name: <div className="text-center">{component.name}</div>,
-    totalIssued: <div className="text-center">{component.totalIssued}</div>,
-    remaining: <div className="text-center">{component.remaining}</div>,
-    returned: (
-      <div className="flex items-center justify-center">
-        <button 
-          onClick={() => decrementReturnQty(index)}
-          disabled={component.returned <= 0}
-          className={`p-1 rounded ${component.returned <= 0 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          <Minus size={16} />
-        </button>
-        <input
-          type="number"
-          min="0"
-          max={component.remaining}
-          value={component.returned}
-          onChange={(e) => handleReturnQtyChange(index, e.target.value)}
-          className="w-16 p-1 mx-1 border border-gray-300 rounded text-center"
-        />
-        <button 
-          onClick={() => incrementReturnQty(index)}
-          disabled={component.returned >= component.remaining}
-          className={`p-1 rounded ${component.returned >= component.remaining ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          <Plus size={16} />
-        </button>
-      </div>
-    ),
-    damage: (
-      <div className="flex items-center justify-center">
-        <button
-          onClick={() => {
-            setSelectedComponentIndex(index);
-            setDamageCount({ ...damageCount, [index]: 0 });
-            setDamageDescription('');
-            setIsUserDamaged(false);
-            setDamageAction('return');
-            setShowDamageModal(true);
-          }}
-          disabled={component.returned <= 0}
-          className={`px-3 py-1 rounded-md ${
-            component.returned > 0 
-              ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Report Damage
-        </button>
-      </div>
-    ),
-    actions: (
-      <div className="text-center">
-        <button
-          onClick={() => handleReturnSubmit(index)}
-          disabled={component.returned <= 0}
-          className={`px-3 py-1 rounded-md ${
-            component.returned > 0 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Return
-        </button>
-      </div>
-    )
-  }));
+
+
+
+
+const returnTrackingRows = returnTrackingComponents
+  .map((component, originalIndex) => ({ ...component, originalIndex }))
+  .filter(component => component.remaining > 0)
+  .map((component) => {
+    const index = component.originalIndex;
+    const returnedValue = returnTrackingComponents[index]?.returned ?? 0;
+
+    return {
+      ...component,
+      name: <div className="text-center">{component.name}</div>,
+      totalIssued: <div className="text-center">{component.totalIssued}</div>,
+      remaining: <div className="text-center">{component.remaining}</div>,
+      returned: (
+        <div className="flex items-center justify-center">
+          <button 
+            onClick={() => decrementReturnQty(index)}
+            disabled={returnedValue <= 0}
+            className={`p-1 rounded ${returnedValue <= 0 ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            <Minus size={16} />
+          </button>
+          <input
+            type="number"
+            min="0"
+            max={component.remaining}
+            value={returnedValue}
+            onChange={(e) => handleReturnQtyChange(index, e.target.value)}
+            className="w-16 p-1 mx-1 border border-gray-300 rounded text-center"
+          />
+          <button 
+            onClick={() => incrementReturnQty(index)}
+            disabled={returnedValue >= component.remaining}
+            className={`p-1 rounded ${returnedValue >= component.remaining ? 'text-gray-300' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      ),
+      damage: (
+        <div className="flex items-center justify-center">
+          <button
+            onClick={() => {
+              setSelectedComponentIndex(index);
+              setDamageCount({ ...damageCount, [index]: 0 });
+              setDamageDescription('');
+              setIsUserDamaged(false);
+              setDamageAction('return');
+              setShowDamageModal(true);
+            }}
+            disabled={returnedValue <= 0}
+            className={`px-3 py-1 rounded-md ${
+              returnedValue > 0 
+                ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Report Damage
+          </button>
+        </div>
+      ),
+      actions: (
+        <div className="text-center">
+          <button
+            onClick={() => handleReturnSubmit(index)}
+            disabled={returnedValue <= 0}
+            className={`px-3 py-1 rounded-md ${
+              returnedValue > 0 
+                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Return
+          </button>
+        </div>
+      )
+    };
+  });
+
   
   // Return history table configuration
   const returnHistoryColumns = [
@@ -675,9 +542,8 @@ const handleReturnSubmit = (componentIndex) => {
     { key: 'isUserDamaged', label: 'User Damaged', className: 'text-center' },
     { key: 'dateReturned', label: 'Date Returned', className: 'text-center' }
   ];
-  
+
   const returnHistoryRows = returnHistory.reduce((acc, item) => {
-    // Main row
     acc.push({
       ...item,
       name: (
@@ -735,8 +601,6 @@ const handleReturnSubmit = (componentIndex) => {
       ),
       dateReturned: <div className="text-center">{formatDate(item.dateReturned)}</div>
     });
-
-    // Expanded description row
     if (expandedRows.has(item.id) && item.damagedCount > 0 && item.damageDescription) {
       acc.push({
         id: `${item.id}-expanded`,
@@ -756,127 +620,120 @@ const handleReturnSubmit = (componentIndex) => {
         )
       });
     }
-
     return acc;
   }, []);
+
   const issueStatus = requestData.status;
-
-let statusIcon, statusText, bgColor, textColor;
-
-switch (issueStatus) {
-  case 'accepted':
-    statusIcon = <CheckCircle size={16} className="text-green-700" />;
-    bgColor = 'bg-green-100';
-    textColor = 'text-green-700';
-    statusText = 'Accepted';
-    break;
-  case 'returned':
-    statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
-    bgColor = 'bg-blue-100';
-    textColor = 'text-blue-700';
-    statusText = 'Returned';
-    break;
-  case 'rejected':
-    statusIcon = <XCircle size={16} className="text-red-700" />;
-    bgColor = 'bg-red-100';
-    textColor = 'text-red-700';
-    statusText = 'Rejected';
-    break;
-  case 'closed':
-    statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
-    bgColor = 'bg-amber-100';
-    textColor = 'text-amber-700';
-    statusText = 'Closed';
-    break;
-  default:
-    statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
-    bgColor = 'bg-gray-100';
-    textColor = 'text-gray-700';
-    statusText = 'Unknown';
-}
-
-
+  let statusIcon, statusText, bgColor, textColor;
+  switch (issueStatus) {
+         case 'accepted':
+      case 'approved':
+      statusIcon = <CheckCircle size={16} className="text-green-700" />;
+      bgColor = 'bg-green-100';
+      textColor = 'text-green-700';
+      statusText = 'Accepted';
+      break;
+    case 'returned':
+      statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
+      bgColor = 'bg-blue-100';
+      textColor = 'text-blue-700';
+      statusText = 'Returned';
+      break;
+    case 'rejected':
+      statusIcon = <XCircle size={16} className="text-red-700" />;
+      bgColor = 'bg-red-100';
+      textColor = 'text-red-700';
+      statusText = 'Rejected';
+      break;
+    case 'closed':
+      statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
+      bgColor = 'bg-amber-100';
+      textColor = 'text-amber-700';
+      statusText = 'Closed';
+      break;
+    default:
+      statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
+      bgColor = 'bg-gray-100';
+      textColor = 'text-gray-700';
+      statusText = 'Unknown';
+  }
 
   return (
     <div className="bg-gray-50">
-        <div className="mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={() => router.back()}
-                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-                aria-label="Go back"
-              >
-                <ArrowLeft size={20} className="text-gray-700" />
-              </button>
-              <FileText className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                Issued Details
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${bgColor} ${textColor}`}>
-                  {statusIcon}
-                  <span className="text-sm font-medium">{statusText}</span>
-                </span>
-              </h1>
-            </div>
+      <div className="mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => router.back()}
+              className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <FileText className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+              Issued Details
+              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${bgColor} ${textColor}`}>
+                {statusIcon}
+                <span className="text-sm font-medium">{statusText}</span>
+              </span>
+            </h1>
           </div>
-
-          {/* Main content card */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {/* Request header */}
-            <div className="bg-blue-50 p-6 border-b border-blue-100">
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
-                {/* Left Section */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-4">  
-                    <h2 className="text-xl font-semibold text-blue-800">
-                      Request #{requestData.id}
-                    </h2>
-                    {requestData.isreissued && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                        <Repeat size={16} className="mr-1" />
-                        Extension / Re-Issue Request
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="w-full mt-5">
-                    <RequestTimeline 
-                      requestData={requestData}
-                      reissue={reissue}
-                      formatDate={formatDate}
-                    />
-                  </div>
+        </div>
+        {/* Main content card */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          {/* Request header */}
+          <div className="bg-blue-50 p-6 border-b border-blue-100">
+            <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+              {/* Left Section */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-4">  
+                  <h2 className="text-xl font-semibold text-blue-800">
+                    Request #{requestData.id}
+                  </h2>
+                  {requestData.isreissued && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                      <Repeat size={16} className="mr-1" />
+                      Extension / Re-Issue Request
+                    </span>
+                  )}
                 </div>
-                
-                {/* Right Section */}
-                <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
-                  {/* Request Type Box */}
-                  <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200 min-w-fit">
-                    <div className="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
-                    <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
-                      {requestData.isFaculty ? 'Faculty' : 'Student'} Request
-                    </span>
-                  </div>
-
-                  {/* Request Status Box */}
-                  <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
-                    ${requestStatus === 'Done' 
-                      ? 'bg-green-100 border-green-200' 
-                      : 'bg-yellow-100 border-yellow-200'
-                    }`}>
-                    {requestStatus === 'Done' 
-                      ? <CheckCircle size={16} className="text-green-700 shrink-0" />
-                      : <Clock size={16} className="text-yellow-700 shrink-0" />
-                    }
-                    <span className={`text-sm font-medium whitespace-nowrap ${
-                      requestStatus === 'Done' ? 'text-green-700' : 'text-yellow-700'
-                    }`}>
-                      Request {requestStatus}
-                    </span>
-                  </div>
+                <div className="w-full mt-5">
+                  <RequestTimeline 
+                    requestData={requestData}
+                    reissue={reissue}
+                    formatDate={formatDate}
+                  />
+                </div>
+              </div>
+              {/* Right Section */}
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
+                {/* Request Type Box */}
+                <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200 min-w-fit">
+                  <div className="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
+                  <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
+                    {requestData.isFaculty ? 'Faculty' : 'Student'} Request
+                  </span>
+                </div>
+                {/* Request Status Box */}
+                <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
+                  ${requestStatus === 'Done' 
+                    ? 'bg-green-100 border-green-200' 
+                    : 'bg-yellow-100 border-yellow-200'
+                  }`}>
+                  {requestStatus === 'Done' 
+                    ? <CheckCircle size={16} className="text-green-700 shrink-0" />
+                    : <Clock size={16} className="text-yellow-700 shrink-0" />
+                  }
+                  <span className={`text-sm font-medium whitespace-nowrap ${
+                    requestStatus === 'Done' ? 'text-green-700' : 'text-yellow-700'
+                  }`}>
+                    Request {requestStatus}
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
           {/* User and Reference Information */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gray-50 p-5 rounded-lg">
@@ -913,8 +770,6 @@ switch (issueStatus) {
                 </div>
               </div>
             </div>
-            
-            
             {/* Description and requested days */}
             <div className="bg-gray-50 p-5 rounded-lg">
               <div className="mb-4">
@@ -928,7 +783,6 @@ switch (issueStatus) {
                   {requestData.description || "No description provided."}
                 </p>
               </div>
-              
               <div className="mb-4">
                 <div className="flex items-center mb-2">
                   <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -937,7 +791,7 @@ switch (issueStatus) {
                   <h4 className="font-medium text-gray-700">Admin Description</h4>
                 </div>
                 <p className="text-gray-600">
-                   {requestData.admindescription||"No description available"}
+                  {requestData.admindescription||"No description available"}
                 </p>
               </div>
             </div>            
@@ -959,9 +813,7 @@ switch (issueStatus) {
                 </div>
               </div>
             </div>
-            
           </div>
-          
           {/* Components Tables Section */}
           <div className="p-6">
             <div className={`grid ${isLargeScreen ? 'grid-cols-2 gap-6' : 'grid-cols-1 gap-8'} mb-8`}>
@@ -976,17 +828,17 @@ switch (issueStatus) {
                       Requested Components
                     </h2>
                     <div className="mb-2">
-                    <div className="flex gap-4">
-                      <div className="flex items-center">
-                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                        <h4 className="font-medium text-gray-700">Requested Days</h4>
-                      </div>
-                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                        <Clock className="w-4 h-4 mr-1" />
-                        <span>{requestData.requestedDays || "N/A"} Days</span>
+                      <div className="flex gap-4">
+                        <div className="flex items-center">
+                          <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                          <h4 className="font-medium text-gray-700">Requested Days</h4>
+                        </div>
+                        <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          <Clock className="w-4 h-4 mr-1" />
+                          <span>{requestData.requestedDays || "N/A"} Days</span>
+                        </div>
                       </div>
                     </div>
-                </div>
                   </div>
                   <Table 
                     columns={requestedComponentsColumns} 
@@ -1006,9 +858,8 @@ switch (issueStatus) {
                   )}                  
                 </div>
               </div>
-              
               {/* Admin Issue Components Table - Show for accepted, returned, and closed status */}
-              {(requestData.status === 'accepted' || requestData.status === 'returned' || requestData.status === 'closed') && (
+              {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'closed') && (
                 <div className="bg-white shadow rounded-lg">
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex justify-between items-center mb-4">
@@ -1019,21 +870,21 @@ switch (issueStatus) {
                         Admin Issued Components
                       </h2>
                       <div className="mb-2">
-                      <div className="flex gap-4">
-                        <div className="flex items-center">
-                          <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                          <h4 className="font-medium text-gray-700">Issued Days</h4>
-                        </div>
-                        <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{requestData.requestedDays || "N/A"} Days</span>
+                        <div className="flex gap-4">
+                          <div className="flex items-center">
+                            <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                            <h4 className="font-medium text-gray-700">Issued Days</h4>
+                          </div>
+                          <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>{requestData.requestedDays || "N/A"} Days</span>
+                          </div>
                         </div>
                       </div>
-                  </div>
                     </div>
                     <Table 
                       columns={adminComponentsColumns} 
-                      rows={requestedComponentsRows.slice(
+                      rows={adminComponentsRows.slice(
                         (adminPage - 1) * itemsPerPage,
                         adminPage * itemsPerPage
                       )}  
@@ -1043,7 +894,7 @@ switch (issueStatus) {
                     {adminComponentsRows.length > 0 && (
                       <Pagination 
                         currentPage={adminPage}
-                        totalPages={Math.ceil(requestedComponentsRows.length / itemsPerPage)}
+                        totalPages={Math.ceil(adminComponentsRows.length / itemsPerPage)}
                         setCurrentPage={setAdminPage}
                       />
                     )}
@@ -1051,7 +902,6 @@ switch (issueStatus) {
                 </div>
               )}
             </div>
-            
             {/* Status Messages for Rejected and Closed */}
             {(requestData.status === 'rejected' || requestData.status === 'closed') && (
               <div className={`mb-8 p-6 rounded-lg border ${
@@ -1084,21 +934,17 @@ switch (issueStatus) {
                 </div>
               </div>
             )}
-            
             {/* Re-requested Components Tables Section - Only show for accepted and returned */}
-            {(requestData.status === 'accepted' || requestData.status === 'returned') && requestData.isreissued && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && requestData.isreissued && (
               <div className="col-span-1 md:col-span-2 bg-white shadow rounded-lg px-3 my-6">
                 <div className="p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                     <Repeat className="w-5 h-5 mr-2 text-amber-600" />
                     Re-requested Components
-                    
                   </h2>
                 </div>
-                
-                {reissue
-                  .filter(reissueItem => reissueItem.requestId === requestId)
-                  .map((reissueItem, reissueIndex) => (
+                {reissue.length > 0 ? (
+                  reissue.map((reissueItem, reissueIndex) => (
                     <div key={reissueIndex} className="p-4">
                       <div className="flex flex-col md:flex-row gap-6">
                         {/* Left Side - Reissue Details */}
@@ -1150,51 +996,51 @@ switch (issueStatus) {
                             </h2>
                             {reissueItem.isreissued && (
                               <div className="mb-2">
-                              <div className="flex gap-4">
-                                <div className="flex items-center">
-                                  <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                                  <h4 className="font-medium text-gray-700">Issued Days</h4>
-                                </div>
-                                <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  <span>{reissueItem.issuedays || "N/A"} Days</span>
+                                <div className="flex gap-4">
+                                  <div className="flex items-center">
+                                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                                    <h4 className="font-medium text-gray-700">Issued Days</h4>
+                                  </div>
+                                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                    <Clock className="w-4 h-4 mr-1" />
+                                    <span>{reissueItem.issuedays || "N/A"} Days</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>)}
+                            )}
                           </div>
-                          
-                          {/* Updated table to properly display reissued components */}
                           <Table 
                             columns={reissueColumns} 
-                            rows={reissueRows.slice(
+                            rows={(reissueItem.components || []).map(c => ({
+                              name: c.product_name || c.name,
+                              quantity: c.quantity
+                            })).slice(
                               (reissuePage - 1) * 3,
                               reissuePage * 3
                             )}  
                             currentPage={reissuePage} 
                             itemsPerPage={3}
                           />
-                          {reissueRows.length > 0 && (
+                          {(reissueItem.components || []).length > 0 && (
                             <Pagination 
                               currentPage={reissuePage}
-                              totalPages={Math.ceil(reissueRows.length / 3)}
+                              totalPages={Math.ceil((reissueItem.components || []).length / 3)}
                               setCurrentPage={setReissuePage}
                             />
                           )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                  
-                  {reissue.filter(item => item.requestId === requestId).length === 0 && (
-                    <div className="p-8 text-center text-gray-500">
-                      No reissue data found for this request.
-                    </div>
-                  )}
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    No reissue data found for this request.
+                  </div>
+                )}
               </div>
             )}
-          
             {/* Return Tracking Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted' || requestData.status === 'returned') && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned') && (
               <div className="bg-white shadow rounded-lg mb-8">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
@@ -1209,7 +1055,6 @@ switch (issueStatus) {
                       itemsPerPage={itemsPerPage}
                       setCurrentPage={setReturnTrackingPage}
                     />
-
                   ) : (
                     <div className="text-center py-6 text-gray-500">
                       All components have been returned
@@ -1218,9 +1063,8 @@ switch (issueStatus) {
                 </div>
               </div>
             )}
-            
             {/* Return History Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted' || requestData.status === 'returned') && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && (
               <div className="bg-white shadow rounded-lg">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
@@ -1265,7 +1109,6 @@ switch (issueStatus) {
             <AlertTriangle className="w-6 h-6 mr-2 text-amber-600" />
             Report Damaged Component
           </h3>
-
           <div className="space-y-5">
             {/* Component Name */}
             <div>
@@ -1274,7 +1117,6 @@ switch (issueStatus) {
                 {returnTrackingComponents[selectedComponentIndex].name}
               </div>
             </div>
-            
             {/* User Damaged Quantity */}
             <div>
               <label className="block text-s font-medium text-gray-700 mb-1">User Damaged Quantity</label>
@@ -1297,7 +1139,6 @@ switch (issueStatus) {
                     const val = parseInt(e.target.value) || 0;
                     const max = returnTrackingComponents[selectedComponentIndex].returned - notUserDamagedCount;
                     setUserDamagedCount(Math.min(val, max));
-                    // Adjust replacing count if needed
                     if (replacingCount > val + notUserDamagedCount) {
                       setReplacingCount(val + notUserDamagedCount);
                     }
@@ -1315,7 +1156,6 @@ switch (issueStatus) {
                 </button>
               </div>
             </div>
-
             {/* Not User Damaged Quantity */}
             <div>
               <label className="block text-s font-medium text-gray-700 mb-1">Not User Damaged Quantity</label>
@@ -1338,7 +1178,6 @@ switch (issueStatus) {
                     const val = parseInt(e.target.value) || 0;
                     const max = returnTrackingComponents[selectedComponentIndex].returned - userDamagedCount;
                     setNotUserDamagedCount(Math.min(val, max));
-                    // Adjust replacing count if needed
                     if (replacingCount > val + userDamagedCount) {
                       setReplacingCount(val + userDamagedCount);
                     }
@@ -1356,7 +1195,6 @@ switch (issueStatus) {
                 </button>
               </div>
             </div>
-
             {/* Replacing Quantity */}
             <div>
               <label className="block text-s font-medium text-gray-700 mb-1">Replacing Quantity</label>
@@ -1396,7 +1234,6 @@ switch (issueStatus) {
                 Cannot exceed total damaged quantity ({userDamagedCount + notUserDamagedCount})
               </p>
             </div>
-
             {/* Damage Description */}
             <div>
               <label className="block text-s font-medium text-gray-700 mb-1">Damage Description</label>
@@ -1410,7 +1247,6 @@ switch (issueStatus) {
               ></textarea>
             </div>    
           </div>
-
           {/* Modal Buttons */}
           <div className="flex justify-end mt-8 space-x-3">
             <button
@@ -1429,7 +1265,14 @@ switch (issueStatus) {
           </div>
         </div>
       </div>
-    )}
+      )}
+      {showSuccess && (
+        <SuccessAlert
+          message="Component returned successfully!"
+          description="The return has been recorded."
+          onClose={() => setShowSuccess(false)}
+        />
+      )}
     </div>
   );
 };
