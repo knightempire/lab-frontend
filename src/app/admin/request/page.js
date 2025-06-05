@@ -9,7 +9,8 @@ import {
   Clock,
   XCircle,
   CalendarDays,
-  Repeat
+  Repeat,
+   RotateCcw  
 } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -109,13 +110,11 @@ const [productOptions, setProductOptions] = useState([]);
         const data = await response.json();
         console.log('Fetched requests:', data);
 
-        if (response.ok && data?.requests) {
-
-          const filtered = data.requests.filter(req => {
+      if (response.ok && data?.requests) {
+        const filtered = data.requests.filter(req => {
           const status = req.requestStatus?.toLowerCase();
-          if (status === 'rejected') return false;
-          if (status === 'approved' && req.collectedDate) return false;
-          return true;
+          
+          return status === 'pending' || (status === 'approved' && !req.collectedDate);
         });
 
         
@@ -265,6 +264,13 @@ selectedProducts.every(productId =>
         textColor = 'text-yellow-700';
         statusText = 'Pending';
         break;
+        case 'returned':
+          statusIcon = <Undo size={16} className="text-blue-700" />;
+          bgColor = 'bg-blue-100';
+          textColor = 'text-blue-700';
+          statusText = 'Returned';
+          break;
+
       case 'rejected':
         statusIcon = <XCircle size={16} className="text-red-700" />;
         bgColor = 'bg-red-100';

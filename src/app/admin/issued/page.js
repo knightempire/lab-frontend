@@ -2,7 +2,7 @@
 
 // app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat, Undo } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -250,6 +250,12 @@ const matchesProducts =
         textColor = 'text-yellow-700';
         statusText = 'Pending';
         break;
+        case 'returned':
+          statusIcon = <Undo size={16} className="text-blue-700" />;
+          bgColor = 'bg-blue-100';
+          textColor = 'text-blue-700';
+          statusText = 'Returned';
+          break;
       case 'rejected':
         statusIcon = <XCircle size={16} className="text-red-700" />;
         bgColor = 'bg-red-100';

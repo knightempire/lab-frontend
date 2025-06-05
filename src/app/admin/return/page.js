@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
-import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat, XCircle, RefreshCcw } from 'lucide-react';
+import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, ArrowLeft, AlertTriangle, Check, Info, Repeat, XCircle, RefreshCcw ,Undo} from 'lucide-react';
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import RequestTimeline from '../../../components/RequestTimeline';
@@ -164,6 +164,7 @@ return {
         issueDate: req.issuedDate,
         returnedDate: req.returnedDate,
         requestedDays: req.requestedDays,
+         allReturnedDate: req.AllReturnedDate || null,
         status: req.requestStatus,
         referenceStaff: {
           name: req.referenceId?.name || '',
@@ -374,11 +375,18 @@ const handleReturnSubmit = async (componentIndex) => {
 
       // Show success and refresh data
       setShowSuccess(true);
-      fetchAllData()
+      fetchAllData();
+
+      // Clear modal values after successful return
+      setUserDamagedCount(0);
+      setNotUserDamagedCount(0);
+      setReplacingCount(0);
+      setDamageDescription('');
+      setSelectedComponentIndex(null);
+      setShowDamageModal(false);
 
     } catch (err) {
       console.error('Error returning component:', err);
-  
     }
   }
 };
@@ -640,12 +648,12 @@ const returnTrackingRows = returnTrackingComponents
       textColor = 'text-green-700';
       statusText = 'Accepted';
       break;
-    case 'returned':
-      statusIcon = <RefreshCcw size={16} className="text-blue-700" />;
-      bgColor = 'bg-blue-100';
-      textColor = 'text-blue-700';
-      statusText = 'Returned';
-      break;
+        case 'returned':
+          statusIcon = <Undo size={16} className="text-blue-700" />;
+          bgColor = 'bg-blue-100';
+          textColor = 'text-blue-700';
+          statusText = 'Returned';
+          break;
     case 'rejected':
       statusIcon = <XCircle size={16} className="text-red-700" />;
       bgColor = 'bg-red-100';
