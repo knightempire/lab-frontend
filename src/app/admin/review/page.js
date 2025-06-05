@@ -32,7 +32,13 @@ const AdminRequestViewContent = () => {
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
 
+  function formatScheduledCollectionDate(date, time) {
+    if (!date || !time) return '';
+    const [year, month, day] = date.split('-'); // date: "2025-06-20"
+    return `${day}/${month}/${year} ${time}`;   // "20/06/2025 16:00"
+  }
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -151,7 +157,11 @@ verifyadmin();
         };
 
         setRequestData(mappedData);
-        setIssuableDays(mappedData.requestedDays);
+      setIssuableDays(
+  mappedData.adminApprovedDays && mappedData.adminApprovedDays > 0
+    ? mappedData.adminApprovedDays
+    : mappedData.requestedDays
+);
         console.log('Request Data:', mappedData);
         console.log('usermessage:', mappedData.userMessage);
 setAdminIssueComponents(() => {
@@ -223,11 +233,13 @@ const handleSave = async () => {
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
+    const iscollected = requestData.collectedDate;
     console.log('Current request status:', currentstatus);
   if (currentstatus === 'pending') {
     console.log("Request is pending, proceeding to save.");
 
       const payload = {
+        adminApprovedDays: issuableDays, 
     issued: adminIssueComponents.map(component => ({
       issuedProductId: component.id,
       issuedQuantity: component.quantity
@@ -260,7 +272,43 @@ const handleSave = async () => {
     console.error('Error:', error);
   }
   }
+  else if ((currentstatus === 'approved' || currentstatus === 'accepted' ) && !iscollected) {
+    console.log("Request is approved, proceeding to save.");
 
+      const payload = {
+        adminApprovedDays: issuableDays, 
+    issued: adminIssueComponents.map(component => ({
+      issuedProductId: component.id,
+      issuedQuantity: component.quantity
+    }))
+  };
+
+  console.log('Payload for update:', payload);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update/${requestId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    if (!response.ok) {
+      console.error('Failed:', data.message || 'Unknown error');
+    } else {
+      console.log('Success:', data);
+      
+      setShowSuccess(true);
+      fetchRequestData(); 
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+  }
 };
 
   
@@ -339,6 +387,11 @@ const handleSave = async () => {
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
+    if (actionType === 'accept' && (!adminAvailableDate || !adminAvailableTime)) {
+      setShowDateTimeWarning(true);
+      return;
+    }
+    setShowDateTimeWarning(false);
     setAction(actionType);
     setResponseMessage(
       actionType === 'accept'
@@ -358,6 +411,8 @@ const handleSave = async () => {
       return;
     }
 
+    const scheduledCollectionDate = formatScheduledCollectionDate(adminAvailableDate, adminAvailableTime);
+
     const payload = {
       adminApprovedDays: issuableDays, // Set the number of approved days
       issued: adminIssueComponents.map(component => ({
@@ -365,7 +420,7 @@ const handleSave = async () => {
         issuedQuantity: component.quantity
       })),
       adminReturnMessage: responseMessage,
-      scheduledCollectionDate: new Date().toISOString() // Set the current date/time
+      scheduledCollectionDate // Set the current date/time
     };
 
     try {
@@ -422,6 +477,37 @@ const handleSave = async () => {
     } catch (error) {
       console.error('Error during API call:', error);
     }
+  }
+};
+
+const issuing = async () => {
+  const requestId = searchParams.get('requestId'); // Make sure searchParams is defined
+  const token = localStorage.getItem('token');
+
+  if (!requestId || !token) {
+    console.error('Missing requestId or token');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/collect/${requestId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error:', errorData);
+    } else {
+      const data = await response.json();
+      console.log('API Success:', data);
+       setShowSuccess(true);
+    }
+  } catch (error) {
+    console.error('Network error:', error);
   }
 };
 
@@ -1081,6 +1167,7 @@ const handleSave = async () => {
                   <button
                     className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
                     onClick={async () => {
+                      issuing();
                       setIsSubmitting(true);
                       setTimeout(() => {
                         setRequestData({
@@ -1168,6 +1255,13 @@ const handleSave = async () => {
                       />
                     </div>
                   </div>
+
+                  {showDateTimeWarning && (
+                    <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                      <span>Please select both date and time to proceed with the action.</span>
+                    </div>
+                  )}
 
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
