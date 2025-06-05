@@ -1055,29 +1055,24 @@ const returnTrackingRows = returnTrackingComponents
               </div>
             )}
             {/* Return Tracking Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned') && (
-              <div className="bg-white shadow rounded-lg mb-8">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                    <RefreshCw className="w-5 h-5 mr-2 text-amber-600" />
-                    Component Return Tracking
-                  </h2>
-                  {returnTrackingComponents.length > 0 ? (
-                    <Table 
-                      columns={returnTrackingColumns} 
-                      rows={returnTrackingRows} 
-                      currentPage={returnTrackingPage} 
-                      itemsPerPage={itemsPerPage}
-                      setCurrentPage={setReturnTrackingPage}
-                    />
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      All components have been returned
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned') &&
+  returnTrackingComponents.some(component => component.remaining > 0) && (
+    <div className="bg-white shadow rounded-lg mb-8">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+          <RefreshCw className="w-5 h-5 mr-2 text-amber-600" />
+          Component Return Tracking
+        </h2>
+        <Table 
+          columns={returnTrackingColumns} 
+          rows={returnTrackingRows} 
+          currentPage={returnTrackingPage} 
+          itemsPerPage={itemsPerPage}
+          setCurrentPage={setReturnTrackingPage}
+        />
+      </div>
+    </div>
+)}
             {/* Return History Table - Only show for accepted and returned */}
             {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && (
               <div className="bg-white shadow rounded-lg">
