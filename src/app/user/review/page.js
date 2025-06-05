@@ -78,7 +78,19 @@ useEffect(() => {
           quantity: issued.issuedQuantity,
           replacedQuantity: 0, 
         })),
-        returnedComponents: [], 
+        returnedComponents: data.issued
+          ? data.issued.flatMap(issued =>
+              (issued.return || []).map(ret => ({
+                name: issued.issuedProductId.product_name,
+                quantity: ret.returnedQuantity,
+                returnDate: ret.returnDate,
+                damagedQuantity: ret.damagedQuantity,
+                userDamagedQuantity: ret.userDamagedQuantity,
+                replacedQuantity: ret.replacedQuantity,
+                action: ret.replacedQuantity > 0 ? 'Replaced' : 'Returned'
+              }))
+            )
+          : [],
         reIssueRequest: null, 
       };
 
@@ -143,6 +155,16 @@ useEffect(() => {
     { key: 'quantity', label: 'Quantity' }
   ];
 
+  const returnedColumns = [
+    { key: 'name', label: 'Component Name' },
+    { key: 'quantity', label: 'Returned Qty' },
+    { key: 'damagedQuantity', label: 'Damaged Qty' },
+    { key: 'userDamagedQuantity', label: 'User Damaged' },
+    { key: 'replacedQuantity', label: 'Replaced Qty' },
+    { key: 'action', label: 'Action' },
+    { key: 'returnDate', label: 'Return Date' }
+  ];
+
   const getPageRows = (rows, page) =>
       rows.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
@@ -176,7 +198,7 @@ useEffect(() => {
           <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
             reIssue.status === 'pending'
               ? 'bg-yellow-100 text-yellow-800'
-              : reIssue.status === 'accepted'
+              : reIssue.status === 'accepted' || reIssue.status === 'approved'
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
           }`}>
@@ -211,7 +233,7 @@ useEffect(() => {
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="font-semibold text-green-700">Re-Issued Components</span>
-                {reIssue.status === 'accepted' && (
+                {reIssue.status === 'accepted'|| reIssue.status === 'approved' && (
                 <span className="ml-auto flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm">
                   <CalendarDays className="w-4 h-4" />
                   {reIssue.adminApprovedDays || reIssue.extensionDays} Days
@@ -368,7 +390,7 @@ useEffect(() => {
             )}
 
             {/* Accepted */}
-            {requestData.status === 'accepted' && (
+            {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' ) && (
             <>
             <div className="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex items-center gap-2">
@@ -498,10 +520,44 @@ useEffect(() => {
                     {requestData.returnedComponents && requestData.returnedComponents.length > 0 ? (
                     <>
                       <Table
-                        columns={columns}
+                        columns={returnedColumns}
                         rows={getPageRows(requestData.returnedComponents, returnPage)}
                         currentPage={returnPage}
                         itemsPerPage={itemsPerPage}
+                        renderCell={(key, row) => {
+                          if (key === 'damagedQuantity') {
+                            return (
+                              <span className={row.damagedQuantity > 0 ? "text-amber-600 font-semibold" : "text-green-600"}>
+                                {row.damagedQuantity ?? 0}
+                              </span>
+                            );
+                          }
+                          if (key === 'userDamagedQuantity') {
+                            return (
+                              <span className={row.userDamagedQuantity > 0 ? "bg-red-100 text-red-600 px-2 py-1 rounded-full" : "bg-green-100 text-green-600 px-2 py-1 rounded-full"}>
+                                {row.userDamagedQuantity > 0 ? "Yes" : "No"}
+                              </span>
+                            );
+                          }
+                          if (key === 'replacedQuantity') {
+                            return (
+                              <span className={row.replacedQuantity > 0 ? "text-blue-600 font-semibold" : "text-gray-600"}>
+                                {row.replacedQuantity ?? 0}
+                              </span>
+                            );
+                          }
+                          if (key === 'action') {
+                            return (
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.action === 'Replaced' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                {row.action}
+                              </span>
+                            );
+                          }
+                          if (key === 'returnDate') {
+                            return formatDate(row.returnDate);
+                          }
+                          return row[key] ?? '-';
+                        }}
                       />
                       {requestData.returnedComponents.length > itemsPerPage && (
                         <Pagination
@@ -517,7 +573,7 @@ useEffect(() => {
                 </div>
 
                 {/* Re-Issue Details: show in addition if extended */}
-                  {requestData.status === 'accepted' && requestData.reIssueRequest && requestData.adminIssueComponents &&
+                  {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned') && requestData.reIssueRequest && requestData.adminIssueComponents &&
                     requestData.adminIssueComponents.length > requestData.returnedComponents.length && requestData.reIssueRequest &&
                   (
                     requestData.reIssueRequest.userExtensionMessage?.trim() ||
@@ -538,7 +594,8 @@ useEffect(() => {
                 </div>
 
                 {/* Extension Request Button */}
-                {requestData.adminIssueComponents &&
+                {requestData.status !== 'returned' &&
+                requestData.adminIssueComponents &&
                   requestData.adminIssueComponents.length > requestData.returnedComponents.length &&
                   (
                     !requestData.reIssueRequest ||
