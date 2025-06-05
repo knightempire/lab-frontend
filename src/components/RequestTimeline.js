@@ -34,11 +34,13 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
 
     timelineItems.push({
       type: 'return',
-      date: requestData.returnDate,
+      date: requestData.allReturnedDate,
       label: 'Returned',
       isCompleted: true, // Always true for returned status
       status: 'returned'
     });
+
+    
   } else {
     // For other statuses: Request → Accepted/Rejected/Closed
     timelineItems.push({
