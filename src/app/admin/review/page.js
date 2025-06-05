@@ -32,7 +32,13 @@ const AdminRequestViewContent = () => {
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
 
+  function formatScheduledCollectionDate(date, time) {
+    if (!date || !time) return '';
+    const [year, month, day] = date.split('-'); // date: "2025-06-20"
+    return `${day}/${month}/${year} ${time}`;   // "20/06/2025 16:00"
+  }
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -381,6 +387,11 @@ const handleSave = async () => {
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
+    if (actionType === 'accept' && (!adminAvailableDate || !adminAvailableTime)) {
+      setShowDateTimeWarning(true);
+      return;
+    }
+    setShowDateTimeWarning(false);
     setAction(actionType);
     setResponseMessage(
       actionType === 'accept'
@@ -400,6 +411,8 @@ const handleSave = async () => {
       return;
     }
 
+    const scheduledCollectionDate = formatScheduledCollectionDate(adminAvailableDate, adminAvailableTime);
+
     const payload = {
       adminApprovedDays: issuableDays, // Set the number of approved days
       issued: adminIssueComponents.map(component => ({
@@ -407,7 +420,7 @@ const handleSave = async () => {
         issuedQuantity: component.quantity
       })),
       adminReturnMessage: responseMessage,
-      scheduledCollectionDate: new Date().toISOString() // Set the current date/time
+      scheduledCollectionDate // Set the current date/time
     };
 
     try {
@@ -1242,6 +1255,13 @@ const issuing = async () => {
                       />
                     </div>
                   </div>
+
+                  {showDateTimeWarning && (
+                    <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                      <span>Please select both date and time to proceed with the action.</span>
+                    </div>
+                  )}
 
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
