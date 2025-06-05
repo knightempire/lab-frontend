@@ -10,7 +10,7 @@ import {
   XCircle,
   CalendarDays,
   Repeat,
-   RotateCcw  
+   Undo  
 } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';

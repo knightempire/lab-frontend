@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,RefreshCcw} from 'lucide-react';
+import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,Undo} from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
@@ -118,7 +118,7 @@ export default function UserRequestsPage() {
         text = 'text-red-700';
         break;
       case 'returned':
-        icon = <RefreshCcw size={16} className="text-blue-700" />;
+        icon = <Undo size={16} className="text-blue-700" />;
         bg = 'bg-blue-100';
         text = 'text-blue-700';
         break;
