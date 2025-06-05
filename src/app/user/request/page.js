@@ -117,7 +117,7 @@ export default function UserRequestsPage() {
         bg = 'bg-red-100';
         text = 'text-red-700';
         break;
-      case 'Returned':
+      case 'returned':
         icon = <RefreshCcw size={16} className="text-blue-700" />;
         bg = 'bg-blue-100';
         text = 'text-blue-700';
