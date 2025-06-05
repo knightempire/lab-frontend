@@ -23,7 +23,6 @@ function UserReviewContent() {
   const [extensionSent, setExtensionSent] = useState(false);
 
 
-
 useEffect(() => {
   const requestId = searchParams.get('requestId');
   console.log('requestId:', requestId);
@@ -101,9 +100,6 @@ useEffect(() => {
   if (!requestData) {
     return <LoadingScreen />;
   }
-
-
-
 
 
   function StatusBadge({ status }) {
