@@ -345,7 +345,7 @@ const handleSave = async () => {
     }));
   };
   const handleNameChange = (id, newName) => {
-    setAdminIssueComponents(adminIssueComponents.map(component => {
+    setAdminIssueComponents(adminIssueComponents.map (component => {
       if (component.id === id) {
         const product = products.find(p => p.name === newName);
         const initialQty = product && product.inStock > 0 ? 1 : 0;
@@ -444,6 +444,7 @@ const handleSave = async () => {
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'accepted' }));
       setShowSuccess(true);
+      setAction(null); 
     } catch (error) {
       console.error('Error during API call:', error);
     }
@@ -1128,101 +1129,103 @@ const issuing = async () => {
 
           {/* --- Take Action Section --- */}
           {isAccepted && requestData.CollectedDate == null ? (
-          <div className="p-6 border-t border-gray-200 flex flex-col items-start">
-              <div className="flex items-center mb-4">
-              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <h3 className="text-base font-medium text-green-800">
-                Request is <span className="font-semibold">approved</span> and pending issuance.
-              </h3>
+  <div className="p-6 border-t border-gray-200 flex flex-col items-start">
+    <div className="flex items-center mb-4">
+      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+        <CheckCircle className="w-5 h-5 text-green-600" />
+      </div>
+      <h3 className="text-base font-medium text-green-800">
+        Request is <span className="font-semibold">approved</span> and pending issuance.
+      </h3>
+    </div>
+    {/* Only show the button if not in confirmation mode */}
+    {action !== 'issued' ? (
+      <button
+        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+        onClick={() => setAction('issued')}
+      >
+        <CheckCircle className="w-5 h-5 mr-2" />
+        Mark as Issued
+      </button>
+    ) : (
+      // Only show the confirmation modal if action === 'issued'
+      <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+        <div className="mb-5">
+          <div className="flex items-center mb-4">
+            <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
+              <CheckCircle className="w-6 h-6" />
             </div>
-            {!action ? (
-              <button
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
-                onClick={() => setAction('issued')}
-              >
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Mark as Issued
-              </button>
-            ) : (
-              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
-                <div className="mb-5">
-                  <div className="flex items-center mb-4">
-                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
-                      <CheckCircle className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-800">
-                        Issue Request
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
-                    onClick={async () => {
-                      issuing();
-                      setIsSubmitting(true);
-                      setTimeout(() => {
-                        setRequestData({
-                          ...requestData,
-                          CollectedDate: new Date().toISOString(),
-                          ResponseMessage: responseMessage 
-                        });
-                        setAction(null);
-                        setIsSubmitting(false);
-                      }, 1000);
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      'Confirm & Issue'
-                    )}
-                  </button>
-
-                  <button
-                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
-                    onClick={() => setAction(null)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-
-            )}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800">
+                Issue Request
+              </h4>
+              <p className="text-sm text-gray-600">
+                You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+              </p>
+            </div>
           </div>
-        ) : requestData.status === 'pending' ? (
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+            onClick={async () => {
+              issuing();
+              setIsSubmitting(true);
+              setTimeout(() => {
+                setRequestData({
+                  ...requestData,
+                  CollectedDate: new Date().toISOString(),
+                  ResponseMessage: responseMessage 
+                });
+                setAction(null);
+                setIsSubmitting(false);
+              }, 1000);
+            }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Confirm & Issue'
+            )}
+          </button>
+
+          <button
+            className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
+            onClick={() => setAction(null)}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+    )}
+  </div>
+) : requestData.status === 'pending' ? (
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
               <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

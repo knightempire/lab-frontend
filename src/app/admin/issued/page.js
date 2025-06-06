@@ -2,7 +2,7 @@
 
 // app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat, Undo } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat, Undo  } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
@@ -239,7 +239,7 @@ const matchesProducts =
    switch (item.status) {
       case 'accepted':
       case 'approved':
-        statusIcon = <CheckCircle size={16} className="text-green-700" />;
+        statusIcon = <CheckCircle  size={16} className="text-green-700" />;
         bgColor = 'bg-green-100';
         textColor = 'text-green-700';
         statusText = 'Accepted';
@@ -267,6 +267,12 @@ const matchesProducts =
         bgColor = 'bg-indigo-100';
         textColor = 'text-indigo-700';
         statusText = 'Extension';
+        break;
+      case 'closed':
+        statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
+        bgColor = 'bg-amber-100';
+        textColor = 'text-amber-700';
+        statusText = 'Closed';
         break;
       default:
         statusIcon = <Clock size={16} className="text-gray-500" />;
