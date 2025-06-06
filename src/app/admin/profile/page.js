@@ -35,9 +35,93 @@ const UserProfilePageView = () => {
   const [returnedStatusFilter, setReturnedStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // 1. Add new state for user requests
+  const [userRequests, setUserRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState('');
   const itemsPerPage = 7;
 
   console.log('UserProfilePage rendered');
+
+  // 3. Helper function to map request status
+  const mapRequestStatus = (apiStatus) => {
+    switch(apiStatus?.toLowerCase()) {
+      case 'approved':
+        return 'accepted';
+      case 'pending':
+        return 'pending';
+      case 'rejected':
+        return 'rejected';
+      case 'returned':
+        return 'accepted'; // Returned requests were previously accepted
+      default:
+        return apiStatus?.toLowerCase() || 'pending';
+    }
+  };
+
+  // 4. Helper function to determine return status
+  const determineReturnStatus = (request) => {
+    if (request.requestStatus === 'returned' || request.isAllReturned) {
+      return true;
+    }
+    if (request.requestStatus === 'approved' && request.issued?.length > 0) {
+      // Check if all issued items have been returned
+      const allReturned = request.issued.every(issuedItem => 
+        issuedItem.return && issuedItem.return.length > 0
+      );
+      return allReturned;
+    }
+    if (request.requestStatus === 'rejected' || request.requestStatus === 'pending') {
+      return null; // Not applicable
+    }
+    return false;
+  };
+
+  // 2. Create function to fetch user requests
+  const fetchUserRequests = async (rollNo) => {
+    const token = localStorage.getItem('token');
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    let endpoint = `${baseUrl}/api/request/user-get/${encodeURIComponent(rollNo)}`;
+    
+    try {
+      setRequestsLoading(true);
+      setRequestsError('');
+      
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('User requests response status:', res.status);
+      const data = await res.json();
+      console.log('User requests data:', data);
+
+      if (!res.ok) {
+        setRequestsError(data.message || `Failed to fetch user requests. Status: ${res.status}`);
+        return;
+      }
+
+      // Transform the API data to match your table structure
+      const transformedRequests = data.requests?.map(request => ({
+        requestId: request.requestId,
+        totalComponents: request.requestedProducts?.length || 0,
+        status: mapRequestStatus(request.requestStatus),
+        isReturned: determineReturnStatus(request),
+        originalData: request // Keep original data for detailed view
+      })) || [];
+
+      setUserRequests(transformedRequests);
+      
+    } catch (err) {
+      console.error('Error fetching user requests:', err);
+      setRequestsError('Network error. Please check your connection and try again.');
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
 
   useEffect(() => {
     console.log('UserProfilePage useEffect triggered');
@@ -93,9 +177,8 @@ const UserProfilePageView = () => {
       }
     };
 
+  // 5. Modify the fetchUserData function to also fetch requests
   const fetchUserData = async () => {
-    
-
     const token = localStorage.getItem('token');
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     let endpoint = `${baseUrl}/api/users/get/${rollNo}`;
@@ -137,6 +220,10 @@ const UserProfilePageView = () => {
               setUserDetails(user);
               setUserStatus(user.isActive ? 'active' : 'deactivated');
               setEditProfileData({ ...user });
+              
+              // Fetch user requests after successfully getting user data
+              await fetchUserRequests(rollNo);
+              
               setLoading(false);
               return;
             }
@@ -153,6 +240,9 @@ const UserProfilePageView = () => {
       setUserDetails(userData);
       setUserStatus(userData.isActive ? 'active' : 'deactivated');
       setEditProfileData({ ...userData });
+      
+      // Fetch user requests after successfully getting user data
+      await fetchUserRequests(rollNo);
       
     } catch (err) {
       console.error('Error fetching user data:', err);
@@ -183,25 +273,34 @@ verifyToken();
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const rollNo = searchParams.get('rollNo');
     
-    // Use the user's ID for update, not rollNo
-    const userId = userDetails._id || userDetails.id;
+    // Use the correct API endpoint structure from your image
     let endpoint = `${baseUrl}/api/users/update/${rollNo}`;
     
-    // If your API uses rollNo for updates
-   
     try {
       setError('');
+      
+      // Prepare the data to match your API structure (from the image)
+      const updateData = {
+        userName: editProfileData.name,
+        userIsAdmin: editProfileData.isAdmin || false,
+        userEmail: editProfileData.email,
+        userRollNo: editProfileData.rollNo,
+        userPhoneNo: editProfileData.phoneNo,
+        userIsFaculty: editProfileData.isFaculty || false,
+        userIsActive: userDetails.isActive // Keep current status, don't change from edit modal
+      };
+
+      console.log('Sending update data:', updateData);
+
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...editProfileData,
-          isActive: userStatus === 'active'
-        }),
+        body: JSON.stringify(updateData),
       });
 
       const data = await res.json();
@@ -212,12 +311,22 @@ verifyToken();
         return;
       }
 
-      const updatedUser = data.user || editProfileData;
+      // Update local state with the response data
+      const updatedUser = data.user || {
+        ...userDetails,
+        name: updateData.userName,
+        isAdmin: updateData.userIsAdmin,
+        email: updateData.userEmail,
+        rollNo: updateData.userRollNo,
+        phoneNo: updateData.userPhoneNo,
+        isFaculty: updateData.userIsFaculty,
+        isActive: updateData.userIsActive
+      };
+
       setUserDetails(updatedUser);
       setUserStatus(updatedUser.isActive ? 'active' : 'deactivated');
       setIsEditing(false);
       
-      // Show success message (optional)
       console.log('Profile updated successfully');
       
     } catch (err) {
@@ -228,28 +337,83 @@ verifyToken();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    
     setEditProfileData((prev) => ({ 
       ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+      [name]: newValue
     }));
   };
 
-  const handleStatusToggle = () => {
+  const handleStatusToggle = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
     const newStatus = userStatus === 'active' ? 'deactivated' : 'active';
-    setUserStatus(newStatus);
-    setEditProfileData((prev) => ({ 
-      ...prev, 
-      isActive: newStatus === 'active' 
-    }));
+    const newIsActive = newStatus === 'active';
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const rollNo = searchParams.get('rollNo');
+    let endpoint = `${baseUrl}/api/users/update/${rollNo}`;
+
+    try {
+      setError('');
+      
+      // Prepare the data for status update
+      const updateData = {
+        userName: userDetails.name,
+        userIsAdmin: userDetails.isAdmin || false,
+        userEmail: userDetails.email,
+        userRollNo: userDetails.rollNo,
+        userPhoneNo: userDetails.phoneNo,
+        userIsFaculty: userDetails.isFaculty || false,
+        userIsActive: newIsActive
+      };
+
+      console.log('Updating status to:', newIsActive);
+
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await res.json();
+      console.log('Status update response:', data);
+
+      if (!res.ok) {
+        setError(data.message || 'Failed to update status.');
+        return;
+      }
+
+      // Update local state
+      setUserStatus(newStatus);
+      setUserDetails(prev => ({ ...prev, isActive: newIsActive }));
+      setEditProfileData(prev => ({ ...prev, isActive: newIsActive }));
+      
+      console.log('Status updated successfully');
+      
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError('Network error. Please try again.');
+    }
   };
 
-  // Loading state
-  if (loading) {
+  // 9. Update the loading state to consider both user data and requests loading
+  if (loading || requestsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-gray-600 text-lg">Loading user data...</span>
+          <span className="text-gray-600 text-lg">
+            {loading ? 'Loading user data...' : 'Loading user requests...'}
+          </span>
         </div>
       </div>
     );
@@ -299,9 +463,11 @@ verifyToken();
     );
   }
 
-  const requests = userDetails.requests || [];
+  // 6. Update the requests variable to use the new state
+  const requests = userRequests || [];
   const totalPages = Math.ceil(requests.length / itemsPerPage);
 
+  // 7. Update the filteredRequests logic to use the transformed data
   const filteredRequests = requests.filter((item) => {
     const matchesSearchQuery =
       item.requestId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -310,8 +476,8 @@ verifyToken();
       statusFilter === '' || item.status?.toLowerCase() === statusFilter.toLowerCase();
     const matchesReturnedStatusFilter =
       returnedStatusFilter === '' ||
-      (returnedStatusFilter === 'returned' && item.isReturned) ||
-      (returnedStatusFilter === 'not returned' && !item.isReturned);
+      (returnedStatusFilter === 'returned' && item.isReturned === true) ||
+      (returnedStatusFilter === 'not returned' && item.isReturned === false);
 
     return matchesSearchQuery && matchesStatusFilter && matchesReturnedStatusFilter;
   });
@@ -319,6 +485,7 @@ verifyToken();
   const hasRequests = filteredRequests.length > 0;
   const showEmptyState = !hasRequests;
 
+  // 8. Update the paginatedRows mapping to handle the new data structure
   const paginatedRows = filteredRequests
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
     .map((item) => ({
@@ -357,7 +524,7 @@ verifyToken();
             ? 'Returned'
             : item.isReturned === false
             ? 'Not Returned'
-            : 'Null'}
+            : 'N/A'}
         </div>
       ),
       viewMore: (
@@ -376,6 +543,13 @@ verifyToken();
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* 10. Update error handling to show requests errors */}
+      {requestsError && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-600">Requests Error: {requestsError}</p>
         </div>
       )}
 
