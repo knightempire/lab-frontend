@@ -336,13 +336,17 @@ const handleSave = async () => {
     }));
   };
   const handleDecrementQuantity = (id) => {
-    setAdminIssueComponents(adminIssueComponents.map(component => {
-      if (component.id === id) {
-        const newQuantity = Math.max(component.quantity - 1, 0);
-        return { ...component, quantity: newQuantity };
-      }
-      return component;
-    }));
+    setAdminIssueComponents(prev =>
+      prev
+        .map(component => {
+          if (component.id === id) {
+            const newQuantity = Math.max(component.quantity - 1, 0);
+            return { ...component, quantity: newQuantity };
+          }
+          return component;
+        })
+        .filter(component => component.quantity > 0) 
+    );
   };
   const handleNameChange = (id, newName) => {
     setAdminIssueComponents(adminIssueComponents.map (component => {
@@ -869,7 +873,10 @@ const issuing = async () => {
                           { key: 'name', label: 'Component Name' },
                           { key: 'quantity', label: 'Quantity' }
                         ]}
-                        rows={adminIssueComponents.map(({ name, quantity }) => ({ name, quantity }))}
+                        rows={adminIssueComponents
+                          .filter(({ quantity }) => quantity > 0) 
+                          .map(({ name, quantity }) => ({ name, quantity }))
+                        }
                         currentPage={1}
                         itemsPerPage={10}
                       />
