@@ -231,7 +231,7 @@ useEffect(() => {
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
                         onClick={() => updateQuantity(globalIndex, -1)}
                       >
-                        −
+                        -
                       </button>
                 
                       {/* Editable Quantity */}
