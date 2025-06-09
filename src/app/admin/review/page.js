@@ -133,7 +133,10 @@ verifyadmin();
 
         const apiResponse = await response.json();
         const data = apiResponse.request; 
-        
+              if (data.requestStatus === 'returned'|| data.requestStatus === 'closed'|| data.requestStatus === 'returned'|| (data.requestStatus === 'approved' && data.collectedDate)) {
+      router.push('/admin/request');
+      return;
+    }
 
         const mappedData = {
           requestId: data.requestId,
