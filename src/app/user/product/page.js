@@ -47,17 +47,18 @@ useEffect(() => {
 
       const data = await res.json();
       console.log('Fetched products:', data.products);
-const fetchedProducts = data.products.map(p => {
-  const prod = p.product;
-  return {
-    id: prod._id,
-    name: prod.product_name,
-    inStock: prod.inStock - prod.yetToGive,
-    selected: false,
-    selectedQuantity: 0
-  };
-});
 
+      const fetchedProducts = data.products.map(p => {
+        const prod = p.product;
+        const inStock = Math.max(0, prod.inStock - prod.yetToGive);
+        return {
+          id: prod._id,
+          name: prod.product_name,
+          inStock: inStock,
+          selected: false,
+          selectedQuantity: 0
+        };
+      });
 
       // Load previous selections from localStorage
       const storedProducts = localStorage.getItem('selectedProducts');
@@ -66,17 +67,33 @@ const fetchedProducts = data.products.map(p => {
 
         const mergedProducts = fetchedProducts.map(product => {
           const selected = selectedItems.find(item => item.name === product.name);
-          if (selected) {
+          // Only restore selection if inStock > 0
+          if (selected && product.inStock > 0) {
             return {
               ...product,
               selected: true,
               selectedQuantity: selected.selectedQuantity
             };
           }
-          return product;
+          // Otherwise, ensure not selected
+          return {
+            ...product,
+            selected: false,
+            selectedQuantity: 0
+          };
         });
 
         setProducts(mergedProducts);
+
+        const cleanedSelected = mergedProducts
+        .filter(p => p.selected && p.inStock > 0)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          inStock: p.inStock,
+          selectedQuantity: p.selectedQuantity
+        }));
+      localStorage.setItem('selectedProducts', JSON.stringify(cleanedSelected));
       } else {
         setProducts(fetchedProducts);
       }
@@ -96,12 +113,14 @@ const fetchedProducts = data.products.map(p => {
 
   // Helper function to save current selections to localStorage
   const saveSelectionsToLocalStorage = (updatedProducts) => {
-    const selected = updatedProducts.filter(p => p.selected).map(p => ({ 
-      id: p.id,
-      name: p.name, 
-      inStock: p.inStock, 
-      selectedQuantity: p.selectedQuantity 
-    }));
+    const selected = updatedProducts
+      .filter(p => p.selected && p.inStock > 0) // Only save if in stock
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        inStock: p.inStock,
+        selectedQuantity: p.selectedQuantity
+      }));
     localStorage.setItem('selectedProducts', JSON.stringify(selected));
   };
 
@@ -150,14 +169,6 @@ const fetchedProducts = data.products.map(p => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const getSelectedProducts = () => {
-    return products.filter(p => p.selected).map(p => ({ 
-      name: p.name, 
-      inStock: p.inStock, 
-      selectedQuantity: p.selectedQuantity 
-    }));
-  };
 
   const handleProceed = () => {
     // Navigate to checkout page - no need to save to localStorage again
@@ -220,7 +231,7 @@ const fetchedProducts = data.products.map(p => {
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
                         onClick={() => updateQuantity(globalIndex, -1)}
                       >
-                        −
+                        -
                       </button>
                 
                       {/* Editable Quantity */}
@@ -269,6 +280,8 @@ const fetchedProducts = data.products.map(p => {
                         type="checkbox"
                         checked={row.selected}
                         onChange={() => toggleSelect(globalIndex)}
+                        disabled={row.inStock === 0} // Disable checkbox if out of stock
+                        title={row.inStock === 0 ? "Out of stock" : ""}
                       />
                     </div>
                   );

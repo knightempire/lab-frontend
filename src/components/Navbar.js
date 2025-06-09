@@ -1,7 +1,8 @@
 'use client';
+
 import Notifications from './Notifications';
 import { useRouter } from 'next/navigation';
-import { Menu, Bell, User, ChevronDown } from 'lucide-react';
+import { Menu, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -15,9 +16,10 @@ export default function Navbar({ toggleSidebar }) {
   const userName = isAdmin ? "Admin" : "User";
 
     const handleSignOut = () => {
-    localStorage.removeItem('token');
-    router.push('/auth/login');
-  };
+      localStorage.removeItem('token');
+      localStorage.removeItem('selectedProducts');
+      router.push('/auth/login');
+    };
 
   return (
     <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
