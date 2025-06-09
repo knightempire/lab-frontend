@@ -50,10 +50,11 @@ useEffect(() => {
 
       const fetchedProducts = data.products.map(p => {
         const prod = p.product;
+        const inStock = Math.max(0, prod.inStock - prod.yetToGive);
         return {
           id: prod._id,
           name: prod.product_name,
-          inStock: prod.inStock - prod.yetToGive,
+          inStock: inStock,
           selected: false,
           selectedQuantity: 0
         };
