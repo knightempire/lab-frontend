@@ -34,6 +34,7 @@ const [issueError, setIssueError] = useState(""); // Add this state
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
+const [collectedError, setCollectedError] = useState('');
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
@@ -131,7 +132,11 @@ verifyadmin();
 
         const apiResponse = await response.json();
         const data = apiResponse.request; 
-
+        
+      if (data.requestStatus === 'returned'|| data.requestStatus === 'closed'|| data.requestStatus === 'returned'|| (data.requestStatus === 'approved' && data.collectedDate)) {
+      router.push('/admin/request');
+      return;
+    }
         const mappedData = {
           requestId: data.requestId,
           name: data.userId.name,
@@ -204,10 +209,11 @@ setAdminIssueComponents(() => {
         const data = await res.json();
         if (res.ok && data.products) {
           // Transform API data to simplified format used in component
-          const simplified = data.products.map(item => ({
-            name: item.product.product_name,
-            inStock: item.product.inStock
-          }));
+const simplified = data.products.map(item => ({
+  _id: item.product._id, // Add this line
+  name: item.product.product_name,
+  inStock: item.product.inStock
+}));
           setProducts(simplified);
         } else {
           console.error('Failed to fetch products:', data.message);
@@ -373,21 +379,37 @@ const handleSave = async () => {
         .filter(component => component.quantity > 0) 
     );
   };
-  const handleNameChange = (id, newName) => {
-    setAdminIssueComponents(adminIssueComponents.map (component => {
-      if (component.id === id) {
-        const product = products.find(p => p.name === newName);
-        const initialQty = product && product.inStock > 0 ? 1 : 0;
-        return { ...component, name: newName, quantity: initialQty };
-      }
-      return component;
-    }));
-    setDropdownOpen(prev => ({ ...prev, [id]: false }));
-    setSearchTerm(prev => ({ ...prev, [id]: '' }));
-  };
-  const toggleDropdown = (id) => {
-    setDropdownOpen(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+const handleNameChange = (id, newName) => {
+  const product = products.find(p => p.name === newName);
+  const newId = product ? product._id : id; // Use product._id from API
+  const initialQty = product && product.inStock > 0 ? 1 : 0;
+  setAdminIssueComponents(adminIssueComponents.map(component => {
+    if (component.id === id) {
+      return { ...component, id: newId, name: newName, quantity: initialQty };
+    }
+    return component;
+  }));
+  setDropdownOpen(prev => ({ ...prev, [id]: false }));
+  setSearchTerm(prev => ({ ...prev, [id]: '' }));
+};
+const toggleDropdown = (id) => {
+  setDropdownOpen(prev => {
+  
+    const newState = Object.keys(prev).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
+    return { ...newState, [id]: !prev[id] };
+  });
+  setSearchTerm(prev => {
+    const newTerms = Object.keys(prev).reduce((acc, key) => {
+      acc[key] = '';
+      return acc;
+    }, {});
+    return newTerms;
+  });
+};
+
   const handleSearchChange = (id, value) => {
     setSearchTerm(prev => ({ ...prev, [id]: value }));
   };
@@ -395,24 +417,49 @@ const handleSave = async () => {
     setAdminIssueComponents(adminIssueComponents.filter(component => component.id !== id));
   };
 const handleAddComponent = () => {
-  const newId = `new-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot add more.');
+    return;
+  }
   setAdminIssueComponents([
     ...adminIssueComponents,
-    { id: newId, name: '', quantity: 0, description: '' }
+    { id: '', name: '', quantity: 0, description: '' }
   ]);
 };
-  const handleResetComponents = () => {
-    if (requestData) {
-      setAdminIssueComponents([...requestData.components]);
-      setIssuableDays(requestData.requestedDays || 7);
-    }
-  };
-  const handleIssuableDaysChange = (value) => {
-    const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
-    setIssuableDays(newDays);
-  };
-  const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
-  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 1));
+
+const handleResetComponents = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot reset.');
+    return;
+  }
+  if (requestData) {
+    setAdminIssueComponents([...requestData.components]);
+    setIssuableDays(requestData.requestedDays || 7);
+  }
+};
+
+const handleIssuableDaysChange = (value) => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
+  setIssuableDays(newDays);
+};
+const handleIncrementDays = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  setIssuableDays(prev => Math.min(prev + 1, 30));
+};
+const handleDecrementDays = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  setIssuableDays(prev => Math.max(prev - 1, 1));
+};
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
@@ -686,7 +733,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
     { key: 'actions', label: 'Actions' }
   ];
   const isCollected = !!(requestData.CollectedDate || requestData.collectedDate);
-
+  console.log('Is collected:', isCollected);
   const adminComponentsRows = adminIssueComponents.map(component => {
     const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
@@ -1005,7 +1052,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                       <button
                         className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={handleDecrementDays}
-                        disabled={issuableDays <= 0}
+                        disabled={issuableDays <= 0 || isCollected}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -1020,7 +1067,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                       <button
                         className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={handleIncrementDays}
-                        disabled={issuableDays >= 30}
+                        disabled={issuableDays >= 30 || isCollected}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -1096,6 +1143,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     <button
                       onClick={handleResetComponents}
                       className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                      disabled={isCollected}
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Reset
@@ -1103,7 +1151,8 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     <button
                       onClick={handleAddComponent}
                       className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
+                      disabled={isCollected}
+                      >
                       <PlusCircle className="w-4 h-4 mr-2" />
                       Add Component
                     </button>
