@@ -161,7 +161,7 @@ return {
         isFaculty: req.userId?.role === 'faculty',
         requestedDate: req.requestDate,
         acceptedDate: req.issuedDate,
-        issueDate: req.issuedDate,
+        issueDate: req.collectedDate,
         returnedDate: req.returnedDate,
         requestedDays: req.requestedDays,
          allReturnedDate: req.AllReturnedDate || null,
@@ -206,12 +206,16 @@ components: (req.issued && req.issued.length > 0
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  if (requestData?.status === 'closed') {
+    setRequestStatus('Done');
+  } else {
     // Check if all components have been returned
     const allReturned = returnTrackingComponents.length === 0 || 
       returnTrackingComponents.every(component => component.remaining === 0);
     setRequestStatus(allReturned ? 'Done' : 'Open');
-  }, [returnTrackingComponents]);
+  }
+}, [returnTrackingComponents, requestData?.status]);
 
   useEffect(() => {
     // Handle window resize for responsive layout

@@ -41,7 +41,30 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     });
 
     
-  } else {
+  }  if (initialStatus === 'closed') {
+    // For returned status: Request → Accepted → Issued → Returned (all from requestData)
+    timelineItems.push({
+      type: 'acceptance',
+      date: requestData.acceptedDate,
+      label: 'Accepted',
+      isCompleted: !!requestData.acceptedDate,
+      status: 'accepted'
+    });
+
+
+
+    timelineItems.push({
+      type: 'closed',
+      date: requestData.returnDate,
+      label: 'closed',
+      isCompleted: true, // Always true for returned status
+      status: 'closed'
+    });
+
+    
+  }
+  
+  else {
     // For other statuses: Request → Accepted/Rejected/Closed
     timelineItems.push({
       type: 'acceptance',
