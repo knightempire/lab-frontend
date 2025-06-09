@@ -47,17 +47,17 @@ useEffect(() => {
 
       const data = await res.json();
       console.log('Fetched products:', data.products);
-const fetchedProducts = data.products.map(p => {
-  const prod = p.product;
-  return {
-    id: prod._id,
-    name: prod.product_name,
-    inStock: prod.inStock - prod.yetToGive,
-    selected: false,
-    selectedQuantity: 0
-  };
-});
 
+      const fetchedProducts = data.products.map(p => {
+        const prod = p.product;
+        return {
+          id: prod._id,
+          name: prod.product_name,
+          inStock: prod.inStock - prod.yetToGive,
+          selected: false,
+          selectedQuantity: 0
+        };
+      });
 
       // Load previous selections from localStorage
       const storedProducts = localStorage.getItem('selectedProducts');
@@ -150,14 +150,6 @@ const fetchedProducts = data.products.map(p => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const getSelectedProducts = () => {
-    return products.filter(p => p.selected).map(p => ({ 
-      name: p.name, 
-      inStock: p.inStock, 
-      selectedQuantity: p.selectedQuantity 
-    }));
-  };
 
   const handleProceed = () => {
     // Navigate to checkout page - no need to save to localStorage again
