@@ -562,85 +562,104 @@ const issuing = async () => {
   };
 
   // --- Component Dropdown ---
-  const ComponentDropdown = ({ id, selectedValue }) => {
-    const buttonRef = useRef(null);
-    const dropdownRef = useRef(null);
-    const existingComponentNames = adminIssueComponents
-      .filter(component => component.id !== id && component.name)
-      .map(component => component.name);
+const ComponentDropdown = ({ id, selectedValue }) => {
+  const buttonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null); // Ref for the input field
+  const existingComponentNames = adminIssueComponents
+    .filter(component => component.id !== id && component.name)
+    .map(component => component.name);
+  
   const filteredProducts = products
     .filter(product =>
-       product.inStock > 0 &&
+      product.inStock > 0 &&
       !existingComponentNames.includes(product.name) &&
       product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
     );
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (
-          dropdownOpen[id] &&
-          buttonRef.current &&
-          !buttonRef.current.contains(event.target) &&
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target)
-        ) {
-          toggleDropdown(id);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [dropdownOpen, id]);
-    return (
-      <div className="relative">
-        <div
-          ref={buttonRef}
-          className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
-          onClick={() => toggleDropdown(id)}
-        >
-          <span>{selectedValue || 'Select component'}</span>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-        {dropdownOpen[id] && (
-          <DropdownPortal targetRef={buttonRef}>
-            <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
-              <div className="p-2 border-b border-gray-200">
-                <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
-                  <Search className="w-4 h-4 text-gray-500 mr-2" />
-                  <input
-                    type="text"
-                    className="w-full bg-transparent border-none focus:outline-none text-sm"
-                    placeholder="Search components..."
-                    value={searchTerm[id] || ''}
-                    onChange={(e) => handleSearchChange(id, e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map(product => (
-                    <div
-                      key={product.name}
-                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
-                      onClick={() => handleNameChange(id, product.name)}
-                    >
-                      <span>{product.name}</span>
-                      <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-2 text-gray-500 text-sm">
-                    {searchTerm[id] ? 'No matching components' : 'All components already added'}
-                  </div>
-                )}
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownOpen[id] &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current && // Check if the input is not focused
+        !inputRef.current.contains(event.target)
+      ) {
+        toggleDropdown(id);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen, id]);
+
+  // Focus the input when the dropdown opens
+  useEffect(() => {
+    if (dropdownOpen[id] && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [dropdownOpen, id]);
+
+  return (
+    <div className="relative">
+      <div
+        ref={buttonRef}
+        className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
+        onClick={() => toggleDropdown(id)}
+      >
+        <span>{selectedValue || 'Select component'}</span>
+        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      {dropdownOpen[id] && (
+        <DropdownPortal targetRef={buttonRef}>
+          <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
+            <div className="p-2 border-b border-gray-200">
+              <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
+                <Search className="w-4 h-4 text-gray-500 mr-2" />
+                <input
+                  ref={inputRef} // Attach ref to the input
+                  type="text"
+                  className="w-full bg-transparent border-none focus:outline-none text-sm"
+                  placeholder="Search components..."
+                  value={searchTerm[id] || ''}
+                  onChange={(e) => {
+                    console.log('Input Value:', e.target.value); 
+                    setSearchTerm(prev => ({ ...prev, [id]: e.target.value }));
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
             </div>
-          </DropdownPortal>
-        )}
-      </div>
-    );
-  };
+            <div className="max-h-48 overflow-y-auto">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map(product => (
+                  <div
+                    key={product.name}
+                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+                    onClick={() => handleNameChange(id, product.name)}
+                  >
+                    <span>{product.name}</span>
+                    <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-2 text-gray-500 text-sm">
+                  {searchTerm[id] ? 'No matching components' : 'All components already added'}
+                </div>
+              )}
+            </div>
+          </div>
+        </DropdownPortal>
+      )}
+    </div>
+  );
+};
+
+
 
   if (!requestData) {
     return (
