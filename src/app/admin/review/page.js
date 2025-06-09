@@ -511,7 +511,7 @@ const handleAddComponent = () => {
 };
 
 const issuing = async () => {
-  const requestId = searchParams.get('requestId'); // Make sure searchParams is defined
+  const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
   if (!requestId || !token) {
@@ -533,14 +533,17 @@ const issuing = async () => {
       console.error('API Error:', errorData);
     } else {
       const data = await response.json();
-      console.log('API Success:', data);
-       setShowSuccess(true);
+      setShowSuccess(true);
+      // Set CollectedDate in state to disable UI
+      setRequestData(prev => ({
+        ...prev,
+        CollectedDate: new Date().toISOString()
+      }));
     }
   } catch (error) {
     console.error('Network error:', error);
   }
 };
-
 
   // --- Status Badge ---
   const StatusBadge = ({ status }) => {
@@ -567,6 +570,7 @@ const issuing = async () => {
       .map(component => component.name);
   const filteredProducts = products
     .filter(product =>
+       product.inStock > 0 &&
       !existingComponentNames.includes(product.name) &&
       product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
     );
@@ -662,6 +666,8 @@ const issuing = async () => {
     { key: 'quantity', label: 'Quantity' },
     { key: 'actions', label: 'Actions' }
   ];
+  const isCollected = !!(requestData.CollectedDate || requestData.collectedDate);
+
   const adminComponentsRows = adminIssueComponents.map(component => {
     const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
@@ -671,6 +677,7 @@ const issuing = async () => {
         <ComponentDropdown
           id={component.id}
           selectedValue={component.name}
+          isCollected={isCollected} // optionally pass as prop
         />
       ),
       quantity: (
@@ -678,7 +685,7 @@ const issuing = async () => {
           <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleDecrementQuantity(component.id)}
-            disabled={component.quantity <= 0 || !component.name}
+            disabled={component.quantity <= 0 || !component.name || isCollected}
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -689,12 +696,12 @@ const issuing = async () => {
             max={maxStock}
             value={component.quantity}
             onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-            disabled={!component.name}
+            disabled={isCollected || !component.name}
           />
           <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleIncrementQuantity(component.id)}
-            disabled={component.quantity >= maxStock || !component.name}
+            disabled={component.quantity >= maxStock || !component.name || isCollected}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -708,6 +715,7 @@ const issuing = async () => {
           className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition duration-150"
           onClick={() => handleDeleteComponent(component.id)}
           title="Delete"
+          disabled={isCollected}
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -1101,13 +1109,15 @@ const issuing = async () => {
                        {issueError && (
     <div className="text-red-600 font-medium mb-2 mr-4">{issueError}</div>
   )}
-                      <button
-                        className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                        onClick={handleSave}
-                      >
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Save Issued Components
-                      </button>
+                {!isCollected && (
+  <button
+    className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+    onClick={handleSave}
+  >
+    <CheckCircle className="w-5 h-5 mr-2" />
+    Save Issued Components
+  </button>
+)}
                     </div>
 
                     {showSuccess && (
