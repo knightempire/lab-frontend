@@ -743,6 +743,7 @@ const issuing = async () => {
   const isRejected = requestData.status === 'rejected';
   const isAccepted = requestData.status === 'approved' || requestData.status === 'accepted';
 
+
   return (
     <div className="bg-gray-50">
       <div className="mx-auto px-4 py-8">
