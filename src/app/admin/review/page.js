@@ -30,6 +30,7 @@ const AdminRequestViewContent = () => {
 
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
+const [issueError, setIssueError] = useState(""); // Add this state
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
@@ -39,6 +40,14 @@ const AdminRequestViewContent = () => {
     const [year, month, day] = date.split('-'); // date: "2025-06-20"
     return `${day}/${month}/${year} ${time}`;   // "20/06/2025 16:00"
   }
+
+
+  useEffect(() => {
+  if (issueError) {
+    const timer = setTimeout(() => setIssueError(""), 3000);
+    return () => clearTimeout(timer);
+  }
+}, [issueError]);
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -222,6 +231,7 @@ setAdminIssueComponents(() => {
 
 
 const handleSave = async () => {
+  
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
@@ -230,6 +240,21 @@ const handleSave = async () => {
     router.push('/auth/login');
     return;
   }
+
+  const hasEmptyComponent = adminIssueComponents.some(
+    (component) => !component.name || component.name.trim() === ""
+  );
+  if (hasEmptyComponent) {
+    setIssueError("Please select a component for all rows before saving.");
+    return;
+  }
+  
+  if (!adminIssueComponents || adminIssueComponents.length === 0) {
+    setIssueError("No issuing components. Please add at least one component to issue.");
+    return;
+  }
+  setIssueError("");
+
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
@@ -369,13 +394,13 @@ const handleSave = async () => {
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter(component => component.id !== id));
   };
-  const handleAddComponent = () => {
-    const newId = Math.max(0, ...adminIssueComponents.map(c => c.id)) + 1;
-    setAdminIssueComponents([
-      ...adminIssueComponents,
-      { id: newId, name: '', quantity: 0, description: '' }
-    ]);
-  };
+const handleAddComponent = () => {
+  const newId = `new-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  setAdminIssueComponents([
+    ...adminIssueComponents,
+    { id: newId, name: '', quantity: 0, description: '' }
+  ]);
+};
   const handleResetComponents = () => {
     if (requestData) {
       setAdminIssueComponents([...requestData.components]);
@@ -1073,6 +1098,9 @@ const issuing = async () => {
                 {/* Submit Button for Admin Issued Components */}
                   <>
                     <div className="flex justify-end mt-4">
+                       {issueError && (
+    <div className="text-red-600 font-medium mb-2 mr-4">{issueError}</div>
+  )}
                       <button
                         className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
                         onClick={handleSave}
