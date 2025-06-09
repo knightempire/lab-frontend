@@ -67,17 +67,33 @@ useEffect(() => {
 
         const mergedProducts = fetchedProducts.map(product => {
           const selected = selectedItems.find(item => item.name === product.name);
-          if (selected) {
+          // Only restore selection if inStock > 0
+          if (selected && product.inStock > 0) {
             return {
               ...product,
               selected: true,
               selectedQuantity: selected.selectedQuantity
             };
           }
-          return product;
+          // Otherwise, ensure not selected
+          return {
+            ...product,
+            selected: false,
+            selectedQuantity: 0
+          };
         });
 
         setProducts(mergedProducts);
+
+        const cleanedSelected = mergedProducts
+        .filter(p => p.selected && p.inStock > 0)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          inStock: p.inStock,
+          selectedQuantity: p.selectedQuantity
+        }));
+      localStorage.setItem('selectedProducts', JSON.stringify(cleanedSelected));
       } else {
         setProducts(fetchedProducts);
       }
@@ -97,12 +113,14 @@ useEffect(() => {
 
   // Helper function to save current selections to localStorage
   const saveSelectionsToLocalStorage = (updatedProducts) => {
-    const selected = updatedProducts.filter(p => p.selected).map(p => ({ 
-      id: p.id,
-      name: p.name, 
-      inStock: p.inStock, 
-      selectedQuantity: p.selectedQuantity 
-    }));
+    const selected = updatedProducts
+      .filter(p => p.selected && p.inStock > 0) // Only save if in stock
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        inStock: p.inStock,
+        selectedQuantity: p.selectedQuantity
+      }));
     localStorage.setItem('selectedProducts', JSON.stringify(selected));
   };
 
@@ -262,6 +280,8 @@ useEffect(() => {
                         type="checkbox"
                         checked={row.selected}
                         onChange={() => toggleSelect(globalIndex)}
+                        disabled={row.inStock === 0} // Disable checkbox if out of stock
+                        title={row.inStock === 0 ? "Out of stock" : ""}
                       />
                     </div>
                   );
