@@ -666,6 +666,12 @@ const returnTrackingRows = returnTrackingComponents
       textColor = 'text-amber-700';
       statusText = 'Closed';
       break;
+    case 'pending':
+        statusIcon = <Clock size={16} className="text-yellow-700" />;
+        bgColor = 'bg-yellow-100';
+        textColor = 'text-yellow-700';
+        statusText = 'Pending';
+        break;
     default:
       statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
       bgColor = 'bg-gray-100';

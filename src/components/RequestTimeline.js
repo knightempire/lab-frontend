@@ -143,36 +143,53 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     }
   }
 
-  function getItemColor(item) {
-    if (!item.isCompleted) {
-      return 'bg-white border-gray-300';
-    }
-
-    switch (item.type) {
-      case 'request':
-      case 'reissue':
-        return 'bg-blue-500 border-blue-500';
-      case 'issue':
-      case 'reissue-issue':
-        return 'bg-purple-500 border-purple-500';
-      case 'return':
-      case 'reissue-return':
-        return 'bg-orange-500 border-orange-500';
-      default:
-        // For acceptance/rejection items
-        switch (item.status?.toLowerCase()) {
-          case 'rejected':
-            return 'bg-red-500 border-red-500';
-          case 'returned':
-            return 'bg-orange-500 border-orange-500';
-          case 'closed':
-            return 'bg-amber-500 border-amber-500';
-          default:
-            return 'bg-green-500 border-green-500';
-        }
-    }
+function getItemColor(item) {
+  if (!item.isCompleted) {
+    // Orange for pending
+    return 'bg-orange-400 border-orange-400';
   }
+  switch (item.type) {
+    case 'request':
+    case 'reissue':
+      return 'bg-blue-500 border-blue-500';
+    case 'issue':
+    case 'reissue-issue':
+      return 'bg-purple-500 border-purple-500';
+    case 'return':
+    case 'reissue-return':
+      return 'bg-orange-500 border-orange-500';
+    default:
+      switch (item.status?.toLowerCase()) {
+        case 'rejected':
+          return 'bg-red-500 border-red-500';
+        case 'returned':
+          return 'bg-orange-500 border-orange-500';
+        case 'closed':
+          return 'bg-amber-500 border-amber-500';
+        default:
+          return 'bg-green-500 border-green-500';
+      }
+  }
+}
 
+function getIcon(item) {
+  if (!item.isCompleted) {
+    // No icon for pending
+    return null;
+  }
+  if (item.status?.toLowerCase() === 'rejected') {
+    return (
+      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
+  );
+}
   function getIcon(item) {
     if (!item.isCompleted) {
       return null;

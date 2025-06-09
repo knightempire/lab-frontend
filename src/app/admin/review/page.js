@@ -8,6 +8,7 @@ import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
+import RequestTimeline from '../../../components/RequestTimeline';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const AdminRequestViewContent = () => {
@@ -133,10 +134,7 @@ verifyadmin();
         const apiResponse = await response.json();
         const data = apiResponse.request; 
         
-      if (data.requestStatus === 'returned'|| data.requestStatus === 'closed'|| data.requestStatus === 'returned'|| (data.requestStatus === 'approved' && data.collectedDate)) {
-      router.push('/admin/request');
-      return;
-    }
+
         const mappedData = {
           requestId: data.requestId,
           name: data.userId.name,
@@ -168,6 +166,9 @@ verifyadmin();
           })),
           returnedComponents: [], 
           reIssueRequest: null, 
+
+        acceptedDate: data.issuedDate || null,      // <-- for "Accepted"
+      issueDate: data.collectedDate || null,
         };
 
         setRequestData(mappedData);
@@ -842,9 +843,31 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                         Extension / Re-Issue Request
                       </span>
                     )}
-                <p className="text-gray-600">
-                  Requested on {formatDate(requestData.requestedDate)}
-                </p>
+                {/* --- Add Timeline Here --- */}
+                <div className="mt-5">
+                  <RequestTimeline
+                    requestData={requestData}
+                    reissue={requestData.reIssueRequest || []}
+                    formatDate={formatDate}
+                    timelineItems={[
+                      {
+                        label: "Initial Request",
+                        date: requestData.requestedDate,
+                        isCompleted: !!requestData.requestedDate,
+                      },
+                      {
+                        label: "accepted",
+                        date: requestData.issuedDate, // <-- use issuedDate
+                        isCompleted: !!requestData.issuedDate,
+                      },
+                      {
+                        label: "issued",
+                        date: requestData.collectedDate, // <-- use collectedDate
+                        isCompleted: !!requestData.collectedDate,
+                      },
+                    ]}
+                  />
+                </div>
               </div>
               <div className="mt-4 md:mt-0">
                 <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
