@@ -8,15 +8,12 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff } from 'lucide-react';
 
-
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-
 
 useEffect(() => {
   const token = localStorage.getItem('token');
@@ -70,59 +67,59 @@ useEffect(() => {
   const validateEmail = (email) =>
      /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setError('');
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  if (!validateEmail(email)) {
-    setError('Only University email addresses are allowed.');
-    return;
-  }
-
-  if (!password.trim()) {
-    setError('Password cannot be empty.');
-    return;
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const endpoint = `${baseUrl}/api/login`;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-    console.log('Login response:', data);
-
-    if (!res.ok) {
-      setError(data.message || 'Login failed. Please try again.');
+    if (!validateEmail(email)) {
+      setError('Only University email addresses are allowed.');
       return;
     }
 
-    const { token, user } = data;
-
-    if (!user.isActive) {
-      setError('Your account is deactivated. Please contact the administrator.');
+    if (!password.trim()) {
+      setError('Password cannot be empty.');
       return;
     }
 
-    localStorage.setItem('token', token);
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const endpoint = `${baseUrl}/api/login`;
 
-    if (user.isAdmin) {
-      router.push('/admin/dashboard');
-    } else {
-      router.push('/user/dashboard');
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      console.log('Login response:', data);
+
+      if (!res.ok) {
+        setError(data.message || 'Login failed. Please try again.');
+        return;
+      }
+
+      const { token, user } = data;
+
+      if (!user.isActive) {
+        setError('Your account is deactivated. Please contact the administrator.');
+        return;
+      }
+
+      localStorage.setItem('token', token);
+
+      if (user.isAdmin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/user/dashboard');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again later.');
     }
-  } catch (err) {
-    console.error('Login error:', err);
-    setError('Something went wrong. Please try again later.');
-  }
-};
+  };
 
 
   return (
