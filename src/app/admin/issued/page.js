@@ -9,9 +9,6 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 
-
-
-
 export default function RequestsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,12 +23,8 @@ const [loading, setLoading] = useState(true);
 const [error, setError] = useState(null);
 const [productOptions, setProductOptions] = useState([]);
 
-
-
 useEffect(() => {
-
-  
-      const verifyadmin = async () => {
+    const verifyadmin = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
         router.push('/auth/login'); 
@@ -62,10 +55,8 @@ useEffect(() => {
 
   verifyadmin();
 
-
   fetchRequests();
 }, []);
-
 
   const fetchRequests = async () => {
     try {
@@ -146,8 +137,6 @@ useEffect(() => {
     }
   };
 
-
-
   const itemsPerPage = 10;
 
   const handleReset = () => {
@@ -193,7 +182,6 @@ const matchesProducts =
   );
 
 
-      
       return matchesRole && matchesStatus && matchesProducts;
 }).filter(req =>
   req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -344,15 +332,15 @@ const matchesProducts =
       </div>
 
       <div className="mb-4 mt-6">
-<FiltersPanel
-  filters={filterList}
-  onChange={handleFilterChange}
-  onReset={handleReset}
-  Text="All requests"
-  products={productOptions}
-  onProductsChange={handleProductsChange}
-  selectedProducts={selectedProducts}
-/>
+        <FiltersPanel
+          filters={filterList}
+          onChange={handleFilterChange}
+          onReset={handleReset}
+          Text="All requests"
+          products={productOptions}
+          onProductsChange={handleProductsChange}
+          selectedProducts={selectedProducts}
+        />
       </div>
 
       <div className="mb-6 w-full relative bg-white">

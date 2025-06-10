@@ -31,12 +31,11 @@ export default function RequestsPage() {
     status: ''
   });
   const [selectedProducts, setselectedProducts] = useState([]);
-const [productOptions, setProductOptions] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
   const itemsPerPage = 10;
 
   useEffect(() => {
-
-      const verifyadmin = async () => {
+    const verifyadmin = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
         router.push('/auth/login'); 
@@ -67,12 +66,9 @@ const [productOptions, setProductOptions] = useState([]);
 
   verifyadmin();
 
-
     fetchRequests();
   }, []);
 
-
-  
     const fetchRequests = async () => {
       setLoading(true);
       try {
@@ -98,9 +94,6 @@ const [productOptions, setProductOptions] = useState([]);
         });
       }
 
-
-
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -117,7 +110,6 @@ const [productOptions, setProductOptions] = useState([]);
           return status === 'pending' || (status === 'approved' && !req.collectedDate);
         });
 
-        
           const transformedRequests = filtered.map((req, index) => ({
             id: req._id,
             requestId: req.requestId || `REQ-${index + 1}`,
@@ -135,11 +127,10 @@ const [productOptions, setProductOptions] = useState([]);
               email: req.referenceId?.email || 'N/A'
             },
             description: req.description || '',
-        components: req.requestedProducts.map(product => ({
-          id: product.productId, 
-          quantity: product.quantity
-        }))
-
+            components: req.requestedProducts.map(product => ({
+              id: product.productId, 
+              quantity: product.quantity
+            }))
           }));
 
           setRequests(transformedRequests);
@@ -173,18 +164,6 @@ const [productOptions, setProductOptions] = useState([]);
     setselectedProducts(components);
   };
 
-  const getUniqueComponents = () => {
-    const componentSet = new Set();
-    console.log('Product options IDs:', mappedOptions.map(p => p.id));
-    requests.forEach(request => {
-        console.log(`Request ${r.requestId} component IDs:`, r.components.map(c => c.id));
-      request.components.forEach(component => {
-        componentSet.add(component.name);
-      });
-    });
-    return Array.from(componentSet);
-  };
-
 const getFilteredResults = () => {
   return requests.filter(req => {
     // Filter by role
@@ -209,21 +188,17 @@ selectedProducts.every(productId =>
   req.components.some(component => component.id === productId)
 )
 
-
-
     console.log(`Request ${req.requestId} matchesProducts:`, matchesProducts);
 
     return matchesRole && matchesStatus && matchesProducts;
   });
 };
 
-
   const handleViewRequest = (request) => {
     const params = new URLSearchParams();
     params.append('requestId', request.requestId);
     router.push(`/admin/review?${params.toString()}`);
   };
-
 
   const filteredRequests = getFilteredResults();
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
