@@ -8,6 +8,7 @@ import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
+import RequestTimeline from '../../../components/RequestTimeline';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const AdminRequestViewContent = () => {
@@ -30,15 +31,25 @@ const AdminRequestViewContent = () => {
 
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
+const [issueError, setIssueError] = useState(""); // Add this state
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
+const [collectedError, setCollectedError] = useState('');
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
     const [year, month, day] = date.split('-'); // date: "2025-06-20"
     return `${day}/${month}/${year} ${time}`;   // "20/06/2025 16:00"
   }
+
+
+  useEffect(() => {
+  if (issueError) {
+    const timer = setTimeout(() => setIssueError(""), 3000);
+    return () => clearTimeout(timer);
+  }
+}, [issueError]);
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -122,6 +133,10 @@ verifyadmin();
 
         const apiResponse = await response.json();
         const data = apiResponse.request; 
+              if (data.requestStatus === 'returned'|| data.requestStatus === 'closed'|| data.requestStatus === 'returned'|| (data.requestStatus === 'approved' && data.collectedDate)) {
+      router.push('/admin/request');
+      return;
+    }
 
         const mappedData = {
           requestId: data.requestId,
@@ -154,6 +169,9 @@ verifyadmin();
           })),
           returnedComponents: [], 
           reIssueRequest: null, 
+
+        acceptedDate: data.issuedDate || null,      // <-- for "Accepted"
+      issueDate: data.collectedDate || null,
         };
 
         setRequestData(mappedData);
@@ -195,10 +213,11 @@ setAdminIssueComponents(() => {
         const data = await res.json();
         if (res.ok && data.products) {
           // Transform API data to simplified format used in component
-          const simplified = data.products.map(item => ({
-            name: item.product.product_name,
-            inStock: item.product.inStock
-          }));
+const simplified = data.products.map(item => ({
+  _id: item.product._id, // Add this line
+  name: item.product.product_name,
+  inStock: item.product.inStock
+}));
           setProducts(simplified);
         } else {
           console.error('Failed to fetch products:', data.message);
@@ -222,6 +241,7 @@ setAdminIssueComponents(() => {
 
 
 const handleSave = async () => {
+  
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
@@ -230,6 +250,21 @@ const handleSave = async () => {
     router.push('/auth/login');
     return;
   }
+
+  const hasEmptyComponent = adminIssueComponents.some(
+    (component) => !component.name || component.name.trim() === ""
+  );
+  if (hasEmptyComponent) {
+    setIssueError("Please select a component for all rows before saving.");
+    return;
+  }
+  
+  if (!adminIssueComponents || adminIssueComponents.length === 0) {
+    setIssueError("No issuing components. Please add at least one component to issue.");
+    return;
+  }
+  setIssueError("");
+
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
@@ -348,46 +383,87 @@ const handleSave = async () => {
         .filter(component => component.quantity > 0) 
     );
   };
-  const handleNameChange = (id, newName) => {
-    setAdminIssueComponents(adminIssueComponents.map (component => {
-      if (component.id === id) {
-        const product = products.find(p => p.name === newName);
-        const initialQty = product && product.inStock > 0 ? 1 : 0;
-        return { ...component, name: newName, quantity: initialQty };
-      }
-      return component;
-    }));
-    setDropdownOpen(prev => ({ ...prev, [id]: false }));
-    setSearchTerm(prev => ({ ...prev, [id]: '' }));
-  };
-  const toggleDropdown = (id) => {
-    setDropdownOpen(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+const handleNameChange = (id, newName) => {
+  const product = products.find(p => p.name === newName);
+  const newId = product ? product._id : id; // Use product._id from API
+  const initialQty = product && product.inStock > 0 ? 1 : 0;
+  setAdminIssueComponents(adminIssueComponents.map(component => {
+    if (component.id === id) {
+      return { ...component, id: newId, name: newName, quantity: initialQty };
+    }
+    return component;
+  }));
+  setDropdownOpen(prev => ({ ...prev, [id]: false }));
+  setSearchTerm(prev => ({ ...prev, [id]: '' }));
+};
+const toggleDropdown = (id) => {
+  setDropdownOpen(prev => {
+  
+    const newState = Object.keys(prev).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
+    return { ...newState, [id]: !prev[id] };
+  });
+  setSearchTerm(prev => {
+    const newTerms = Object.keys(prev).reduce((acc, key) => {
+      acc[key] = '';
+      return acc;
+    }, {});
+    return newTerms;
+  });
+};
+
   const handleSearchChange = (id, value) => {
     setSearchTerm(prev => ({ ...prev, [id]: value }));
   };
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter(component => component.id !== id));
   };
-  const handleAddComponent = () => {
-    const newId = Math.max(0, ...adminIssueComponents.map(c => c.id)) + 1;
-    setAdminIssueComponents([
-      ...adminIssueComponents,
-      { id: newId, name: '', quantity: 0, description: '' }
-    ]);
-  };
-  const handleResetComponents = () => {
-    if (requestData) {
-      setAdminIssueComponents([...requestData.components]);
-      setIssuableDays(requestData.requestedDays || 7);
-    }
-  };
-  const handleIssuableDaysChange = (value) => {
-    const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
-    setIssuableDays(newDays);
-  };
-  const handleIncrementDays = () => setIssuableDays(prev => Math.min(prev + 1, 30));
-  const handleDecrementDays = () => setIssuableDays(prev => Math.max(prev - 1, 1));
+const handleAddComponent = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot add more.');
+    return;
+  }
+  setAdminIssueComponents([
+    ...adminIssueComponents,
+    { id: '', name: '', quantity: 0, description: '' }
+  ]);
+};
+
+const handleResetComponents = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot reset.');
+    return;
+  }
+  if (requestData) {
+    setAdminIssueComponents([...requestData.components]);
+    setIssuableDays(requestData.requestedDays || 7);
+  }
+};
+
+const handleIssuableDaysChange = (value) => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
+  setIssuableDays(newDays);
+};
+const handleIncrementDays = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  setIssuableDays(prev => Math.min(prev + 1, 30));
+};
+const handleDecrementDays = () => {
+  if (isCollected) {
+    setCollectedError('Components already issued. You cannot change duration.');
+    return;
+  }
+  setIssuableDays(prev => Math.max(prev - 1, 1));
+};
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
@@ -486,7 +562,7 @@ const handleSave = async () => {
 };
 
 const issuing = async () => {
-  const requestId = searchParams.get('requestId'); // Make sure searchParams is defined
+  const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
   if (!requestId || !token) {
@@ -508,14 +584,17 @@ const issuing = async () => {
       console.error('API Error:', errorData);
     } else {
       const data = await response.json();
-      console.log('API Success:', data);
-       setShowSuccess(true);
+      setShowSuccess(true);
+      // Set CollectedDate in state to disable UI
+      setRequestData(prev => ({
+        ...prev,
+        CollectedDate: new Date().toISOString()
+      }));
     }
   } catch (error) {
     console.error('Network error:', error);
   }
 };
-
 
   // --- Status Badge ---
   const StatusBadge = ({ status }) => {
@@ -534,84 +613,104 @@ const issuing = async () => {
   };
 
   // --- Component Dropdown ---
-  const ComponentDropdown = ({ id, selectedValue }) => {
-    const buttonRef = useRef(null);
-    const dropdownRef = useRef(null);
-    const existingComponentNames = adminIssueComponents
-      .filter(component => component.id !== id && component.name)
-      .map(component => component.name);
+const ComponentDropdown = ({ id, selectedValue }) => {
+  const buttonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null); // Ref for the input field
+  const existingComponentNames = adminIssueComponents
+    .filter(component => component.id !== id && component.name)
+    .map(component => component.name);
+  
   const filteredProducts = products
     .filter(product =>
+      product.inStock > 0 &&
       !existingComponentNames.includes(product.name) &&
       product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
     );
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (
-          dropdownOpen[id] &&
-          buttonRef.current &&
-          !buttonRef.current.contains(event.target) &&
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target)
-        ) {
-          toggleDropdown(id);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [dropdownOpen, id]);
-    return (
-      <div className="relative">
-        <div
-          ref={buttonRef}
-          className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
-          onClick={() => toggleDropdown(id)}
-        >
-          <span>{selectedValue || 'Select component'}</span>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-        {dropdownOpen[id] && (
-          <DropdownPortal targetRef={buttonRef}>
-            <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
-              <div className="p-2 border-b border-gray-200">
-                <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
-                  <Search className="w-4 h-4 text-gray-500 mr-2" />
-                  <input
-                    type="text"
-                    className="w-full bg-transparent border-none focus:outline-none text-sm"
-                    placeholder="Search components..."
-                    value={searchTerm[id] || ''}
-                    onChange={(e) => handleSearchChange(id, e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map(product => (
-                    <div
-                      key={product.name}
-                      className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
-                      onClick={() => handleNameChange(id, product.name)}
-                    >
-                      <span>{product.name}</span>
-                      <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-2 text-gray-500 text-sm">
-                    {searchTerm[id] ? 'No matching components' : 'All components already added'}
-                  </div>
-                )}
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownOpen[id] &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current && // Check if the input is not focused
+        !inputRef.current.contains(event.target)
+      ) {
+        toggleDropdown(id);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen, id]);
+
+  // Focus the input when the dropdown opens
+  useEffect(() => {
+    if (dropdownOpen[id] && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [dropdownOpen, id]);
+
+  return (
+    <div className="relative">
+      <div
+        ref={buttonRef}
+        className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
+        onClick={() => toggleDropdown(id)}
+      >
+        <span>{selectedValue || 'Select component'}</span>
+        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+      {dropdownOpen[id] && (
+        <DropdownPortal targetRef={buttonRef}>
+          <div ref={dropdownRef} className="bg-white shadow-md rounded-md mt-1">
+            <div className="p-2 border-b border-gray-200">
+              <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
+                <Search className="w-4 h-4 text-gray-500 mr-2" />
+                <input
+                  ref={inputRef} // Attach ref to the input
+                  type="text"
+                  className="w-full bg-transparent border-none focus:outline-none text-sm"
+                  placeholder="Search components..."
+                  value={searchTerm[id] || ''}
+                  onChange={(e) => {
+                    console.log('Input Value:', e.target.value); 
+                    setSearchTerm(prev => ({ ...prev, [id]: e.target.value }));
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
             </div>
-          </DropdownPortal>
-        )}
-      </div>
-    );
-  };
+            <div className="max-h-48 overflow-y-auto">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map(product => (
+                  <div
+                    key={product.name}
+                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
+                    onClick={() => handleNameChange(id, product.name)}
+                  >
+                    <span>{product.name}</span>
+                    <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-2 text-gray-500 text-sm">
+                  {searchTerm[id] ? 'No matching components' : 'All components already added'}
+                </div>
+              )}
+            </div>
+          </div>
+        </DropdownPortal>
+      )}
+    </div>
+  );
+};
+
+
 
   if (!requestData) {
     return (
@@ -637,6 +736,8 @@ const issuing = async () => {
     { key: 'quantity', label: 'Quantity' },
     { key: 'actions', label: 'Actions' }
   ];
+  const isCollected = !!(requestData.CollectedDate || requestData.collectedDate);
+  console.log('Is collected:', isCollected);
   const adminComponentsRows = adminIssueComponents.map(component => {
     const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.inStock : 0;
@@ -646,6 +747,7 @@ const issuing = async () => {
         <ComponentDropdown
           id={component.id}
           selectedValue={component.name}
+          isCollected={isCollected} // optionally pass as prop
         />
       ),
       quantity: (
@@ -653,7 +755,7 @@ const issuing = async () => {
           <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleDecrementQuantity(component.id)}
-            disabled={component.quantity <= 0 || !component.name}
+            disabled={component.quantity <= 0 || !component.name || isCollected}
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -664,12 +766,12 @@ const issuing = async () => {
             max={maxStock}
             value={component.quantity}
             onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-            disabled={!component.name}
+            disabled={isCollected || !component.name}
           />
           <button
             className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => handleIncrementQuantity(component.id)}
-            disabled={component.quantity >= maxStock || !component.name}
+            disabled={component.quantity >= maxStock || !component.name || isCollected}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -683,6 +785,7 @@ const issuing = async () => {
           className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition duration-150"
           onClick={() => handleDeleteComponent(component.id)}
           title="Delete"
+          disabled={isCollected}
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -709,6 +812,7 @@ const issuing = async () => {
   const isReIssue = requestData.isExtended;
   const isRejected = requestData.status === 'rejected';
   const isAccepted = requestData.status === 'approved' || requestData.status === 'accepted';
+
 
   return (
     <div className="bg-gray-50">
@@ -742,9 +846,31 @@ const issuing = async () => {
                         Extension / Re-Issue Request
                       </span>
                     )}
-                <p className="text-gray-600">
-                  Requested on {formatDate(requestData.requestedDate)}
-                </p>
+                {/* --- Add Timeline Here --- */}
+                <div className="mt-5">
+                  <RequestTimeline
+                    requestData={requestData}
+                    reissue={requestData.reIssueRequest || []}
+                    formatDate={formatDate}
+                    timelineItems={[
+                      {
+                        label: "Initial Request",
+                        date: requestData.requestedDate,
+                        isCompleted: !!requestData.requestedDate,
+                      },
+                      {
+                        label: "accepted",
+                        date: requestData.issuedDate, // <-- use issuedDate
+                        isCompleted: !!requestData.issuedDate,
+                      },
+                      {
+                        label: "issued",
+                        date: requestData.collectedDate, // <-- use collectedDate
+                        isCompleted: !!requestData.collectedDate,
+                      },
+                    ]}
+                  />
+                </div>
               </div>
               <div className="mt-4 md:mt-0">
                 <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
@@ -952,7 +1078,7 @@ const issuing = async () => {
                       <button
                         className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={handleDecrementDays}
-                        disabled={issuableDays <= 0}
+                        disabled={issuableDays <= 0 || isCollected}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -967,7 +1093,7 @@ const issuing = async () => {
                       <button
                         className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={handleIncrementDays}
-                        disabled={issuableDays >= 30}
+                        disabled={issuableDays >= 30 || isCollected}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -1043,6 +1169,7 @@ const issuing = async () => {
                     <button
                       onClick={handleResetComponents}
                       className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                      disabled={isCollected}
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Reset
@@ -1050,7 +1177,8 @@ const issuing = async () => {
                     <button
                       onClick={handleAddComponent}
                       className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
+                      disabled={isCollected}
+                      >
                       <PlusCircle className="w-4 h-4 mr-2" />
                       Add Component
                     </button>
@@ -1073,13 +1201,18 @@ const issuing = async () => {
                 {/* Submit Button for Admin Issued Components */}
                   <>
                     <div className="flex justify-end mt-4">
-                      <button
-                        className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                        onClick={handleSave}
-                      >
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Save Issued Components
-                      </button>
+                       {issueError && (
+    <div className="text-red-600 font-medium mb-2 mr-4">{issueError}</div>
+  )}
+                {!isCollected && (
+  <button
+    className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+    onClick={handleSave}
+  >
+    <CheckCircle className="w-5 h-5 mr-2" />
+    Save Issued Components
+  </button>
+)}
                     </div>
 
                     {showSuccess && (
