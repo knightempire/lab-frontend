@@ -182,15 +182,22 @@ const getFilteredResults = () => {
     console.log(`\nChecking request ${req.requestId} components:`, req.components.map(c => c.id));
     console.log('Selected product IDs:', selectedProducts);
 
-const matchesProducts =
-  selectedProducts.length === 0 ||
-selectedProducts.every(productId =>
-  req.components.some(component => component.id === productId)
-)
+    const matchesProducts =
+      selectedProducts.length === 0 ||
+      selectedProducts.every(productId =>
+      req.components.some(component => component.id === productId)
+    )
 
     console.log(`Request ${req.requestId} matchesProducts:`, matchesProducts);
 
-    return matchesRole && matchesStatus && matchesProducts;
+    const matchesSearch =
+      searchQuery.trim() === '' ||
+      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase());
+
+
+    return matchesRole && matchesStatus && matchesProducts && matchesSearch;
   });
 };
 
