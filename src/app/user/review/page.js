@@ -7,7 +7,7 @@ import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
 import { Suspense } from 'react';
-
+import RequestTimeline from '../../../components/RequestTimeline';
 
 function UserReviewContent() {
   const router = useRouter();
@@ -299,9 +299,11 @@ useEffect(() => {
                       </span>
                 </div>
                 )}
-                <p className="text-gray-600">
-                Requested on {formatDate(requestData.requestedDate)}
-                </p>
+                <RequestTimeline 
+              requestData={requestData} 
+              reissue={requestData.reIssueData || []} 
+              formatDate={formatDate} 
+            />
             </div>
             <div className="mt-4 md:mt-0">
                 <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
