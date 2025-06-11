@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -348,17 +348,6 @@ const handleSave = async () => {
 
   
   // --- Admin Issue Table Handlers ---
-  const handleQuantityChange = (id, newQuantity) => {
-    setAdminIssueComponents(adminIssueComponents.map(component => {
-      if (component.id === id) {
-        const product = products.find(p => p.name === component.name);
-        const maxStock = product ? product.inStock : 0;
-        const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
-        return { ...component, quantity: limitedQuantity };
-      }
-      return component;
-    }));
-  };
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
@@ -383,36 +372,48 @@ const handleSave = async () => {
         .filter(component => component.quantity > 0) 
     );
   };
-const handleNameChange = (id, newName) => {
-  const product = products.find(p => p.name === newName);
-  const newId = product ? product._id : id; // Use product._id from API
-  const initialQty = product && product.inStock > 0 ? 1 : 0;
-  setAdminIssueComponents(adminIssueComponents.map(component => {
-    if (component.id === id) {
-      return { ...component, id: newId, name: newName, quantity: initialQty };
-    }
-    return component;
-  }));
-  setDropdownOpen(prev => ({ ...prev, [id]: false }));
-  setSearchTerm(prev => ({ ...prev, [id]: '' }));
-};
-const toggleDropdown = (id) => {
-  setDropdownOpen(prev => {
-  
-    const newState = Object.keys(prev).reduce((acc, key) => {
-      acc[key] = false;
-      return acc;
-    }, {});
-    return { ...newState, [id]: !prev[id] };
-  });
-  setSearchTerm(prev => {
-    const newTerms = Object.keys(prev).reduce((acc, key) => {
-      acc[key] = '';
-      return acc;
-    }, {});
-    return newTerms;
-  });
-};
+  const handleNameChange = useCallback((id, newName) => {
+    const product = products.find(p => p.name === newName);
+    const newId = product ? product._id : id;
+    const initialQty = product && product.inStock > 0 ? 1 : 0;
+    setAdminIssueComponents(prev => prev.map(component => {
+      if (component.id === id) {
+        return { ...component, id: newId, name: newName, quantity: initialQty };
+      }
+      return component;
+    }));
+    setDropdownOpen(prev => ({ ...prev, [id]: false }));
+  }, [products]);
+
+  const handleQuantityChange = useCallback((id, newQuantity) => {
+    setAdminIssueComponents(prev => prev.map(component => {
+      if (component.id === id) {
+        const product = products.find(p => p.name === component.name);
+        const maxStock = product ? product.inStock : 0;
+        const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
+        return { ...component, quantity: limitedQuantity };
+      }
+      return component;
+    }));
+  }, [products]);
+    
+  const toggleDropdown = useCallback((id) => {
+    setDropdownOpen(prev => {
+      const isCurrentlyOpen = prev[id];
+      
+      if (isCurrentlyOpen) {
+        // If clicking the same dropdown, just close it
+        return { ...prev, [id]: false };
+      } else {
+        // Close all others and open the clicked one
+        const newState = Object.keys(prev).reduce((acc, key) => {
+          acc[key] = false;
+          return acc;
+        }, {});
+        return { ...newState, [id]: true };
+      }
+    });
+  }, []);
 
   const handleSearchChange = (id, value) => {
     setSearchTerm(prev => ({ ...prev, [id]: value }));
@@ -613,52 +614,90 @@ const issuing = async () => {
   };
 
   // --- Component Dropdown ---
+  // Replace your ComponentDropdown component with this fixed version:
+
 const ComponentDropdown = ({ id, selectedValue }) => {
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
-  const inputRef = useRef(null); // Ref for the input field
+  const inputRef = useRef(null);
+  
+  // Move search term to local state to prevent parent re-renders
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  
   const existingComponentNames = adminIssueComponents
     .filter(component => component.id !== id && component.name)
     .map(component => component.name);
   
+  // Use local search term instead of parent state
   const filteredProducts = products
     .filter(product =>
       product.inStock > 0 &&
       !existingComponentNames.includes(product.name) &&
-      product.name.toLowerCase().includes((searchTerm[id] || '').toLowerCase())
+      product.name.toLowerCase().includes(localSearchTerm.toLowerCase())
     );
 
+  // Handle click outside with useCallback to prevent re-creation
+  const handleClickOutside = useCallback((event) => {
+    if (
+      dropdownOpen[id] &&
+      buttonRef.current &&
+      !buttonRef.current.contains(event.target) &&
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target) &&
+      inputRef.current &&
+      !inputRef.current.contains(event.target)
+    ) {
+      toggleDropdown(id);
+    }
+  }, [dropdownOpen[id], id, toggleDropdown]);
+
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dropdownOpen[id] &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        inputRef.current && // Check if the input is not focused
-        !inputRef.current.contains(event.target)
-      ) {
-        toggleDropdown(id);
-      }
-    };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownOpen, id]);
+  }, [handleClickOutside]);
 
-  // Focus the input when the dropdown opens
+  // Focus input only when dropdown first opens - with delay to prevent scroll
   useEffect(() => {
-    if (dropdownOpen[id] && inputRef.current) {
-      inputRef.current.focus();
+    if (dropdownOpen[id]) {
+      // Reset local search when opening
+      setLocalSearchTerm('');
+      
+      // Delay focus to prevent scroll issues
+      const focusTimer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus({ preventScroll: true });
+        }
+      }, 10);
+      
+      return () => clearTimeout(focusTimer);
     }
-  }, [dropdownOpen, id]);
+  }, [dropdownOpen[id], id]);
+
+  // Handle input change without triggering parent re-renders
+  const handleInputChange = (e) => {
+    e.stopPropagation();
+    setLocalSearchTerm(e.target.value);
+  };
+
+  // Handle name selection
+  const handleNameSelect = (productName) => {
+    handleNameChange(id, productName);
+    setLocalSearchTerm(''); // Reset search term after selection
+  };
+
+  // Handle button click with scroll prevention
+  const handleButtonClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDropdown(id);
+  };
 
   return (
     <div className="relative">
       <div
         ref={buttonRef}
         className="w-full px-3 py-2 rounded-md border border-gray-300 flex justify-between items-center cursor-pointer bg-white"
-        onClick={() => toggleDropdown(id)}
+        onClick={handleButtonClick}
       >
         <span>{selectedValue || 'Select component'}</span>
         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -672,15 +711,12 @@ const ComponentDropdown = ({ id, selectedValue }) => {
               <div className="flex items-center px-2 py-1 bg-gray-100 rounded-md">
                 <Search className="w-4 h-4 text-gray-500 mr-2" />
                 <input
-                  ref={inputRef} // Attach ref to the input
+                  ref={inputRef}
                   type="text"
                   className="w-full bg-transparent border-none focus:outline-none text-sm"
                   placeholder="Search components..."
-                  value={searchTerm[id] || ''}
-                  onChange={(e) => {
-                    console.log('Input Value:', e.target.value); 
-                    setSearchTerm(prev => ({ ...prev, [id]: e.target.value }));
-                  }}
+                  value={localSearchTerm}
+                  onChange={handleInputChange}
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -691,7 +727,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                   <div
                     key={product.name}
                     className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between"
-                    onClick={() => handleNameChange(id, product.name)}
+                    onClick={() => handleNameSelect(product.name)}
                   >
                     <span>{product.name}</span>
                     <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
@@ -699,7 +735,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                 ))
               ) : (
                 <div className="px-4 py-2 text-gray-500 text-sm">
-                  {searchTerm[id] ? 'No matching components' : 'All components already added'}
+                  {localSearchTerm ? 'No matching components' : 'All components already added'}
                 </div>
               )}
             </div>
@@ -709,8 +745,6 @@ const ComponentDropdown = ({ id, selectedValue }) => {
     </div>
   );
 };
-
-
 
   if (!requestData) {
     return (
