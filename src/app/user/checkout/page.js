@@ -8,17 +8,34 @@ import Pagination from '../../../components/pagination';
 import DropdownPortal from '../../../components/dropDown';
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  
+  const router = useRouter(); 
   const [selectedProducts, setSelectedProducts] = useState([]);
   
-
   useEffect(() => {
     const storedProducts = localStorage.getItem('selectedProducts');
     if (storedProducts) {
       try {
         const parsedProducts = JSON.parse(storedProducts);
-        setSelectedProducts(parsedProducts);
+        
+        // Filter out products with zero or negative stock
+        const validProducts = parsedProducts.filter(product => {
+          return product.inStock > 0;
+        });
+        
+        // Update quantities if they exceed available stock
+        const correctedProducts = validProducts.map(product => ({
+          ...product,
+          selectedQuantity: Math.min(product.selectedQuantity, product.inStock)
+        }));
+        
+        setSelectedProducts(correctedProducts);
+        
+        // Update localStorage with corrected products
+        if (correctedProducts.length !== parsedProducts.length || 
+            correctedProducts.some((p, i) => p.selectedQuantity !== parsedProducts[i]?.selectedQuantity)) {
+          localStorage.setItem('selectedProducts', JSON.stringify(correctedProducts));
+        }
+        
       } catch (error) {
         console.error('Failed to parse selected products:', error);
       }
@@ -49,7 +66,7 @@ export default function CheckoutPage() {
   
   // Pagination (if needed)
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 3; // Changed to match your slice logic
   
   // Staff options state
   const [referenceStaffOptions, setReferenceStaffOptions] = useState([]);
@@ -60,70 +77,89 @@ export default function CheckoutPage() {
     fetchReferenceStaff();
   }, []);
 
+  const fetchReferenceStaff = async () => {
+  const token = localStorage.getItem('token'); 
 
-     const fetchReferenceStaff = async () => {
-      const token = localStorage.getItem('token'); 
+  if (!token) {
+      router.push('/auth/login'); 
+  }
+  if (token) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/get`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (!token) {
-         router.push('/auth/login'); 
-      }
-      if (token) {
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/get`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-      if (response.ok) {
-            const data = await response.json();
-            if (data.references && Array.isArray(data.references)) {
-              setReferenceStaffOptions(data.references); 
-            } else {
-              console.error('Invalid data format: "references" should be an array');
-              setReferenceStaffOptions([]);
-            }
-          } else {
-            console.error('Failed to fetch reference staff:', response.statusText);
-            setReferenceStaffOptions([]);
-          }
-        } catch (error) {
-          console.error('Error fetching reference staff:', error);
-          setReferenceStaffOptions([]);
-        }
+  if (response.ok) {
+    const data = await response.json();
+      if (data.references && Array.isArray(data.references)) {
+        setReferenceStaffOptions(data.references); 
       } else {
-        console.error('No token found in localStorage');
+        console.error('Invalid data format: "references" should be an array');
         setReferenceStaffOptions([]);
       }
-    };
-
-
-const filteredStaffOptions = referenceStaffOptions.filter((staff) => 
-  staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) || 
-  staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
-);
-
+      } else {
+      console.error('Failed to fetch reference staff:', response.statusText);
+      setReferenceStaffOptions([]);
+      }
+      } catch (error) {
+        console.error('Error fetching reference staff:', error);
+        setReferenceStaffOptions([]);
+      }
+    } else {
+      console.error('No token found in localStorage');
+      setReferenceStaffOptions([]);
+    }
+  };
+  const filteredStaffOptions = referenceStaffOptions.filter((staff) => 
+    staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) || 
+    staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
+  );
 
   // Calculate total items
   const totalItems = selectedProducts.reduce((acc, product) => acc + product.selectedQuantity, 0);
 
-  const updateQuantity = (index, newQuantity) => {
+  // Fixed: Calculate actual index in the full array based on pagination
+  const getActualIndex = (pageIndex) => {
+    return (currentPage - 1) * itemsPerPage + pageIndex;
+  };
+
+  const updateQuantity = (pageIndex, newQuantity) => {
+    const actualIndex = getActualIndex(pageIndex);
     const updated = [...selectedProducts];
-    const product = updated[index];
+    const product = updated[actualIndex];
+    
+    // Ensure we have current stock information
+    if (product.inStock <= 0) {
+      // Remove product if out of stock
+      const filteredProducts = updated.filter((_, i) => i !== actualIndex);
+      setSelectedProducts(filteredProducts);
+      localStorage.setItem('selectedProducts', JSON.stringify(filteredProducts));
+      
+      // Fix pagination after removal
+      const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / itemsPerPage);
+      if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
+        setCurrentPage(totalPagesAfterRemoval);
+      } else if (filteredProducts.length === 0) {
+        setCurrentPage(1);
+      }
+      return;
+    }
     
     // Allow quantity to go to 0, but not below 0, and not above inStock
     const quantity = Math.max(0, Math.min(parseInt(newQuantity) || 0, product.inStock));
     
     // If quantity is 0, remove the product
     if (quantity === 0) {
-      const filteredProducts = updated.filter((_, i) => i !== index);
+      const filteredProducts = updated.filter((_, i) => i !== actualIndex);
       setSelectedProducts(filteredProducts);
       localStorage.setItem('selectedProducts', JSON.stringify(filteredProducts));
       
       // Fix pagination after removal
-      const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / 3);
+      const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / itemsPerPage);
       if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
         setCurrentPage(totalPagesAfterRemoval);
       } else if (filteredProducts.length === 0) {
@@ -137,13 +173,14 @@ const filteredStaffOptions = referenceStaffOptions.filter((staff) =>
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
   };
 
-  const removeProduct = (index) => {
-    const updated = selectedProducts.filter((_, i) => i !== index);
+  const removeProduct = (pageIndex) => {
+    const actualIndex = getActualIndex(pageIndex); // Convert page index to actual array index
+    const updated = selectedProducts.filter((_, i) => i !== actualIndex);
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
     
     // Fix pagination after removal
-    const totalPagesAfterRemoval = Math.ceil(updated.length / 3);
+    const totalPagesAfterRemoval = Math.ceil(updated.length / itemsPerPage);
     if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
       setCurrentPage(totalPagesAfterRemoval);
     } else if (updated.length === 0) {
@@ -161,20 +198,16 @@ const filteredStaffOptions = referenceStaffOptions.filter((staff) =>
     }
   };
 
-
-  
-
-const handleCustomFacultySubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
-    setErrors({
-      ...errors,
-      customFaculty: 'Both name and email are required'
-    });
-    return;
-  }
-  
+  const handleCustomFacultySubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
+      setErrors({
+        ...errors,
+        customFaculty: 'Both name and email are required'
+      });
+      return;
+    }
 
   const emailRegex = /^[^\s@]+@cb\.amrita\.edu$/;
   if (!emailRegex.test(customFacultyEmail)) {
@@ -185,12 +218,10 @@ const handleCustomFacultySubmit = async (e) => {
     return;
   }
 
-
   console.log('New Faculty Added:', {
     name: customFacultyName,
     email: customFacultyEmail
   });
-  
 
   setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
   
@@ -199,7 +230,6 @@ const handleCustomFacultySubmit = async (e) => {
   delete updatedErrors.referenceStaff;
   setErrors(updatedErrors);
 
-
   const token = localStorage.getItem('token'); 
 
   if (!token) {
@@ -207,7 +237,7 @@ const handleCustomFacultySubmit = async (e) => {
       ...errors,
       customFaculty: 'Token is missing. Please log in again.'
     });
-   router.push('/auth/login'); 
+  router.push('/auth/login'); 
   }
 
   const payload = {
@@ -237,20 +267,19 @@ const handleCustomFacultySubmit = async (e) => {
         return;
       }
 
-
       throw new Error(data?.message || 'Something went wrong.');
     }
 
-
     console.log('Faculty added successfully:', data);
- 
+
     await fetchReferenceStaff(); 
     setCustomFacultyName('');
     setCustomFacultyEmail('');
     setShowCustomFacultyForm(false);
     setShowStaffDropdown(false);
     
-  } catch (error) {
+  } 
+  catch (error) {
     
     setErrors({
       ...errors,
@@ -260,118 +289,133 @@ const handleCustomFacultySubmit = async (e) => {
   }
 };
 
+    // Validate form data
+    const validateForm = () => {
+      const validationErrors = {};
+      
+      if (!purpose.trim()) {
+        validationErrors.purpose = 'Purpose is required';
+      }
+      
+      if (!referenceStaff) {
+        validationErrors.referenceStaff = 'Reference staff is required';
+      }
+      
+      if (!returnDays || returnDays < 1 || returnDays > 30) {
+        validationErrors.returnDays = 'Return days must be between 1 and 30';
+      }
+      
+      if (!acknowledged) {
+        validationErrors.acknowledged = 'You must acknowledge the terms';
+      }
+      
+      if (selectedProducts.length === 0) {
+        validationErrors.products = 'At least one product must be selected';
+      }
+      
+      // Check for stock availability issues
+      const stockIssues = selectedProducts.filter(product => {
+        return product.inStock <= 0 || product.selectedQuantity > product.inStock;
+      });
+      
+      if (stockIssues.length > 0) {
+        const outOfStockProducts = stockIssues.filter(p => p.inStock <= 0);
+        const insufficientStockProducts = stockIssues.filter(p => p.inStock > 0 && p.selectedQuantity > p.inStock);
+        
+        let stockErrorMessage = '';
+        if (outOfStockProducts.length > 0) {
+          stockErrorMessage += `Out of stock: ${outOfStockProducts.map(p => p.name).join(', ')}. `;
+        }
+        if (insufficientStockProducts.length > 0) {
+          stockErrorMessage += `Insufficient stock: ${insufficientStockProducts.map(p => `${p.name} (requested: ${p.selectedQuantity}, available: ${p.inStock})`).join(', ')}.`;
+        }
+        
+        validationErrors.stockAvailability = stockErrorMessage.trim();
+      }
+      
+      return validationErrors;
+    };
 
 
+    const handleSubmitRequest = () => {
+      setSubmitted(true);
+      
+      const validationErrors = validateForm();
+      setErrors(validationErrors);
 
-  // Validate form data
-  const validateForm = () => {
-    const validationErrors = {};
+      if (Object.keys(validationErrors).length === 0) {
+        setShowConfirmDialog(true);
+      }
+    };
     
-    if (!purpose.trim()) {
-      validationErrors.purpose = 'Purpose is required';
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirmDialog(false);
+    
+    // Get the token from localStorage
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+
+      router.push('/auth/login');
+      return;
     }
-    
-    if (!referenceStaff) {
-      validationErrors.referenceStaff = 'Reference staff is required';
-    }
-    
-    if (!returnDays || returnDays < 1 || returnDays > 30) {
-      validationErrors.returnDays = 'Return days must be between 1 and 30';
-    }
-    
-    if (!acknowledged) {
-      validationErrors.acknowledged = 'You must acknowledge the terms';
-    }
-    
-    if (selectedProducts.length === 0) {
-      validationErrors.products = 'At least one product must be selected';
-    }
-    
-    return validationErrors;
-  };
 
+    const requestData = {
+      referenceId: referenceStaffId, 
+      description: purpose, 
+      requestedDays: returnDays,  
+      requestedProducts: selectedProducts.map(product => ({
+        productId: product.id, 
+        quantity: product.selectedQuantity,  
+      }))
+    };
 
-  const handleSubmitRequest = () => {
-    setSubmitted(true);
-    
-    const validationErrors = validateForm();
-    setErrors(validationErrors);
+    console.log("Sending the following data to API:", requestData);
 
-    if (Object.keys(validationErrors).length === 0) {
-      setShowConfirmDialog(true);
-    }
-  };
-  
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/add`;
 
-const handleConfirmSubmit = async () => {
-  setShowConfirmDialog(false);
-  
-  // Get the token from localStorage
-  const token = localStorage.getItem('token');
-  
-  if (!token) {
-
-    router.push('/auth/login');
-    return;
-  }
-
-  const requestData = {
-    referenceId: referenceStaffId, 
-    description: purpose, 
-    requestedDays: returnDays,  
-    requestedProducts: selectedProducts.map(product => ({
-      productId: product.id, 
-      quantity: product.selectedQuantity,  
-    }))
-  };
-
-  console.log("Sending the following data to API:", requestData);
-
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/add`;
-
-  try {
-    // Make the API request
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,  
-      },
-      body: JSON.stringify(requestData), 
-    });
-
-    if (response.ok) {
-      console.log('Form submitted successfully', {
-        selectedProducts,
-        purpose,
-        referenceStaffId,
-        returnDays,
-        acknowledged
+    try {
+      // Make the API request
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,  
+        },
+        body: JSON.stringify(requestData), 
       });
 
-      setSubmitSuccess(true);
+      if (response.ok) {
+        console.log('Form submitted successfully', {
+          selectedProducts,
+          purpose,
+          referenceStaffId,
+          returnDays,
+          acknowledged
+        });
 
-      setTimeout(() => {
-        console.log('Redirecting to home page...');
-        setSubmitSuccess(false);
-        localStorage.removeItem('selectedProducts');
-        router.push('/user/dashboard'); 
-      }, 1500);
-    } else {
-      const errorData = await response.json();
-      console.error('Error submitting form:', errorData);
+        setSubmitSuccess(true);
 
+        setTimeout(() => {
+          console.log('Redirecting to home page...');
+          setSubmitSuccess(false);
+          localStorage.removeItem('selectedProducts');
+          router.push('/user/dashboard'); 
+        }, 1500);
+      } else {
+        const errorData = await response.json();
+        console.error('Error submitting form:', errorData);
+
+      }
+    } catch (error) {
+      console.error('Error during API request:', error);
     }
-  } catch (error) {
-    console.error('Error during API request:', error);
-  }
-};
-  
-
+  };
+    
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
   };
-
 
   const handleBack = () => {
     localStorage.setItem('selectedProducts', JSON.stringify(selectedProducts));
@@ -382,7 +426,7 @@ const handleConfirmSubmit = async () => {
   const closeSuccessAlert = () => {
     setSubmitSuccess(false);
   };
-  
+    
 
   const columns = [
     { key: 'name', label: 'Component' },
@@ -391,8 +435,7 @@ const handleConfirmSubmit = async () => {
     { key: 'action', label: 'Action' },
   ];
   
-
-  const renderCell = (key, product, index) => {
+  const renderCell = (key, product, pageIndex) => { // Using pageIndex instead of index
     switch (key) {
       case 'name':
         return <div className="font-medium text-gray-900">{product.name}</div>;
@@ -404,14 +447,14 @@ const handleConfirmSubmit = async () => {
               <button
                 type="button"
                 className="h-8 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600"
-                onClick={() => updateQuantity(index, product.selectedQuantity - 1)}
+                onClick={() => updateQuantity(pageIndex, product.selectedQuantity - 1)}
               >
                 −
               </button>
               <input
                 type="text"
                 value={product.selectedQuantity}
-                onChange={(e) => updateQuantity(index, e.target.value)}
+                onChange={(e) => updateQuantity(pageIndex, e.target.value)}
                 className="h-8 w-12 text-center border-x border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 min="1"
                 max={product.inStock}
@@ -419,7 +462,7 @@ const handleConfirmSubmit = async () => {
               <button
                 type="button"
                 className="h-8 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600"
-                onClick={() => updateQuantity(index, product.selectedQuantity + 1)}
+                onClick={() => updateQuantity(pageIndex, product.selectedQuantity + 1)}
                 disabled={product.selectedQuantity >= product.inStock}
               >
                 +
@@ -440,7 +483,7 @@ const handleConfirmSubmit = async () => {
           <div className="flex justify-center">
             <button
               type="button"
-              onClick={() => removeProduct(index)}
+              onClick={() => removeProduct(pageIndex)}
               className="text-gray-500 hover:text-red-600 transition-colors"
               aria-label="Remove item"
             >
@@ -456,7 +499,11 @@ const handleConfirmSubmit = async () => {
 
   const staffDropdownRef = useRef(null);
 
-
+  // Get current page items
+  const currentPageItems = selectedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="bg-gray-50">
@@ -520,17 +567,14 @@ const handleConfirmSubmit = async () => {
                 <div className="overflow-x-auto min-h-[310px]">
                   <Table 
                     columns={columns} 
-                    rows={selectedProducts.slice(
-                        (currentPage - 1) * 3,
-                        currentPage * 3
-                      )} 
+                    rows={currentPageItems}
                     currentPage={currentPage} 
-                    itemsPerPage={3} 
+                    itemsPerPage={itemsPerPage} 
                     renderCell={renderCell} 
                   />
                   <Pagination
                     currentPage={currentPage}
-                    totalPages={Math.ceil(selectedProducts.length / 3)}
+                    totalPages={Math.ceil(selectedProducts.length / itemsPerPage)}
                     setCurrentPage={setCurrentPage}
                   />
                 </div>
@@ -554,8 +598,17 @@ const handleConfirmSubmit = async () => {
                   {errors.products}
                 </div>
               )}
-            </section>
 
+              {submitted && errors.stockAvailability && (
+                <div className="p-3 bg-red-50 text-red-700 text-sm flex items-start border-t border-red-100">
+                  <AlertCircle size={16} className="mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-medium mb-1">Stock Availability Issues:</div>
+                    <div>{errors.stockAvailability}</div>
+                  </div>
+                </div>
+              )}
+            </section>
 
             <section className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-2 border-b border-gray-200">
@@ -606,76 +659,74 @@ const handleConfirmSubmit = async () => {
                         </svg>
                       </div>
                       
-{showStaffDropdown && (
-  <DropdownPortal 
-    targetRef={staffDropdownRef} 
-    onClose={() => setShowStaffDropdown(false)}
-    className="max-h-60 overflow-auto"
-    position="top"
-  >
-    <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
-      <div className="relative">
-        <input
-          type="text"
-          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Search staff..."
-          value={staffSearchQuery}
-          onChange={(e) => setStaffSearchQuery(e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          autoComplete="off"
-          autoFocus
-        />
-        <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
-      </div>
-    </div>
-    
-    <ul className="py-1">
-      {filteredStaffOptions.length > 0 ? (
-        filteredStaffOptions.map((staff) => (
-          <li 
-            key={staff.id}
-            className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
-            onClick={() => {
-              setReferenceStaff(`${staff.name} (${staff.email})`);
-              setReferenceStaffId(staff.id);
-              setShowStaffDropdown(false);
-            }}
-          >
-            <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-              {staff.name.charAt(0)} 
-            </div>
-            <div className="flex flex-col">
-              <span>{staff.name}</span> 
-              <span className="text-xs text-gray-500">{staff.email}</span> 
-            </div>
-          </li>
-        ))
-      ) : (
-        <li className="px-4 py-2 text-sm text-gray-500 italic">
-          No matching staff found
-        </li>
-      )}
-    </ul>
-    
-    <div className="p-2 border-t border-gray-200 bg-gray-50">
-      <button
-        type="button"
-        className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowCustomFacultyForm(true);
-          setStaffSearchQuery('');
-          setShowStaffDropdown(false); 
-        }}
-      >
-        <UserPlus size={16} className="mr-2" />
-        Add new faculty member
-      </button>
-    </div>
-  </DropdownPortal>
-)}
-
-
+                      {showStaffDropdown && (
+                        <DropdownPortal 
+                          targetRef={staffDropdownRef} 
+                          onClose={() => setShowStaffDropdown(false)}
+                          className="max-h-60 overflow-auto"
+                          position="top"
+                        >
+                          <div className="p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Search staff..."
+                                value={staffSearchQuery}
+                                onChange={(e) => setStaffSearchQuery(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoComplete="off"
+                                autoFocus
+                              />
+                              <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
+                            </div>
+                          </div>
+                          
+                          <ul className="py-1">
+                            {filteredStaffOptions.length > 0 ? (
+                              filteredStaffOptions.map((staff) => (
+                                <li 
+                                  key={staff.id}
+                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer transition-colors flex items-center"
+                                  onClick={() => {
+                                    setReferenceStaff(`${staff.name} (${staff.email})`);
+                                    setReferenceStaffId(staff.id);
+                                    setShowStaffDropdown(false);
+                                  }}
+                                >
+                                  <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
+                                    {staff.name.charAt(0)} 
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span>{staff.name}</span> 
+                                    <span className="text-xs text-gray-500">{staff.email}</span> 
+                                  </div>
+                                </li>
+                              ))
+                            ) : (
+                              <li className="px-4 py-2 text-sm text-gray-500 italic">
+                                No matching staff found
+                              </li>
+                            )}
+                          </ul>
+                          
+                          <div className="p-2 border-t border-gray-200 bg-gray-50">
+                            <button
+                              type="button"
+                              className="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors flex items-center justify-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowCustomFacultyForm(true);
+                                setStaffSearchQuery('');
+                                setShowStaffDropdown(false); 
+                              }}
+                            >
+                              <UserPlus size={16} className="mr-2" />
+                              Add new faculty member
+                            </button>
+                          </div>
+                        </DropdownPortal>
+                      )}
                       {showCustomFacultyForm && (
                         <div className="fixed inset-0 bg-black/25 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                           <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden animate-fade-in">
@@ -762,7 +813,6 @@ const handleConfirmSubmit = async () => {
                       </p>
                     )}
                   </div>
-                  
 
                   <div className="md:w-1/3">
                     <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
@@ -795,12 +845,10 @@ const handleConfirmSubmit = async () => {
                       </p>
                     )}
                   </div>
-                </div>
-                
+                </div>                
               </div>
             </section>
           </div>
-
  
           <div className="md:w-1/3 space-y-6">
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -823,8 +871,7 @@ const handleConfirmSubmit = async () => {
                   </div>
                 </div>
               </div>
-            </div>
-           
+            </div>           
  
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -838,8 +885,7 @@ const handleConfirmSubmit = async () => {
                       The return days for your request start when the admin approves it. Once you receive the approval email, you can collect components from the lab 
                     </p>
                   </div>
-                </div>
-                
+                </div>                
 
                 <div className="flex items-start pt-2">
                   <div className="flex items-center h-5 mt-0.5">
@@ -866,8 +912,7 @@ const handleConfirmSubmit = async () => {
                       </p>
                     )}
                   </div>
-                </div>
-                
+                </div>                
    
                 <button
                   type="button"

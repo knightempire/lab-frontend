@@ -236,7 +236,9 @@ useEffect(() => {
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -645,19 +647,19 @@ const returnTrackingRows = returnTrackingComponents
   const issueStatus = requestData.status;
   let statusIcon, statusText, bgColor, textColor;
   switch (issueStatus) {
-         case 'accepted':
-      case 'approved':
-      statusIcon = <CheckCircle size={16} className="text-green-700" />;
-      bgColor = 'bg-green-100';
-      textColor = 'text-green-700';
-      statusText = 'Accepted';
+    case 'accepted':
+    case 'approved':
+    statusIcon = <CheckCircle size={16} className="text-green-700" />;
+    bgColor = 'bg-green-100';
+    textColor = 'text-green-700';
+    statusText = 'Accepted';
+    break;
+    case 'returned':
+      statusIcon = <Undo size={16} className="text-blue-700" />;
+      bgColor = 'bg-blue-100';
+      textColor = 'text-blue-700';
+      statusText = 'Returned';
       break;
-        case 'returned':
-          statusIcon = <Undo size={16} className="text-blue-700" />;
-          bgColor = 'bg-blue-100';
-          textColor = 'text-blue-700';
-          statusText = 'Returned';
-          break;
     case 'rejected':
       statusIcon = <XCircle size={16} className="text-red-700" />;
       bgColor = 'bg-red-100';

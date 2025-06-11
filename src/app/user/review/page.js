@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo} from 'lucide-react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
 import { Suspense } from 'react';
-
+import RequestTimeline from '../../../components/RequestTimeline';
 
 function UserReviewContent() {
   const router = useRouter();
@@ -17,10 +17,13 @@ function UserReviewContent() {
   const [adminPage, setAdminPage] = useState(1);
   const [returnPage, setReturnPage] = useState(1);
   const itemsPerPage = 5;
-
+  
   const [extensionDays, setExtensionDays] = useState(1);
   const [extensionMessage, setExtensionMessage] = useState('');
   const [extensionSent, setExtensionSent] = useState(false);
+
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const [requestStatus, setRequestStatus] = useState('Open');
 
 
 useEffect(() => {
@@ -116,11 +119,12 @@ useEffect(() => {
 
   function StatusBadge({ status }) {
     const statusConfig = {
-        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏳' },
-        accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
-        approved: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
-        rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: '✕' },
-        returned: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '🔄' },
+        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock size={16} className="text-yellow-700" /> },
+        accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle size={16} className="text-green-700" /> },
+        approved: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle size={16} className="text-green-700" />},
+        rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle size={16} className="text-red-700" /> },
+        returned: { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Undo size={16} className="text-blue-700" /> },
+        closed: { bg: 'bg-amber-100', text: 'text-amber-800', icon: <AlertTriangle size={16} className="text-amber-700" /> },
     };
     const config = statusConfig[status] || statusConfig.pending;
     return (
@@ -156,13 +160,12 @@ useEffect(() => {
   ];
 
   const returnedColumns = [
-    { key: 'name', label: 'Component Name' },
-    { key: 'quantity', label: 'Returned Qty' },
-    { key: 'damagedQuantity', label: 'Damaged Qty' },
-    { key: 'userDamagedQuantity', label: 'User Damaged' },
-    { key: 'replacedQuantity', label: 'Replaced Qty' },
-    { key: 'action', label: 'Action' },
-    { key: 'returnDate', label: 'Return Date' }
+    { key: 'name', label: 'Component Name', className: 'text-center' },
+    { key: 'qtyReturned', label: 'Qty Returned', className: 'text-center' },
+    { key: 'damagedCount', label: 'Damaged Count', className: 'text-center' },
+    { key: 'actionType', label: 'Action', className: 'text-center' },
+    { key: 'isUserDamaged', label: 'User Damaged', className: 'text-center' },
+    { key: 'dateReturned', label: 'Date Returned', className: 'text-center' }
   ];
 
   const getPageRows = (rows, page) =>
@@ -265,6 +268,18 @@ useEffect(() => {
     );
   }
 
+  const toggleRowExpansion = (itemId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
   return (
      <div className="bg-gray-50">
        <div className="mx-auto px-4 py-8">
@@ -279,8 +294,10 @@ useEffect(() => {
             </button>
             <FileText className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full">
+              <StatusBadge status={requestData.status} />
+            </span>
             </div>
-            <StatusBadge status={requestData.status} />
         </div>
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -299,17 +316,37 @@ useEffect(() => {
                       </span>
                 </div>
                 )}
-                <p className="text-gray-600">
-                Requested on {formatDate(requestData.requestedDate)}
-                </p>
+                <RequestTimeline 
+              requestData={requestData} 
+              reissue={requestData.reIssueData || []} 
+              formatDate={formatDate} 
+            />
             </div>
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
             <div className="mt-4 md:mt-0">
                 <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
                 <div className={`w-3 h-3 rounded-full ${requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'} mr-2`}></div>
                 <span className="font-medium">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
                 </div>
             </div>
+            {/* Request Status Box */}
+            <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
+              ${requestStatus === 'Done' 
+                ? 'bg-green-100 border-green-200' 
+                : 'bg-yellow-100 border-yellow-200'
+              }`}>
+              {requestStatus === 'Done' 
+                ? <CheckCircle size={16} className="text-green-700 shrink-0" />
+                : <Clock size={16} className="text-yellow-700 shrink-0" />
+              }
+              <span className={`text-sm font-medium whitespace-nowrap ${
+                requestStatus === 'Done' ? 'text-green-700' : 'text-yellow-700'
+              }`}>
+                Request {requestStatus}
+              </span>
             </div>
+            </div>
+          </div>
         </div>
 
             {/* --- User and Reference Info --- */}
@@ -512,66 +549,127 @@ useEffect(() => {
 
                 {/* Returned Components Table - spans both columns */}
                 <div className="bg-white shadow rounded-lg md:col-span-2">
-                <div className="p-6 border-b border-gray-200">
+                  <div className="p-6 border-b border-gray-200">
                     <div className="flex items-center mb-4">
-                    <RefreshCw className="w-5 h-5 mr-2 text-indigo-600" />
-                    <h2 className="text-lg font-semibold text-indigo-700">Returned Components</h2>
+                      <RefreshCw className="w-5 h-5 mr-2 text-indigo-600" />
+                      <h2 className="text-lg font-semibold text-indigo-700">Returned Components</h2>
                     </div>
                     {requestData.returnedComponents && requestData.returnedComponents.length > 0 ? (
-                    <>
-                      <Table
-                        columns={returnedColumns}
-                        rows={getPageRows(requestData.returnedComponents, returnPage)}
-                        currentPage={returnPage}
-                        itemsPerPage={itemsPerPage}
-                        renderCell={(key, row) => {
-                          if (key === 'damagedQuantity') {
-                            return (
-                              <span className={row.damagedQuantity > 0 ? "text-amber-600 font-semibold" : "text-green-600"}>
-                                {row.damagedQuantity ?? 0}
-                              </span>
-                            );
-                          }
-                          if (key === 'userDamagedQuantity') {
-                            return (
-                              <span className={row.userDamagedQuantity > 0 ? "bg-red-100 text-red-600 px-2 py-1 rounded-full" : "bg-green-100 text-green-600 px-2 py-1 rounded-full"}>
-                                {row.userDamagedQuantity > 0 ? "Yes" : "No"}
-                              </span>
-                            );
-                          }
-                          if (key === 'replacedQuantity') {
-                            return (
-                              <span className={row.replacedQuantity > 0 ? "text-blue-600 font-semibold" : "text-gray-600"}>
-                                {row.replacedQuantity ?? 0}
-                              </span>
-                            );
-                          }
-                          if (key === 'action') {
-                            return (
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.action === 'Replaced' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                                {row.action}
-                              </span>
-                            );
-                          }
-                          if (key === 'returnDate') {
-                            return formatDate(row.returnDate);
-                          }
-                          return row[key] ?? '-';
-                        }}
-                      />
-                      {requestData.returnedComponents.length > itemsPerPage && (
-                        <Pagination
-                          currentPage={returnPage}
-                          totalPages={Math.ceil(requestData.returnedComponents.length / itemsPerPage)}
-                          setCurrentPage={setReturnPage}
-                        />
-                      )}
-                    </>
-                    ) : (
-                    <div className="text-gray-400 text-center py-6">No return history available yet.</div>
-                    )}
-                </div>
+                      <>
+                        <Table
+                          columns={returnedColumns}
+                          rows={(() => {
+                            const returnHistoryRows = requestData.returnedComponents.reduce((acc, item) => {
+                              // Map the existing data structure to match the template
+                              const mappedItem = {
+                                id: `${item.name}-${item.returnDate}`, // Create unique ID
+                                name: item.name,
+                                qtyReturned: item.quantity,
+                                damagedCount: item.damagedQuantity || 0,
+                                actionType: item.replacedQuantity > 0 ? 'replace' : 'return',
+                                isUserDamaged: item.userDamagedQuantity > 0,
+                                dateReturned: item.returnDate,
+                                damageDescription: item.damageDescription || null // Add if available in your data
+                              };
 
+                              acc.push({
+                                ...mappedItem,
+                                name: (
+                                  <div className="text-center flex items-center justify-center">
+                                    {mappedItem.name}
+                                  </div>
+                                ),
+                                qtyReturned: <div className="text-center">{mappedItem.qtyReturned}</div>,
+                                damagedCount: (
+                                  <div className="flex items-center justify-center">
+                                    {mappedItem.damagedCount > 0 ? (
+                                      <div className="flex items-center text-amber-600">
+                                        <AlertTriangle className="w-4 h-4 mr-1" />
+                                        <span>{mappedItem.damagedCount}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-green-600">0</span>
+                                    )}
+                                    {mappedItem.damagedCount > 0 && mappedItem.damageDescription && (
+                                      <button
+                                        onClick={() => toggleRowExpansion(mappedItem.id)}
+                                        className="ml-2 p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors"
+                                        title="View damage description"
+                                      >
+                                        {expandedRows.has(mappedItem.id) ? (
+                                          <Minus size={16} />
+                                        ) : (
+                                          <Plus size={16} />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                ),
+                                actionType: (
+                                  <div className="text-center">
+                                    {mappedItem.damagedCount > 0 ? (
+                                      <span className={mappedItem.actionType === 'replace' ? 'text-blue-600' : 'text-amber-600'}>
+                                        {mappedItem.actionType === 'replace' ? 'Replaced' : 'Returned'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-green-600">Returned</span>
+                                    )}
+                                  </div>
+                                ),
+                                isUserDamaged: (
+                                  <div className="text-center">
+                                    {mappedItem.damagedCount > 0 ? (
+                                      <span className={mappedItem.isUserDamaged ? 'text-red-600 rounded-full bg-red-100 px-3 py-1' : 'text-green-600 rounded-full bg-green-100 px-3 py-1'}>
+                                        {mappedItem.isUserDamaged ? 'Yes' : 'No'}
+                                      </span>
+                                    ) : (
+                                      <span>-</span>
+                                    )}
+                                  </div>
+                                ),
+                                dateReturned: <div className="text-center">{formatDate(mappedItem.dateReturned)}</div>
+                              });
+
+                              // Add expanded row if needed
+                              if (expandedRows.has(mappedItem.id) && mappedItem.damagedCount > 0 && mappedItem.damageDescription) {
+                                acc.push({
+                                  id: `${mappedItem.id}-expanded`,
+                                  isExpanded: true,
+                                  expandedContent: (
+                                    <div className="p-4 bg-blue-50 border-l-4 border-blue-500">
+                                      <div className="flex items-start">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                          <h4 className="font-medium text-gray-800 mb-2">Damage Description</h4>
+                                          <p className="text-gray-600 text-sm leading-relaxed">
+                                            {mappedItem.damageDescription}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                });
+                              }
+                              return acc;
+                            }, []);
+
+                            return getPageRows(returnHistoryRows, returnPage);
+                          })()}
+                          currentPage={returnPage}
+                          itemsPerPage={itemsPerPage}
+                        />
+                        {requestData.returnedComponents.length > itemsPerPage && (
+                          <Pagination
+                            currentPage={returnPage}
+                            totalPages={Math.ceil(requestData.returnedComponents.length / itemsPerPage)}
+                            setCurrentPage={setReturnPage}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-gray-400 text-center py-6">No return history available yet.</div>
+                    )}
+                  </div>
                 {/* Re-Issue Details: show in addition if extended */}
                   {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned') && requestData.reIssueRequest && requestData.adminIssueComponents &&
                     requestData.adminIssueComponents.length > requestData.returnedComponents.length && requestData.reIssueRequest &&
