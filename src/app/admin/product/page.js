@@ -188,8 +188,8 @@ const addProduct = async () => {
   }
 };
 
-const updateProduct = async (index) => {
-  console.log('Updating product at index:', index);
+const updateProduct = async (id) => {
+  console.log('Updating product at index:', id);
 
     console.log('newProduct:', newProduct);
   const errors = validateProduct(newProduct);
@@ -217,43 +217,36 @@ const updateProduct = async (index) => {
   };
 
   try {
+    console.log('Updating product with ID:', id);
 
-   const productId = products[index]._id;
-  
-    console.log('Updating product with ID:', productId);
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${productId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, 
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(updatedProduct),
     });
 
-
-
     const result = await response.json();
 
-        if (!response.ok) {
+    if (!response.ok) {
       if (result.message === 'Product already exists') {
-            setFormErrors({ product_name: result.message });
-        } else {
-          toast.error(result.message || 'Failed to add product');
-     }
-  return;
+        setFormErrors({ product_name: result.message });
+      } else {
+        toast.error(result.message || 'Failed to add product');
+      }
+      return;
     }
 
-setSuccessMessage(result.message || 'Product updated successfully');
+    setSuccessMessage(result.message || 'Product updated successfully');
 
-    const updatedProducts = [...products];
-    updatedProducts[index] = {
-      ...updatedProducts[index], 
-      ...updatedProduct, 
-    };
+    // Find the index in the original products array by _id
+    const updatedProducts = products.map((p) =>
+      p._id === id ? { ...p, ...updatedProduct } : p
+    );
 
     setProducts(updatedProducts);
-
 
     resetForm();
     setShowSuccessAlert(true);
@@ -266,13 +259,12 @@ setSuccessMessage(result.message || 'Product updated successfully');
 
 
 
+const startEdit = (product, id) => {
+  setEditIndex(id); // Now using _id
+  setNewProduct({ ...product });
+  setShowForm(true);
+};
 
-  const startEdit = (product, index) => {
-      console.log("Starting to edit", product); 
-    setEditIndex(index);
-    setNewProduct({ ...product });
-    setShowForm(true);
-  };
 
   const cancelForm = () => resetForm();
   
@@ -294,21 +286,21 @@ setSuccessMessage(result.message || 'Product updated successfully');
     { key: 'actions', label: 'Actions' },
   ];
 
-  const rows = paginatedProducts.map((item, idx) => ({
-    ...item,
-    issued: item.quantity - item.damagedQuantity - item.inStock,
-    actions: (
-      <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
-        <button
-          onClick={() => startEdit(item, (currentPage - 1) * itemsPerPage + idx)}
-          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-        >
-          <Edit2 size={14} />
-          <span>Edit</span>
-        </button>
-      </div>
-    )
-  }));
+const rows = paginatedProducts.map((item, idx) => ({
+  ...item,
+  issued: item.quantity - item.damagedQuantity - item.inStock,
+  actions: (
+    <div className="flex justify-center gap-x-4 pt-2 border-t border-gray-100">
+      <button
+        onClick={() => startEdit(item, item._id)}
+        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+      >
+        <Edit2 size={14} />
+        <span>Edit</span>
+      </button>
+    </div>
+  )
+}));
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
