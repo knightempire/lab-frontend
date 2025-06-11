@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo} from 'lucide-react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
@@ -119,11 +119,12 @@ useEffect(() => {
 
   function StatusBadge({ status }) {
     const statusConfig = {
-        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏳' },
-        accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
-        approved: { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' },
-        rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: '✕' },
-        returned: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '🔄' },
+        pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock size={16} className="text-yellow-700" /> },
+        accepted: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle size={16} className="text-green-700" /> },
+        approved: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle size={16} className="text-green-700" />},
+        rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle size={16} className="text-red-700" /> },
+        returned: { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Undo size={16} className="text-blue-700" /> },
+        closed: { bg: 'bg-amber-100', text: 'text-amber-800', icon: <AlertTriangle size={16} className="text-amber-700" /> },
     };
     const config = statusConfig[status] || statusConfig.pending;
     return (
@@ -293,8 +294,10 @@ useEffect(() => {
             </button>
             <FileText className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full">
+              <StatusBadge status={requestData.status} />
+            </span>
             </div>
-            <StatusBadge status={requestData.status} />
         </div>
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
