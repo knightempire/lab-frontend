@@ -36,6 +36,7 @@ useEffect(() => {
       if (!res.ok) {
         console.warn('Invalid token. Removing...');
         localStorage.removeItem('token');
+        localStorage.removeItem('selectedProducts');
         return;
       }
 
@@ -120,7 +121,6 @@ useEffect(() => {
       setError('Something went wrong. Please try again later.');
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

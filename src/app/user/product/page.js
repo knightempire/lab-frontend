@@ -19,6 +19,9 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const [sortKey, setSortKey] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+
 // Initialize products and restore selections from localStorage
 useEffect(() => {
   const fetchProducts = async () => {
@@ -124,55 +127,64 @@ useEffect(() => {
     localStorage.setItem('selectedProducts', JSON.stringify(selected));
   };
 
-  const toggleSelect = (index) => {
-    const updated = [...products];
-    const product = updated[index];
-    product.selected = !product.selected;
-    product.selectedQuantity = product.selected ? 1 : 0;
+  const toggleSelect = (id) => {
+    const updated = products.map(product =>
+      product.id === id
+        ? {
+            ...product,
+            selected: !product.selected,
+            selectedQuantity: !product.selected ? 1 : 0
+          }
+        : product
+    );
     setProducts(updated);
-    
-    // Save selections immediately when toggling
     saveSelectionsToLocalStorage(updated);
   };
 
-  const updateQuantity = (index, delta) => {
-    const updated = [...products];
-    const product = updated[index];
-
-    if (!product.selected) return;
-
-    const newQty = product.selectedQuantity + delta;
-
-    // Check if the new quantity exceeds available stock
-    if (delta > 0 && newQty > product.inStock) {
-      // If trying to exceed inStock, cap at max available
-      product.selectedQuantity = product.inStock;
-    } else if (newQty <= 0) {
-      product.selected = false;
-      product.selectedQuantity = 0;
-    } else {
-      product.selectedQuantity = newQty;
-    }
-
-    setProducts(updated);
-    
-    // Save selections immediately when updating quantity
-    saveSelectionsToLocalStorage(updated);
+  const updateQuantity = (id, delta) => {
+    setProducts(prevProducts => {
+      const updated = prevProducts.map(product => {
+        if (product.id !== id) return product;
+        if (!product.selected) return product;
+        const newQty = product.selectedQuantity + delta;
+        if (delta > 0 && newQty > product.inStock) {
+          return { ...product, selectedQuantity: product.inStock };
+        } else if (newQty <= 0) {
+          return { ...product, selected: false, selectedQuantity: 0 };
+        } else {
+          return { ...product, selectedQuantity: newQty };
+        }
+      });
+      saveSelectionsToLocalStorage(updated);
+      return updated;
+    });
   };
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortKey === 'name') {
+      return sortOrder === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
+    } else if (sortKey === 'inStock') {
+      return sortOrder === 'asc'
+        ? a.inStock - b.inStock
+        : b.inStock - a.inStock;
+    }
+    return 0;
+  });
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   const handleProceed = () => {
-    // Navigate to checkout page - no need to save to localStorage again
-    // as we're already saving on every selection change
+    // Navigate to checkout page - no need to save to localStorage again as we're already saving on every selection change
     router.push('/user/checkout');
   };
 
@@ -221,51 +233,91 @@ useEffect(() => {
               rows={paginatedProducts}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}
-              renderCell={(colKey, row, rowIndex) => {
-                const globalIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+              renderHeaderCell={(col) => {
+                if (col.key === 'name' || col.key === 'inStock') {
+                  return (
+                    <button
+                      type="button"
+                      className={`
+                        group
+                        flex items-center justify-center gap-2 font-semibold uppercase
+                        px-10 w-full
+                      `}
+                      style={{ minWidth: 160 }}
+                      onClick={() => {
+                        if (sortKey === col.key) {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortKey(col.key);
+                          setSortOrder('asc');
+                        }
+                      }}
+                    >
+                      <span>{col.label}</span>
+                      <span className="ml-1 flex flex-col text-xs leading-none">
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'asc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▲
+                        </span>
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'desc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▼
+                        </span>
+                      </span>
+                    </button>
+                  );
+                }
+                return col.label;
+              }}
+              renderCell={(colKey, row) => {
                 if (colKey === 'quantity') {
                   return row.selected ? (
                     <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
                       {/* Minus Button */}
                       <button
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
-                        onClick={() => updateQuantity(globalIndex, -1)}
+                        onClick={() => updateQuantity(row.id, -1)}
                       >
                         -
                       </button>
-                
+
                       {/* Editable Quantity */}
                       <input
                         type="text"
                         value={row.selectedQuantity}
                         onChange={(e) => {
-                          // Parse as integer and ensure it's a valid number
                           const value = parseInt(e.target.value) || 0;
-                          // Make sure it doesn't exceed stock and is not negative
                           const newQuantity = Math.max(0, Math.min(value, row.inStock));
-                          
-                          const updated = [...products];
-                          if (newQuantity === 0) {
-                            updated[globalIndex].selected = false;
-                            updated[globalIndex].selectedQuantity = 0;
-                          } else {
-                            updated[globalIndex].selectedQuantity = newQuantity;
-                          }
+                          const updated = products.map(product => {
+                            if (product.id !== row.id) return product;
+                            if (newQuantity === 0) {
+                              return { ...product, selected: false, selectedQuantity: 0 };
+                            } else {
+                              return { ...product, selected: true, selectedQuantity: newQuantity };
+                            }
+                          });
                           setProducts(updated);
-                          
-                          // Save selections immediately when manually editing quantity
                           saveSelectionsToLocalStorage(updated);
                         }}
                         className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
                         min="0"
                         max={row.inStock}
                       />
-                
+
                       {/* Plus Button */}
                       <button
                         className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
-                        onClick={() => updateQuantity(globalIndex, 1)}
-                        // Disable button if at max stock
+                        onClick={() => updateQuantity(row.id, 1)}
                         disabled={row.selectedQuantity >= row.inStock}
                       >
                         +
@@ -279,8 +331,8 @@ useEffect(() => {
                       <input
                         type="checkbox"
                         checked={row.selected}
-                        onChange={() => toggleSelect(globalIndex)}
-                        disabled={row.inStock === 0} // Disable checkbox if out of stock
+                        onChange={() => toggleSelect(row.id)}
+                        disabled={row.inStock === 0}
                         title={row.inStock === 0 ? "Out of stock" : ""}
                       />
                     </div>

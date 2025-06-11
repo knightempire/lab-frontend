@@ -1,14 +1,16 @@
 'use client';
 
-export default function Table({ columns, rows, currentPage, itemsPerPage, renderCell }) {
+export default function Table({ columns, rows, currentPage, itemsPerPage, renderCell, renderHeaderCell }) {
   return (
     <div className="mt-4 overflow-x-auto bg-white shadow rounded-lg">
       <table className="w-full text-sm text-left text-gray-700">
         <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
           <tr>
             <th className="px-6 py-3 text-center w-12">S.No</th>
-            {columns.map((col) => (
-              <th key={col.key} className="px-6 py-3 text-center">{col.label}</th>
+            {columns.map(col => (
+              <th key={col.key} className="px-6 py-4 text-center">
+                {renderHeaderCell ? renderHeaderCell(col) : col.label}
+              </th>
             ))}
           </tr>
         </thead>
