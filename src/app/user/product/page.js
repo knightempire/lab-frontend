@@ -19,6 +19,9 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const [sortKey, setSortKey] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+
 // Initialize products and restore selections from localStorage
 useEffect(() => {
   const fetchProducts = async () => {
@@ -161,14 +164,27 @@ useEffect(() => {
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = products
-    .filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortKey === 'name') {
+      return sortOrder === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
+    } else if (sortKey === 'inStock') {
+      return sortOrder === 'asc'
+        ? a.inStock - b.inStock
+        : b.inStock - a.inStock;
+    }
+    return 0;
+  });
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleProceed = () => {
-    // Navigate to checkout page - no need to save to localStorage again
-    // as we're already saving on every selection change
+    // Navigate to checkout page - no need to save to localStorage again as we're already saving on every selection change
     router.push('/user/checkout');
   };
 
@@ -217,6 +233,52 @@ useEffect(() => {
               rows={paginatedProducts}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}
+              renderHeaderCell={(col) => {
+                if (col.key === 'name' || col.key === 'inStock') {
+                  return (
+                    <button
+                      type="button"
+                      className={`
+                        group
+                        flex items-center justify-center gap-2 font-semibold uppercase
+                        px-10 w-full
+                      `}
+                      style={{ minWidth: 160 }}
+                      onClick={() => {
+                        if (sortKey === col.key) {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortKey(col.key);
+                          setSortOrder('asc');
+                        }
+                      }}
+                    >
+                      <span>{col.label}</span>
+                      <span className="ml-1 flex flex-col text-xs leading-none">
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'asc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▲
+                        </span>
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'desc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▼
+                        </span>
+                      </span>
+                    </button>
+                  );
+                }
+                return col.label;
+              }}
               renderCell={(colKey, row) => {
                 if (colKey === 'quantity') {
                   return row.selected ? (
