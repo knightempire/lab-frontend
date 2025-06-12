@@ -74,76 +74,105 @@ export default function RequestsPage() {
       try {
         const token = localStorage.getItem('token');
 
-              const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+    // Fetch products (unchanged)
+    const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const productData = await productRes.json();
+
+    const productMap = {};
+    if (productData?.products) {
+      const displayable = productData.products.filter(p => p.product.isDisplay);
+      const mappedOptions = displayable.map(p => ({
+        id: p.product._id,
+        name: p.product.product_name
+      }));
+      setProductOptions(mappedOptions);
+      mappedOptions.forEach(p => {
+        productMap[p.id] = p.name;
       });
-      const productData = await productRes.json();
+    }
 
-      const productMap = {};
-      if (productData?.products) {
-        const displayable = productData.products.filter(p => p.product.isDisplay);
-        const mappedOptions = displayable.map(p => ({
-          id: p.product._id,
-          name: p.product.product_name
-        }));
-        setProductOptions(mappedOptions);
-
-        // Build id-to-name mapping
-        mappedOptions.forEach(p => {
-          productMap[p.id] = p.name;
-        });
+    // Fetch requests
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
+    });
+    const data = await response.json();
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+    // Fetch all reIssued requests
+    const reIssuedRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const reIssuedData = await reIssuedRes.json();
+    const allReIssued = reIssuedData?.reIssued || [];
 
-        const data = await response.json();
-        console.log('Fetched requests:', data);
-
-      if (response.ok && data?.requests) {
-        const filtered = data.requests.filter(req => {
-          const status = req.requestStatus?.toLowerCase();
-          
-          return status === 'pending' || (status === 'approved' && !req.collectedDate);
-        });
-
-          const transformedRequests = filtered.map((req, index) => ({
-            id: req._id,
-            requestId: req.requestId || `REQ-${index + 1}`,
-            name: req.userId?.name || 'Unknown',
-            rollNo: req.userId?.rollNo || 'N/A',
-            phoneNo: req.userId?.phoneNo || 'N/A', // Not provided
-            email: req.userId?.email || 'N/A',
-            isFaculty: req.userId?.role === 'faculty', // Update if role is not present
-            requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
-            requestedDays: req.requestedDays,
-            status: req.requestStatus.toLowerCase(),
-            isExtended: false, // Assuming not in response
-            referenceStaff: {
-              name: req.referenceId?.name || 'N/A',
-              email: req.referenceId?.email || 'N/A'
-            },
-            description: req.description || '',
-            components: req.requestedProducts.map(product => ({
-              id: product.productId, 
-              quantity: product.quantity
-            }))
-          }));
-
-          setRequests(transformedRequests);
-        } else {
-          setError(data.message || 'Failed to fetch requests.');
+    if (response.ok && data?.requests) {
+      const filtered = data.requests.filter(req => {
+        const status = req.requestStatus?.toLowerCase();
+        // Show pending, or approved with pending re-issue
+        if (status === 'pending') return true;
+        if (status === 'approved') {
+          // Check if there is a pending re-issue for this request
+          const hasPendingReissue = allReIssued.some(
+            r => r.requestId === req.requestId && r.status === 'pending'
+          );
+          return hasPendingReissue;
         }
-      } catch (err) {
-        setError('Something went wrong while fetching requests.');
-      } finally {
-        setLoading(false);
-      }
-    };
+        return false;
+      });
 
+      const transformedRequests = filtered.map((req, index) => {
+        // Find pending re-issue for this request (if any)
+        const pendingReissue = allReIssued.find(
+          r => r.requestId === req.requestId && r.status === 'pending'
+        );
+        let status = req.requestStatus.toLowerCase();
+        let statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        if (pendingReissue) {
+          status = 'extension-pending';
+          statusText = 'Extension Pending';
+        }
+
+        return {
+          id: req._id,
+          requestId: req.requestId || `REQ-${index + 1}`,
+          name: req.userId?.name || 'Unknown',
+          rollNo: req.userId?.rollNo || 'N/A',
+          phoneNo: req.userId?.phoneNo || 'N/A',
+          email: req.userId?.email || 'N/A',
+          isFaculty: req.userId?.role === 'faculty',
+          requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
+          requestedDays: req.requestedDays,
+          status,
+          statusText,
+          isExtended: false,
+          referenceStaff: {
+            name: req.referenceId?.name || 'N/A',
+            email: req.referenceId?.email || 'N/A'
+          },
+          description: req.description || '',
+          components: req.requestedProducts.map(product => ({
+            id: product.productId,
+            quantity: product.quantity
+          })),
+          pendingReissue // attach the pending re-issue object if present
+        };
+      });
+
+      setRequests(transformedRequests);
+    } else {
+      setError(data.message || 'Failed to fetch requests.');
+    }
+  } catch (err) {
+    setError('Something went wrong while fetching requests.');
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filters, selectedProducts]);
@@ -259,7 +288,7 @@ const getFilteredResults = () => {
         textColor = 'text-red-700';
         statusText = 'Rejected';
         break;
-      case 'extension':
+        case 'extension-pending':
         statusIcon = <Repeat size={16} className="text-indigo-700" />;
         bgColor = 'bg-indigo-100';
         textColor = 'text-indigo-700';
