@@ -393,15 +393,12 @@ function getNotReturnedComponents(issued, returned) {
   console.log('Issued components:', issued);
   console.log('Returned components:', returned);
   return issued.map(issuedItem => {
-    let totalIssued = issuedItem.issuedQuantity || issuedItem.quantity || 0;
-    let name = issuedItem.issuedProductId?.product_name || issuedItem.name;
-    const totalReplaced = (issuedItem.return || []).reduce(
-      (sum, ret) => sum + (ret.replacedQuantity || 0), 0
-    );
-    const totalReturned = (issuedItem.return || []).reduce(
-      (sum, ret) => sum + (ret.returnedQuantity || 0), 0
-    );
-    // Correct formula: issued - returned + replaced
+    const totalIssued = issuedItem.quantity || issuedItem.issuedQuantity || 0;
+    const name = issuedItem.name || issuedItem.issuedProductId?.product_name;
+    // Sum returned and replaced from the flat returned array
+    const relatedReturns = (returned || []).filter(ret => ret.issuedProductId === issuedItem.id);
+    const totalReturned = relatedReturns.reduce((sum, ret) => sum + (ret.returnedQuantity || 0), 0);
+    const totalReplaced = relatedReturns.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0);
     const notReturned = totalIssued - totalReturned + totalReplaced;
     // Debug print
     console.log(`[DEBUG] ${name}: issued=${totalIssued}, returned=${totalReturned}, replaced=${totalReplaced}, notReturned=${notReturned}`);
@@ -864,36 +861,43 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           isCollected={isCollected} // optionally pass as prop
         />
       ),
-      quantity: (
-        <div className="flex items-center justify-center space-x-2">
-          <button
-            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => handleDecrementQuantity(component.id)}
-            disabled={component.quantity <= 0 || !component.name || isCollected}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <input
-            type="text"
-            className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            min="0"
-            max={maxStock}
-            value={component.quantity}
-            onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-            disabled={isCollected || !component.name}
-          />
-          <button
-            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => handleIncrementQuantity(component.id)}
-            disabled={component.quantity >= maxStock || !component.name || isCollected}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <span className="text-xs text-gray-500 ml-1">
-            Available: {component.name ? maxStock : 'N/A'}
-          </span>
-        </div>
-      ),
+ quantity: (
+  <div className="flex items-center justify-center space-x-2">
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      onClick={() => handleDecrementQuantity(component.id)}
+      disabled={component.quantity <= 0 || !component.name || isCollected}
+    >
+      <Minus className="w-4 h-4" />
+    </button>
+    <input
+      type="text"
+      className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      min="0"
+      max={maxStock}
+      value={component.quantity}
+      onChange={(e) => handleQuantityChange(component.id, e.target.value)}
+      disabled={isCollected || !component.name}
+    />
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      onClick={() => handleIncrementQuantity(component.id)}
+      disabled={component.quantity >= maxStock || !component.name || isCollected}
+    >
+      <Plus className="w-4 h-4" />
+    </button>
+    <span className="text-xs text-gray-500 ml-1">
+      Available: {component.name ? maxStock : 'N/A'}
+    </span>
+    {/* Show warning if issued < requested */}
+    {(() => {
+      const userRequested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
+      return component.quantity < userRequested ? (
+        <AlertTriangle className="w-4 h-4 text-yellow-500 ml-2" title="Issued quantity is less than requested!" />
+      ) : null;
+    })()}
+  </div>
+),
       actions: (
         <button
           className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition duration-150"
@@ -1112,35 +1116,39 @@ const ComponentDropdown = ({ id, selectedValue }) => {
   </div>
                         </div>
                       </div>
-                      <Table
-                        columns={[
-                          { key: 'name', label: 'Component Name' },
-                          { key: 'quantity', label: 'Quantity' }
-                        ]}
-                        rows={adminIssueComponents
-                          .filter(({ quantity }) => quantity > 0)
-                          .map(({ name, quantity, id }) => {
-                            // Find the issued item to get replaced count
-                            const issuedItem = requestData.issued?.find(i => i.issuedProductId?._id === id);
-                            const replaced = issuedItem
-                              ? (issuedItem.return || []).reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
-                              : 0;
-                            return {
-                              name,
-                              quantity: (
-                                <span>
-                                  {quantity}
-                                  {replaced > 0 && (
-                                    <span className="text-xs text-gray-500"> + {replaced}</span>
-                                  )}
-                                </span>
-                              )
-                            };
-                          })
-                        }
-                        currentPage={1}
-                        itemsPerPage={10}
-                      />
+<Table
+  columns={[
+    { key: 'name', label: 'Component Name' },
+    { key: 'quantity', label: 'Quantity' }
+  ]}
+  rows={adminIssueComponents
+    .filter(({ quantity }) => quantity > 0)
+    .map(({ name, quantity, id }) => {
+      // Calculate replaced count from returnedComponents
+      const replaced = requestData.returnedComponents
+        ? requestData.returnedComponents
+            .filter(ret => ret.issuedProductId === id)
+            .reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+        : 0;
+      // DEBUG LOG
+      console.log(`[DEBUG] AdminIssuedTable: name=${name}, issued=${quantity}, replaced=${replaced}`);
+
+      return {
+        name,
+        quantity: (
+          <span>
+            {quantity}
+            {replaced > 0 && (
+              <span className="text-xs text-gray-500"> + {replaced}</span>
+            )}
+          </span>
+        )
+      };
+    })
+  }
+  currentPage={1}
+  itemsPerPage={10}
+/>
                     </div>
                   </div>
                 </div>
