@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo} from 'lucide-react';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo , HelpCircle} from 'lucide-react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
@@ -67,6 +67,8 @@ useEffect(() => {
         issueDate: data.collectedDate || null,
         allReturnedDate: data.AllReturnedDate || null,
         scheduledCollectionDate: data.scheduledCollectionDate,
+        requestedDays: data.requestedDays || 0,
+        adminApprovedDays: data.adminApprovedDays || 0,
         status: data.requestStatus.toLowerCase(), // Ensure status is in lowercase
         referenceStaff: {
           name: data.referenceId.name,
@@ -437,32 +439,45 @@ useEffect(() => {
                 <span className="text-gray-700 font-medium">Allocated:</span>
                 <span className="font-semibold">{requestData.adminApprovedDays || requestData.requestedDays || "N/A"} Days</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
-                <span className="text-gray-700 font-medium">Return Date:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const days = Number(requestData.adminApprovedDays || requestData.requestedDays);
-                    if (!days || !requestData.requestedDate) return "N/A";
-                    const start = new Date(requestData.requestedDate);
-                    start.setDate(start.getDate() + days);
-                    return start.toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                  })()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-600" />
-                <span className="text-gray-700 font-medium">Time Left:</span>
-                <span className="font-semibold">
-                  {getDaysLeft(requestData.adminApprovedDays, requestData.requestedDate)}
-                </span>
-              </div>
+              {requestData.issueDate ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-5 h-5 text-indigo-600" />
+                    <span className="text-gray-700 font-medium">Return Date:</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const days = Number(requestData.adminApprovedDays || requestData.requestedDays);
+                        if (!days || !requestData.issueDate) return "N/A";
+                        const start = new Date(requestData.issueDate);
+                        start.setDate(start.getDate() + days);
+                        const pad = n => n.toString().padStart(2, '0');
+                        return `${pad(start.getDate())}/${pad(start.getMonth() + 1)}/${start.getFullYear()} ${pad(start.getHours())}:${pad(start.getMinutes())}`;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-green-600" />
+                    <span className="text-gray-700 font-medium">Time Left:</span>
+                    <span className="font-semibold">
+                      {getDaysLeft(requestData.adminApprovedDays, requestData.issueDate)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-indigo-600" />
+                  <span className="text-gray-700 font-medium">Scheduled Collection Date:</span>
+<span className="font-semibold flex items-center relative group">
+  {requestData.scheduledCollectionDate || "-"}
+  <span className="ml-2 cursor-pointer relative flex items-center">
+    <HelpCircle className="w-4 h-4 text-blue-500 inline" />
+    <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+      Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
+    </span>
+  </span>
+</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -900,19 +915,22 @@ useEffect(() => {
         </div>
         {/* Scheduled Collection Date and Failure Message */}
         <div className="text-center py-8">
-          <div className="mb-4">
-            <span className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
-              <CalendarDays className="w-5 h-5 mr-2" />
-              Scheduled Collection Date:&nbsp;
-              {requestData.scheduledCollectionDate
-                ? (() => {
-                    const d = new Date(requestData.scheduledCollectionDate);
-                    const pad = n => n.toString().padStart(2, '0');
-                    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                  })()
-                : '-'}
-            </span>
-          </div>
+<div className="mb-4">
+  <span className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
+    <CalendarDays className="w-5 h-5 mr-2" />
+    Scheduled Collection Date:&nbsp;
+    {requestData.scheduledCollectionDate
+      ? requestData.scheduledCollectionDate
+      : '-'}
+    <span
+      className="ml-2 cursor-pointer"
+      title="Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically."
+    >
+      {/* Import HelpCircle from lucide-react at the top */}
+      <HelpCircle className="w-4 h-4 text-blue-500 inline" />
+    </span>
+  </span>
+</div>
           <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
           <p className="text-lg text-red-700 font-semibold">
             Failed to collect components from scheduled date. 48 hrs crossed!
