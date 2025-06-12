@@ -63,8 +63,9 @@ useEffect(() => {
         email: data.userId.email,
         isFaculty: false, 
         requestedDate: data.requestDate,
-        requestedDays: data.requestedDays,
-        adminApprovedDays: data.adminApprovedDays,
+        acceptedDate: data.issuedDate || null,
+        issueDate: data.collectedDate || null,
+        allReturnedDate: data.AllReturnedDate || null,
         status: data.requestStatus.toLowerCase(), // Ensure status is in lowercase
         referenceStaff: {
           name: data.referenceId.name,
