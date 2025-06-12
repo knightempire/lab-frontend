@@ -29,6 +29,7 @@ const AdminRequestViewContent = () => {
 
   const [validationMessage, setValidationMessage] = useState('');
 
+
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
 const [issueError, setIssueError] = useState(""); // Add this state
@@ -41,6 +42,9 @@ const [collectedError, setCollectedError] = useState('');
 const [reissueAction, setReissueAction] = useState(null); // 'accept' or 'decline'
 const [reissueMessage, setReissueMessage] = useState('');
 const [isReissueSubmitting, setIsReissueSubmitting] = useState(false);
+const [showReissueDuration, setShowReissueDuration] = useState(true);
+const [showReissueActions, setShowReissueActions] = useState(true);
+const [reissueSummary, setReissueSummary] = useState(null);
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
@@ -421,7 +425,14 @@ const handleReIssueAction = async (action, message) => {
     });
     if (res.ok) {
       setShowSuccess(true);
-      fetchRequestData();
+       setReissueAction(null); // Hide the buttons
+      setReissueMessage('');
+      setShowReissueDuration(false); // Hide the re-issue duration input
+        setShowReissueActions(false);
+         setReissueSummary({
+    ...yourSummaryData,
+    resStatus: 200
+  });
     } else {
       const data = await res.json();
       setIssueError(data.message || 'Failed to process re-issue action.');
@@ -460,6 +471,20 @@ function getInitialReturnDate(collectedDate, adminApprovedDays) {
   const date = new Date(collectedDate);
   date.setDate(date.getDate() + Number(adminApprovedDays));
   return date.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+function getPreviousReturnDate(issueDate, adminApprovedDays) {
+  if (!issueDate || !adminApprovedDays) return null;
+  const date = new Date(issueDate);
+  date.setDate(date.getDate() + Number(adminApprovedDays));
+  return date;
+}
+function formatDateShort(dateObj) {
+  if (!dateObj) return "-";
+  return dateObj.toLocaleDateString("en-IN", {
     year: "numeric",
     month: "short",
     day: "numeric"
@@ -1691,47 +1716,63 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           currentPage={1}
           itemsPerPage={10}
         />
-<div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
-  <div className="flex items-center space-x-3">
-    <CalendarDays className="w-5 h-5 text-blue-600" />
-    <h4 className="font-medium text-blue-700">Issue Duration</h4>
-    <button
-      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
-      onClick={handleDecrementDays}
-      disabled={issuableDays <= 1}
-    >
-      <Minus className="w-4 h-4" />
-    </button>
-    <input
-      type="text"
-      className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      min="1"
-      max="30"
-      value={issuableDays}
-      onChange={(e) => handleIssuableDaysChange(e.target.value)}
-    />
-    <button
-      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
-      onClick={handleIncrementDays}
-      disabled={issuableDays >= 30}
-    >
-      <Plus className="w-4 h-4" />
-    </button>
-    <span className="text-sm font-medium">Days</span>
+{requestData.reIssueRequest.status === 'pending' && showReissueDuration && (
+  <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
+    <div className="flex items-center space-x-3">
+      <CalendarDays className="w-5 h-5 text-blue-600" />
+      <h4 className="font-medium text-blue-700">Issue Duration</h4>
+      <button
+        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+        onClick={handleDecrementDays}
+        disabled={issuableDays <= 1}
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+      <input
+        type="text"
+        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        min="1"
+        max="30"
+        value={issuableDays}
+        onChange={(e) => handleIssuableDaysChange(e.target.value)}
+      />
+      <button
+        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+        onClick={handleIncrementDays}
+        disabled={issuableDays >= 30}
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <span className="text-sm font-medium">Days</span>
+    </div>
   </div>
-</div>
+)}
     </div>
     )}
 
     {/* Accept/Decline Buttons */}
-{requestData.reIssueRequest.status === 'pending' && !reissueAction && (
+{requestData.reIssueRequest.status === 'pending' && showReissueActions && !reissueAction && (
   <div className="p-6 border-t border-gray-200 flex gap-4">
     <button
       className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-      onClick={() => {
-        setReissueAction('accept');
-        setReissueMessage('Your re-issue request has been approved.');
-      }}
+onClick={() => {
+  setReissueAction('accept');
+  setReissueMessage('Your re-issue request has been approved.');
+  // Get the previous return date (initial return date)
+  const prevReturnDateObj = getPreviousReturnDate(requestData.issueDate, requestData.adminApprovedDays);
+  let finalReturnDate = "-";
+  if (prevReturnDateObj) {
+    const newDate = new Date(prevReturnDateObj);
+    newDate.setDate(newDate.getDate() + Number(issuableDays));
+    finalReturnDate = formatDateShort(newDate);
+  }
+  setReissueSummary({
+    status: 'accepted',
+    days: issuableDays,
+    message: 'Your re-issue request has been approved.',
+    returnDate: finalReturnDate
+  });
+}}
     >
       <CheckCircle className="w-5 h-5 mr-2" />
       Accept Re-Issue
@@ -1741,11 +1782,76 @@ const ComponentDropdown = ({ id, selectedValue }) => {
       onClick={() => {
         setReissueAction('decline');
         setReissueMessage('Your re-issue request has been declined due to unavailability , Return components on original return date.');
+        setReissueSummary({
+          status: 'declined',
+          days: '-',
+          message: 'Your re-issue request has been declined due to unavailability , Return components on original return date.',
+          returnDate: getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
+        });
       }}
     >
       <XCircle className="w-5 h-5 mr-2" />
       Decline Re-Issue
     </button>
+  </div>
+)}
+
+
+{reissueSummary && reissueSummary.resStatus === 200 && (
+  <div
+    className={`mt-8 w-full rounded-2xl border shadow-lg px-0 py-0 overflow-hidden
+      ${reissueSummary.status === 'accepted'
+        ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-300'
+        : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-300'
+      }`}
+    style={{ maxWidth: "100%" }}
+  >
+    {/* Header */}
+    <div className={`flex items-center gap-4 px-8 py-6 border-b ${reissueSummary.status === 'accepted' ? 'border-green-200' : 'border-red-200'} bg-white`}>
+      <div className={`flex items-center justify-center rounded-full h-16 w-16 shadow ${reissueSummary.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'}`}>
+        {reissueSummary.status === 'accepted' ? (
+          <CheckCircle className="w-10 h-10 text-green-600" />
+        ) : (
+          <XCircle className="w-10 h-10 text-red-600" />
+        )}
+      </div>
+      <div>
+        <div className={`text-2xl font-extrabold tracking-wide ${reissueSummary.status === 'accepted' ? 'text-green-700' : 'text-red-700'}`}>
+          Re-Issue {reissueSummary.status === 'accepted' ? 'Accepted' : 'Rejected'}
+        </div>
+        <div className="text-gray-500 text-sm mt-1">
+          {reissueSummary.status === 'accepted'
+            ? 'The re-issue request has been approved. See details below.'
+            : 'The re-issue request has been declined. See details below.'}
+        </div>
+      </div>
+    </div>
+    {/* Details */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <Repeat className="w-4 h-4 text-indigo-400" />
+          Re-Issue Days
+        </div>
+        <div className="font-bold text-2xl text-gray-900">{reissueSummary.days}</div>
+      </div>
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-blue-400" />
+          Return Date
+        </div>
+        <div className="font-bold text-2xl text-gray-900">{reissueSummary.returnDate}</div>
+      </div>
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-green-400" />
+          Admin Message
+        </div>
+        <div className="bg-white border border-gray-200 rounded-md px-4 py-3 text-gray-800 text-base w-full shadow-sm">
+          {reissueSummary.message}
+        </div>
+      </div>
+    </div>
   </div>
 )}
 
