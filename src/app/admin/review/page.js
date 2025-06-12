@@ -386,6 +386,50 @@ const handleSave = async () => {
   }
 };
 
+
+// Add this function inside your AdminRequestViewContent component
+
+const handleReIssueAction = async (action, message) => {
+  console.log('reIssueRequest:', requestData?.reIssueRequest);
+
+  const token = localStorage.getItem('token');
+  const reissueId = requestData.reIssueRequest?.reIssuedId; 
+
+  console.log(reissueId, "reissueId");
+  let url = '';
+  let payload = {
+    adminReturnMessage: message
+  };
+
+  if (action === 'accept') {
+    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/approve/${reissueId}`;
+    payload.adminApprovedDays = issuableDays;
+  } else if (action === 'decline') {
+    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/reject/${reissueId}`;
+  } else {
+    return;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      setShowSuccess(true);
+      fetchRequestData();
+    } else {
+      const data = await res.json();
+      setIssueError(data.message || 'Failed to process re-issue action.');
+    }
+  } catch (err) {
+    setIssueError('Network error.');
+  }
+};
   
 // Helper to get not returned components for re-issue
 function getNotReturnedComponents(issued, returned) {
@@ -1647,28 +1691,63 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           currentPage={1}
           itemsPerPage={10}
         />
-      </div>
+<div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
+  <div className="flex items-center space-x-3">
+    <CalendarDays className="w-5 h-5 text-blue-600" />
+    <h4 className="font-medium text-blue-700">Issue Duration</h4>
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+      onClick={handleDecrementDays}
+      disabled={issuableDays <= 1}
+    >
+      <Minus className="w-4 h-4" />
+    </button>
+    <input
+      type="text"
+      className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      min="1"
+      max="30"
+      value={issuableDays}
+      onChange={(e) => handleIssuableDaysChange(e.target.value)}
+    />
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+      onClick={handleIncrementDays}
+      disabled={issuableDays >= 30}
+    >
+      <Plus className="w-4 h-4" />
+    </button>
+    <span className="text-sm font-medium">Days</span>
+  </div>
+</div>
+    </div>
     )}
 
     {/* Accept/Decline Buttons */}
-    {requestData.reIssueRequest.status === 'pending' && !reissueAction && (
-      <div className="p-6 border-t border-gray-200 flex gap-4">
-        <button
-          className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-          onClick={() => setReissueAction('accept')}
-        >
-          <CheckCircle className="w-5 h-5 mr-2" />
-          Accept Re-Issue
-        </button>
-        <button
-          className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-          onClick={() => setReissueAction('decline')}
-        >
-          <XCircle className="w-5 h-5 mr-2" />
-          Decline Re-Issue
-        </button>
-      </div>
-    )}
+{requestData.reIssueRequest.status === 'pending' && !reissueAction && (
+  <div className="p-6 border-t border-gray-200 flex gap-4">
+    <button
+      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+      onClick={() => {
+        setReissueAction('accept');
+        setReissueMessage('Your re-issue request has been approved.');
+      }}
+    >
+      <CheckCircle className="w-5 h-5 mr-2" />
+      Accept Re-Issue
+    </button>
+    <button
+      className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+      onClick={() => {
+        setReissueAction('decline');
+        setReissueMessage('Your re-issue request has been declined due to unavailability , Return components on original return date.');
+      }}
+    >
+      <XCircle className="w-5 h-5 mr-2" />
+      Decline Re-Issue
+    </button>
+  </div>
+)}
 
     {/* Confirmation Card - Styled like Take Action */}
     {requestData.reIssueRequest.status === 'pending' && reissueAction && (
