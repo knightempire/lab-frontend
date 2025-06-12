@@ -111,19 +111,25 @@ export default function RequestsPage() {
     const allReIssued = reIssuedData?.reIssued || [];
 
     if (response.ok && data?.requests) {
-      const filtered = data.requests.filter(req => {
-        const status = req.requestStatus?.toLowerCase();
-        // Show pending, or approved with pending re-issue
-        if (status === 'pending') return true;
-        if (status === 'approved') {
-          // Check if there is a pending re-issue for this request
-          const hasPendingReissue = allReIssued.some(
-            r => r.requestId === req.requestId && r.status === 'pending'
-          );
-          return hasPendingReissue;
-        }
-        return false;
-      });
+const filtered = data.requests.filter(req => {
+  const status = req.requestStatus?.toLowerCase();
+
+  // Show pending
+  if (status === 'pending') return true;
+
+  // Show approved with pending re-issue
+  if (status === 'approved') {
+    const hasPendingReissue = allReIssued.some(
+      r => r.requestId === req.requestId && r.status === 'pending'
+    );
+    // Show if pending re-issue OR if not yet collected
+  const notCollected = !req.collectedDate;
+
+  if (hasPendingReissue || notCollected) return true;
+  }
+
+  return false;
+});
 
       const transformedRequests = filtered.map((req, index) => {
         // Find pending re-issue for this request (if any)
@@ -149,6 +155,7 @@ export default function RequestsPage() {
           requestedDays: req.requestedDays,
           status,
           statusText,
+          collectedDate: req.collectedDate || null,
           isExtended: false,
           referenceStaff: {
             name: req.referenceId?.name || 'N/A',
