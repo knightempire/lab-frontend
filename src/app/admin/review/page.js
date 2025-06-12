@@ -143,14 +143,33 @@ verifyadmin();
     const data = apiResponse.request; 
 
     // If returned/closed/collected, redirect
-    // if (
-    //   data.requestStatus === 'returned' ||
-    //   data.requestStatus === 'closed' ||
-    //   (data.requestStatus === 'approved' && data.collectedDate)
-    // ) {
-    //   router.push('/admin/request');
-    //   return;
-    // }
+if (
+  data.requestStatus === 'returned' ||
+  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' ||
+  (
+    data.requestStatus === 'approved' &&
+    data.collectedDate &&
+    // Only redirect if there is NO pending re-issue request
+    !(
+      Array.isArray(data.reIssued) &&
+      data.reIssued.length > 0 &&
+      // Check if latest re-issue is pending
+      (() => {
+        const lastReissueId = data.reIssued[data.reIssued.length - 1];
+        return lastReissueId && data.reIssuedStatus === 'pending';
+      })()
+    )
+  ) ||
+  (
+    // If re-issue exists and is rejected, redirect
+    Array.isArray(data.reIssued) &&
+    data.reIssued.length > 0 &&
+    data.reIssuedStatus === 'rejected'
+  )
+) {
+  router.push('/admin/request');
+  return;
+}
 
     // --- Check for re-issue ---
     let isExtended = false;
