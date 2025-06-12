@@ -28,16 +28,13 @@ function UserReviewContent() {
 
 useEffect(() => {
   const requestId = searchParams.get('requestId');
-  console.log('requestId:', requestId);
-
   const fetchRequestData = async () => {
     try {
-      const token = localStorage.getItem('token'); 
+      const token = localStorage.getItem('token');
       if (!token) {
-        console.error('No token found in localStorage');
-        router.push('/auth/login'); 
+        router.push('/auth/login');
         return;
-      } 
+      }
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
         method: 'GET',
         headers: {
@@ -47,21 +44,22 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        localStorage.removeItem('token'); 
+        localStorage.removeItem('token');
         router.push('/auth/login');
         return;
       }
 
       const apiResponse = await response.json();
-      const data = apiResponse.request; 
+      const data = apiResponse.request;
 
+      // Prepare mappedData as before
       const mappedData = {
         requestId: data.requestId,
         name: data.userId.name,
         rollNo: data.userId.rollNo,
-        phoneNo: data.userId.phoneNo, 
+        phoneNo: data.userId.phoneNo,
         email: data.userId.email,
-        isFaculty: false, 
+        isFaculty: false,
         requestedDate: data.requestDate,
         acceptedDate: data.issuedDate || null,
         issueDate: data.collectedDate || null,
@@ -69,7 +67,7 @@ useEffect(() => {
         scheduledCollectionDate: data.scheduledCollectionDate,
         requestedDays: data.requestedDays || 0,
         adminApprovedDays: data.adminApprovedDays || 0,
-        status: data.requestStatus.toLowerCase(), // Ensure status is in lowercase
+        status: data.requestStatus.toLowerCase(),
         referenceStaff: {
           name: data.referenceId.name,
           email: data.referenceId.email,
@@ -77,16 +75,16 @@ useEffect(() => {
         userMessage: data.description,
         adminMessage: data.adminReturnMessage || "",
         components: data.requestedProducts.map(product => ({
-          name: product.productId.product_name, 
+          name: product.productId.product_name,
           quantity: product.quantity,
         })),
-  adminIssueComponents: data.issued.map(issued => ({
-    name: issued.issuedProductId.product_name,
-    quantity: issued.issuedQuantity,
-    replacedQuantity: issued.return
-      ? issued.return.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
-      : 0,
-  })),
+        adminIssueComponents: data.issued.map(issued => ({
+          name: issued.issuedProductId.product_name,
+          quantity: issued.issuedQuantity,
+          replacedQuantity: issued.return
+            ? issued.return.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+            : 0,
+        })),
         returnedComponents: data.issued
           ? data.issued.flatMap(issued =>
               (issued.return || []).map(ret => ({
@@ -100,13 +98,37 @@ useEffect(() => {
               }))
             )
           : [],
-        reIssueRequest: null, 
+        reIssueRequest: null,
       };
 
-      console.log('Mapped request data:', mappedData); // Debugging line
+      // If reIssued exists and has at least one value, fetch its details
+      if (Array.isArray(data.reIssued) && data.reIssued.length > 0 && data.reIssued[0]) {
+        const reIssuedId = data.reIssued[0];
+        const reissueRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (reissueRes.ok) {
+          const reissueData = await reissueRes.json();
+          const reIssued = reissueData.reIssued;
+          mappedData.reIssueRequest = {
+            status: reIssued.status,
+            userExtensionMessage: reIssued.requestDescription,
+            adminExtensionMessage: reIssued.adminReturnMessage || "",
+            extensionDays: reIssued.requestedDays,
+            adminIssueComponents: [], // You can fill this if your API provides
+          };
+        }
+      }
+
       setRequestData(mappedData);
     } catch (error) {
-      console.error('Error fetching request data:', error);
       router.push('/user/request');
     }
   };
@@ -319,6 +341,54 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
     return now >= halfway;
   }
 
+  // Add this function inside UserReviewContent
+async function handleExtensionRequestSubmit(e) {
+  e.preventDefault();
+
+  const token = localStorage.getItem('token');
+  const requestId = searchParams.get('requestId');
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/add/${requestId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requestedDays: extensionDays,
+          requestDescription: extensionMessage
+        })
+      }
+    );
+
+    const data = await res.json(); 
+    console.log('Response data:', data); 
+
+    if (res.ok) { 
+      setRequestData(prev => ({
+        ...prev,
+        reIssueRequest: {
+          status: "pending",
+          userExtensionMessage: extensionMessage,
+          adminExtensionMessage: "",
+          extensionDays: extensionDays,
+          adminIssueComponents: []
+        }
+      }));
+      setExtensionSent(true);
+    } else {
+      console.error('Failed response:', data);
+    }
+
+  } catch (err) {
+    console.error('Error submitting extension request:', err);
+  }
+}
+
+
   return (
      <div className="bg-gray-50">
        <div className="mx-auto px-4 py-8">
@@ -504,13 +574,10 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
                   <span className="text-gray-700 font-medium">Scheduled Collection Date:</span>
 <span className="font-semibold flex items-center relative group">
   {requestData.scheduledCollectionDate || "-"}
-  <span className="ml-2 cursor-pointer relative flex items-center">
-    <HelpCircle className="w-4 h-4 text-blue-500 inline" />
-    <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+  <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
       Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
     </span>
   </span>
-</span>
                 </div>
               )}
             </div>
@@ -771,20 +838,7 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
                   </h3>
                 {/* Always display the extension request form/table */}
                 <form
-                  onSubmit={e => {
-                    e.preventDefault();
-                    setRequestData(prev => ({
-                      ...prev,
-                      reIssueRequest: {
-                        status: "pending",
-                        userExtensionMessage: extensionMessage,
-                        adminExtensionMessage: "",
-                        extensionDays: extensionDays,
-                        adminIssueComponents: []
-                      }
-                    }));
-                    setExtensionSent(true);
-                  }}
+                  onSubmit={handleExtensionRequestSubmit}
                   className="space-y-4"
                 >
                   <div>
