@@ -25,7 +25,6 @@ export default function ProductPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const itemsPerPage = 10;
   
-
 useEffect(() => {
   const verifyadmin = async () => {
     const token = localStorage.getItem('token');
@@ -110,7 +109,6 @@ const validateProduct = (product) => {
   const damagedQuantity = parseInt(product.damagedQuantity);
   const inStock = parseInt(product.inStock);
 
-
   if (isNaN(quantity) || quantity < 0) {
     errors.quantity = 'Quantity must be a non-negative number.';
   }
@@ -126,7 +124,6 @@ const validateProduct = (product) => {
   console.log('Validation errors:', errors);  
   return errors;
 };
-
 
 const addProduct = async () => {
   const errors = validateProduct(newProduct);
@@ -561,7 +558,6 @@ const rows = paginatedProducts.map((item, idx) => ({
     </div>
   </div>
 )}
-
 
   {showSuccessAlert && (
     <SuccessAlert
