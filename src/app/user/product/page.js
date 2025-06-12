@@ -241,7 +241,7 @@ useEffect(() => {
                       className={`
                         group
                         flex items-center justify-center gap-2 font-semibold uppercase
-                        px-10 w-full
+                        w-full
                       `}
                       style={{ minWidth: 160 }}
                       onClick={() => {
