@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 
 export default function ProductPage() {
     const router = useRouter();
-const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ product_name: '', quantity: '', damagedQuantity: '', inStock: '' });
   const [editIndex, setEditIndex] = useState(null);
@@ -19,16 +19,14 @@ const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [excelData, setExcelData] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-const [formErrors, setFormErrors] = useState({});
-const [successMessage, setSuccessMessage] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
   const itemsPerPage = 10;
   
 
 useEffect(() => {
-
   const verifyadmin = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -85,8 +83,6 @@ const fetchProducts = async () => {
     console.error('Error fetching products:', error);
   }
 };
-
-
 
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
@@ -190,11 +186,9 @@ const addProduct = async () => {
 
 const updateProduct = async (id) => {
   console.log('Updating product at index:', id);
-
-    console.log('newProduct:', newProduct);
+  console.log('newProduct:', newProduct);
   const errors = validateProduct(newProduct);
   console.log('Validation errors:', errors); 
-
 
   if (Object.keys(errors).length > 0) {
     setFormErrors(errors);
@@ -257,14 +251,11 @@ const updateProduct = async (id) => {
   }
 };
 
-
-
 const startEdit = (product, id) => {
   setEditIndex(id); // Now using _id
   setNewProduct({ ...product });
   setShowForm(true);
 };
-
 
   const cancelForm = () => resetForm();
   
@@ -275,7 +266,6 @@ const startEdit = (product, id) => {
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
   
-
   const columns = [
     { key: 'product_name', label: 'Name' },
     { key: 'quantity', label: 'Total Quantity' },
@@ -500,7 +490,7 @@ const rows = paginatedProducts.map((item, idx) => ({
         </div>
       )}
 
-      {/* Modal Form */}
+{/* Modal Form */}
 {showForm && (
   <div
     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
@@ -573,13 +563,13 @@ const rows = paginatedProducts.map((item, idx) => ({
 )}
 
 
-      {showSuccessAlert && (
-  <SuccessAlert
-    message="Done successfully :)"
-  description={successMessage}
-    onClose={() => setShowSuccessAlert(false)}
-  />
-)}
+  {showSuccessAlert && (
+    <SuccessAlert
+      message="Done successfully :)"
+    description={successMessage}
+      onClose={() => setShowSuccessAlert(false)}
+    />
+  )}
 
     </div>
   );
