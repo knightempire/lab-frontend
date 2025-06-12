@@ -219,19 +219,28 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
-      <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
-        <Repeat className="w-5 h-5 text-yellow-500" />
-        <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
-        <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-          reIssue.status === 'pending'
-            ? 'bg-yellow-100 text-yellow-800'
-            : reIssue.status === 'accepted' || reIssue.status === 'approved'
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
-        </span>
-      </div>
+
+                
+<div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
+  <Repeat className="w-5 h-5 text-yellow-500" />
+  <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+  <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
+    reIssue.status === 'pending'
+      ? 'bg-yellow-100 text-yellow-800'
+      : reIssue.status === 'accepted' || reIssue.status === 'approved'
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800'
+  }`}>
+    {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
+  </span>
+  {extensionSent && (
+    <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg ml-auto">
+      <CheckCircle className="w-5 h-5 mr-2" />
+      Extension request sent!
+    </div>
+  )}
+</div>
+      
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <div className="mb-4 flex items-center gap-2">
@@ -275,7 +284,11 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
             <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
           )}
         </div>
+        
       </div>
+
+                
+       
     </div>
   );
 }
@@ -832,13 +845,8 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
                     </button>
                   </div>
                 </form>
-                {/* Move the message OUTSIDE the form, so it always appears below the table/form */}
-                {extensionSent && (
-                  <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mt-4">
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Extension request sent!
-                  </div>
-                )}
+ 
+          
               </div>
             </div>
           )}
