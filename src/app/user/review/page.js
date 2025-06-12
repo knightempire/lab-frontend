@@ -66,6 +66,7 @@ useEffect(() => {
         acceptedDate: data.issuedDate || null,
         issueDate: data.collectedDate || null,
         allReturnedDate: data.AllReturnedDate || null,
+        scheduledCollectionDate: data.scheduledCollectionDate,
         status: data.requestStatus.toLowerCase(), // Ensure status is in lowercase
         referenceStaff: {
           name: data.referenceId.name,
@@ -837,6 +838,90 @@ useEffect(() => {
                 </div>
             </div>
             )}
+
+            {/* Closed - Failed to collect components */}
+            {requestData.status === 'closed' && (
+  <div className="space-y-8">
+    <div className="bg-white shadow rounded-lg">
+      <div className="p-6 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Requested Components Table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+              <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+              Requested Components
+            </h3>
+            {requestData.components && requestData.components.length > 0 ? (
+              <>
+                <Table
+                  columns={columns}
+                  rows={getPageRows(requestData.components, userPage)}
+                  currentPage={userPage}
+                  itemsPerPage={itemsPerPage}
+                />
+                {requestData.components.length > itemsPerPage && (
+                  <Pagination
+                    currentPage={userPage}
+                    totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                    setCurrentPage={setUserPage}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-gray-400 text-center py-6">No components found.</div>
+            )}
+          </div>
+          {/* Admin Issued Components Table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+              Admin Issued Components
+            </h3>
+            {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
+              <>
+                <Table
+                  columns={columns}
+                  rows={getPageRows(requestData.adminIssueComponents, adminPage)}
+                  currentPage={adminPage}
+                  itemsPerPage={itemsPerPage}
+                />
+                {requestData.adminIssueComponents.length > itemsPerPage && (
+                  <Pagination
+                    currentPage={adminPage}
+                    totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                    setCurrentPage={setAdminPage}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
+            )}
+          </div>
+        </div>
+        {/* Scheduled Collection Date and Failure Message */}
+        <div className="text-center py-8">
+          <div className="mb-4">
+            <span className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
+              <CalendarDays className="w-5 h-5 mr-2" />
+              Scheduled Collection Date:&nbsp;
+              {requestData.scheduledCollectionDate
+                ? (() => {
+                    const d = new Date(requestData.scheduledCollectionDate);
+                    const pad = n => n.toString().padStart(2, '0');
+                    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  })()
+                : '-'}
+            </span>
+          </div>
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-lg text-red-700 font-semibold">
+            Failed to collect components from scheduled date. 48 hrs crossed!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
           </div>
         </div>
       </div>
