@@ -29,6 +29,7 @@ const AdminRequestViewContent = () => {
 
   const [validationMessage, setValidationMessage] = useState('');
 
+
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
 const [issueError, setIssueError] = useState(""); // Add this state
@@ -36,6 +37,14 @@ const [issueError, setIssueError] = useState(""); // Add this state
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
 const [collectedError, setCollectedError] = useState('');
+
+
+const [reissueAction, setReissueAction] = useState(null); // 'accept' or 'decline'
+const [reissueMessage, setReissueMessage] = useState('');
+const [isReissueSubmitting, setIsReissueSubmitting] = useState(false);
+const [showReissueDuration, setShowReissueDuration] = useState(true);
+const [showReissueActions, setShowReissueActions] = useState(true);
+const [reissueSummary, setReissueSummary] = useState(null);
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
@@ -105,102 +114,156 @@ verifyadmin();
 
     const fetchRequestData = async () => {
       try {
+    const requestId = searchParams.get('requestId');
+    const token = localStorage.getItem('token'); 
+    if (!token) {
+      console.error('No token found in localStorage');
+      router.push('/auth/login'); 
+      return;
+    } 
+    if (!requestId) {
+      router.push('/admin/request');
+      return;
+    }
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-            const requestId = searchParams.get('requestId');
-    console.log('requestId:', requestId);
+    if (!response.ok) {
+      localStorage.removeItem('token'); 
+      router.push('/auth/login');
+      return;
+    }
 
-         const token = localStorage.getItem('token'); 
-        if (!token) {
-          console.error('No token found in localStorage');
-          router.push('/auth/login'); 
-          return;
-        } 
-        if (!requestId) {
-           router.push('/admin/request');
-        }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+    const apiResponse = await response.json();
+    const data = apiResponse.request; 
+
+    // If returned/closed/collected, redirect
+if (
+  data.requestStatus === 'returned' ||
+  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' ||
+  (
+    data.requestStatus === 'approved' &&
+    data.collectedDate &&
+    // Only redirect if there is NO pending re-issue request
+    !(
+      Array.isArray(data.reIssued) &&
+      data.reIssued.length > 0 &&
+      // Check if latest re-issue is pending
+      (() => {
+        const lastReissueId = data.reIssued[data.reIssued.length - 1];
+        return lastReissueId && data.reIssuedStatus === 'pending';
+      })()
+    )
+  ) ||
+  (
+    // If re-issue exists and is rejected, redirect
+    Array.isArray(data.reIssued) &&
+    data.reIssued.length > 0 &&
+    data.reIssuedStatus === 'rejected'
+  )
+) {
+  router.push('/admin/request');
+  return;
+}
+
+    // --- Check for re-issue ---
+    let isExtended = false;
+    let reIssueRequest = null;
+    if (Array.isArray(data.reIssued) && data.reIssued.length > 0) {
+      // Only check the latest re-issue (or loop if you want all)
+      const reIssuedId = data.reIssued[data.reIssued.length - 1];
+      const reissueRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`,
+        {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
-        });
-
-        if (!response.ok) {
-          localStorage.remove('token'); 
-          router.push('/auth/login');
         }
-
-        const apiResponse = await response.json();
-        const data = apiResponse.request; 
-              if (data.requestStatus === 'returned'|| data.requestStatus === 'closed'|| data.requestStatus === 'returned'|| (data.requestStatus === 'approved' && data.collectedDate)) {
-      router.push('/admin/request');
-      return;
+      );
+      if (reissueRes.ok) {
+        const reissueData = await reissueRes.json();
+        if (reissueData.reIssued && reissueData.reIssued.status === 'pending') {
+          isExtended = true;
+          reIssueRequest = {
+            ...reissueData.reIssued
+          };
+        }
+      }
     }
 
-        const mappedData = {
-          requestId: data.requestId,
-          name: data.userId.name,
-          rollNo: data.userId.rollNo,
-          phoneNo: data.userId.phoneNo, 
-          email: data.userId.email,
-          isFaculty: false, 
-          requestedDate: data.requestDate,
-          requestedDays: data.requestedDays,
-          adminApprovedDays: data.adminApprovedDays,
-          status: data.requestStatus,
-          referenceStaff: {
-            name: data.referenceId.name,
-            email: data.referenceId.email,
-          },
-          userMessage: data.description ,
-          
-          adminMessage: data.adminReturnMessage || "",
-          components: data.requestedProducts.map(product => ({
-            id: product.productId._id,
-          name: product.productId?.product_name || "Unknown Product",
-            quantity: product.quantity,
-          })),
-          adminIssueComponents: data.issued.map(issued => ({
-              id: issued.issuedProductId._id,
-            name: issued.issuedProductId.product_name,
-            quantity: issued.issuedQuantity,
-            replacedQuantity: 0, 
-          })),
-          returnedComponents: [], 
-          reIssueRequest: null, 
-
-        acceptedDate: data.issuedDate || null,      // <-- for "Accepted"
+    const mappedData = {
+      requestId: data.requestId,
+      name: data.userId.name,
+      rollNo: data.userId.rollNo,
+      phoneNo: data.userId.phoneNo, 
+      email: data.userId.email,
+      isFaculty: false, 
+      requestedDate: data.requestDate,
+      requestedDays: data.requestedDays,
+      adminApprovedDays: data.adminApprovedDays,
+      status: data.requestStatus,
+      referenceStaff: {
+        name: data.referenceId.name,
+        email: data.referenceId.email,
+      },
+      userMessage: data.description ,
+      adminMessage: data.adminReturnMessage || "",
+      components: data.requestedProducts.map(product => ({
+        id: product.productId._id,
+        name: product.productId?.product_name || "Unknown Product",
+        quantity: product.quantity,
+      })),
+      adminIssueComponents: data.issued.map(issued => ({
+        id: issued.issuedProductId._id,
+        name: issued.issuedProductId.product_name,
+        quantity: issued.issuedQuantity,
+      })),
+     returnedComponents: data.issued
+    .flatMap(issued => (issued.return || []).map(ret => ({
+      issuedProductId: issued.issuedProductId._id,
+      name: issued.issuedProductId.product_name,
+      returnedQuantity: ret.returnedQuantity,
+      replacedQuantity: ret.replacedQuantity,
+      damagedQuantity: ret.damagedQuantity,
+      returnDate: ret.returnDate,
+      _id: ret._id,
+    }))),
+      reIssueRequest, 
+      isExtended,
+      acceptedDate: data.issuedDate || null,
       issueDate: data.collectedDate || null,
-        };
-
-        setRequestData(mappedData);
-      setIssuableDays(
-  mappedData.adminApprovedDays && mappedData.adminApprovedDays > 0
-    ? mappedData.adminApprovedDays
-    : mappedData.requestedDays
-);
-        console.log('Request Data:', mappedData);
-        console.log('usermessage:', mappedData.userMessage);
-setAdminIssueComponents(() => {
-  const isIssuedEmpty = !mappedData.adminIssueComponents || mappedData.adminIssueComponents.length === 0;
-
-  return isIssuedEmpty
-    ? mappedData.components.map((c, idx) => ({
-        id: c.id || idx + 1, // Fallback ID if needed
-        name: c.name,
-        quantity: c.quantity,
-        description: c.description || ''
-      }))
-    : mappedData.adminIssueComponents;
-});
-
-      } catch (error) {
-        console.error('Error fetching request data:', error);
-        router.push('/admin/request');
-      }
+      // Optionally add originalRequestedDays, originalRequestDate, etc.
     };
 
+    setRequestData(mappedData);
+    setIssuableDays(
+      mappedData.adminApprovedDays && mappedData.adminApprovedDays > 0
+        ? mappedData.adminApprovedDays
+        : mappedData.requestedDays
+    );
+    setAdminIssueComponents(() => {
+      const isIssuedEmpty = !mappedData.adminIssueComponents || mappedData.adminIssueComponents.length === 0;
+      return isIssuedEmpty
+        ? mappedData.components.map((c, idx) => ({
+            id: c.id || idx + 1,
+            name: c.name,
+            quantity: c.quantity,
+            description: c.description || ''
+          }))
+        : mappedData.adminIssueComponents;
+    });
+  } catch (error) {
+    console.error('Error fetching request data:', error);
+    router.push('/admin/request');
+  }
+};
       const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -346,7 +409,109 @@ const handleSave = async () => {
   }
 };
 
+
+// Add this function inside your AdminRequestViewContent component
+
+const handleReIssueAction = async (action, message) => {
+  console.log('reIssueRequest:', requestData?.reIssueRequest);
+
+  const token = localStorage.getItem('token');
+  const reissueId = requestData.reIssueRequest?.reIssuedId; 
+
+  console.log(reissueId, "reissueId");
+  let url = '';
+  let payload = {
+    adminReturnMessage: message
+  };
+
+  if (action === 'accept') {
+    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/approve/${reissueId}`;
+    payload.adminApprovedDays = issuableDays;
+  } else if (action === 'decline') {
+    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/reject/${reissueId}`;
+  } else {
+    return;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      setShowSuccess(true);
+       setReissueAction(null); // Hide the buttons
+      setReissueMessage('');
+      setShowReissueDuration(false); // Hide the re-issue duration input
+        setShowReissueActions(false);
+         setReissueSummary({
+    ...yourSummaryData,
+    resStatus: 200
+  });
+    } else {
+      const data = await res.json();
+      setIssueError(data.message || 'Failed to process re-issue action.');
+    }
+  } catch (err) {
+    setIssueError('Network error.');
+  }
+};
   
+// Helper to get not returned components for re-issue
+function getNotReturnedComponents(issued, returned) {
+  console.log('Calculating not returned components...');
+  console.log('Issued components:', issued);
+  console.log('Returned components:', returned);
+  return issued.map(issuedItem => {
+    const totalIssued = issuedItem.quantity || issuedItem.issuedQuantity || 0;
+    const name = issuedItem.name || issuedItem.issuedProductId?.product_name;
+    // Sum returned and replaced from the flat returned array
+    const relatedReturns = (returned || []).filter(ret => ret.issuedProductId === issuedItem.id);
+    const totalReturned = relatedReturns.reduce((sum, ret) => sum + (ret.returnedQuantity || 0), 0);
+    const totalReplaced = relatedReturns.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0);
+    const notReturned = totalIssued - totalReturned + totalReplaced;
+    // Debug print
+    console.log(`[DEBUG] ${name}: issued=${totalIssued}, returned=${totalReturned}, replaced=${totalReplaced}, notReturned=${notReturned}`);
+    return {
+      name,
+      quantity: notReturned
+    };
+  }).filter(item => item.quantity > 0);
+}
+
+function getInitialReturnDate(collectedDate, adminApprovedDays) {
+  console.log('Collected Date:', collectedDate);
+  console.log('Admin Approved Days:', adminApprovedDays);
+  if (!collectedDate || !adminApprovedDays) return "-";
+  const date = new Date(collectedDate);
+  date.setDate(date.getDate() + Number(adminApprovedDays));
+  return date.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+function getPreviousReturnDate(issueDate, adminApprovedDays) {
+  if (!issueDate || !adminApprovedDays) return null;
+  const date = new Date(issueDate);
+  date.setDate(date.getDate() + Number(adminApprovedDays));
+  return date;
+}
+function formatDateShort(dateObj) {
+  if (!dateObj) return "-";
+  return dateObj.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+// 
+
   // --- Admin Issue Table Handlers ---
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
@@ -419,7 +584,7 @@ const handleSave = async () => {
     setSearchTerm(prev => ({ ...prev, [id]: value }));
   };
   const handleDeleteComponent = (id) => {
-    setAdminIssueComponents(adminIssueComponents.filter(component => component.id !== id));
+    setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
 const handleAddComponent = () => {
   if (isCollected) {
@@ -784,36 +949,43 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           isCollected={isCollected} // optionally pass as prop
         />
       ),
-      quantity: (
-        <div className="flex items-center justify-center space-x-2">
-          <button
-            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => handleDecrementQuantity(component.id)}
-            disabled={component.quantity <= 0 || !component.name || isCollected}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <input
-            type="text"
-            className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            min="0"
-            max={maxStock}
-            value={component.quantity}
-            onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-            disabled={isCollected || !component.name}
-          />
-          <button
-            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => handleIncrementQuantity(component.id)}
-            disabled={component.quantity >= maxStock || !component.name || isCollected}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <span className="text-xs text-gray-500 ml-1">
-            Available: {component.name ? maxStock : 'N/A'}
-          </span>
-        </div>
-      ),
+ quantity: (
+  <div className="flex items-center justify-center space-x-2">
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      onClick={() => handleDecrementQuantity(component.id)}
+      disabled={component.quantity <= 0 || !component.name || isCollected}
+    >
+      <Minus className="w-4 h-4" />
+    </button>
+    <input
+      type="text"
+      className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      min="0"
+      max={maxStock}
+      value={component.quantity}
+      onChange={(e) => handleQuantityChange(component.id, e.target.value)}
+      disabled={isCollected || !component.name}
+    />
+    <button
+      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      onClick={() => handleIncrementQuantity(component.id)}
+      disabled={component.quantity >= maxStock || !component.name || isCollected}
+    >
+      <Plus className="w-4 h-4" />
+    </button>
+    <span className="text-xs text-gray-500 ml-1">
+      Available: {component.name ? maxStock : 'N/A'}
+    </span>
+    {/* Show warning if issued < requested */}
+    {(() => {
+      const userRequested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
+      return component.quantity < userRequested ? (
+        <AlertTriangle className="w-4 h-4 text-yellow-500 ml-2" title="Issued quantity is less than requested!" />
+      ) : null;
+    })()}
+  </div>
+),
       actions: (
         <button
           className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition duration-150"
@@ -991,10 +1163,12 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                             <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
                             <h4 className="font-medium text-gray-700">Requested Days</h4>
                           </div>
-                          <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span>{requestData.originalRequestedDays || "N/A"} Days</span>
-                          </div>
+                          <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+    <div>
+      <Clock className="w-4 h-4 mr-1 inline" />
+      <span>{requestData.requestedDays || "N/A"} Days</span>
+    </div>
+  </div>
                         </div>
                       </div>
                       <Table
@@ -1022,120 +1196,53 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                             <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
                             <h4 className="font-medium text-gray-700">Issued Days</h4>
                           </div>
-                          <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span>{requestData.originalRequestedDays || "N/A"} Days</span>
-                          </div>
+                          <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+    <div>
+      <Clock className="w-4 h-4 mr-1 inline" />
+      <span>{requestData.adminApprovedDays || "N/A"} Days</span>
+    </div>
+  </div>
                         </div>
                       </div>
-                      <Table
-                        columns={[
-                          { key: 'name', label: 'Component Name' },
-                          { key: 'quantity', label: 'Quantity' }
-                        ]}
-                        rows={adminIssueComponents
-                          .filter(({ quantity }) => quantity > 0) 
-                          .map(({ name, quantity }) => ({ name, quantity }))
-                        }
-                        currentPage={1}
-                        itemsPerPage={10}
-                      />
+<Table
+  columns={[
+    { key: 'name', label: 'Component Name' },
+    { key: 'quantity', label: 'Quantity' }
+  ]}
+  rows={adminIssueComponents
+    .filter(({ quantity }) => quantity > 0)
+    .map(({ name, quantity, id }) => {
+      // Calculate replaced count from returnedComponents
+      const replaced = requestData.returnedComponents
+        ? requestData.returnedComponents
+            .filter(ret => ret.issuedProductId === id)
+            .reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+        : 0;
+      // DEBUG LOG
+      console.log(`[DEBUG] AdminIssuedTable: name=${name}, issued=${quantity}, replaced=${replaced}`);
+
+      return {
+        name,
+        quantity: (
+          <span>
+            {quantity}
+            {replaced > 0 && (
+              <span className="text-xs text-gray-500"> + {replaced}</span>
+            )}
+          </span>
+        )
+      };
+    })
+  }
+  currentPage={1}
+  itemsPerPage={10}
+/>
                     </div>
                   </div>
                 </div>
               </div>
     
-              {/* Dates and User Note */}
-              <div className="p-6 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                      <h4 className="font-medium text-gray-700">Original Request Date</h4>
-                    </div>
-                    <p className="text-gray-600">{formatDate(requestData.originalRequestDate || requestData.requestedDate)}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                      <h4 className="font-medium text-gray-700">First Approved Date</h4>
-                    </div>
-                    <p className="text-gray-600">{formatDate(requestData.originalApprovedDate)}</p>
-                  </div>
-                </div>
-                 {/* --- Admin Message from First Approval --- */}
-                  {requestData.originalAdminMessage && (
-                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
-                      <div className="flex items-center mb-2">
-                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                        <h4 className="font-medium text-green-700">Admin Message (First Approval)</h4>
-                      </div>
-                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
-                    </div>
-                  )}
-                <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-gray-700">User Note / Reason</h4>
-                  </div>
-                  <p className="text-gray-600">{requestData.userMessage  || "No description provided."}</p>
-                </div>
-              </div>
-
-              {/* Re-Issue Request Components Table (Read-only) */}
-              <div className="p-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
-                  <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
-                  Re-Issue Request Components
-                </h3>
-                <Table
-                  columns={reissueColumns}
-                  rows={reissueRows}
-                  currentPage={1}
-                  itemsPerPage={10}
-                />
-              </div>
-              {/* Issuable Days (Below Re-Issue Table) */}
-              <div className="p-6 border-t border-blue-100">
-                <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <div className="flex items-center mb-2">
-                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-blue-700">Issuable Days</h4>
-                  </div>
-                  <div className="flex items-center mt-2 gap-4">
-                    <span className="text-gray-600">Requested:</span>
-                    <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
-                  </div>
-                  <div className="flex items-center mt-3">
-                    <span className="text-gray-600 w-32">Issue Duration:</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={handleDecrementDays}
-                        disabled={issuableDays <= 0 || isCollected}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <input
-                        type="text"
-                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        min="0"
-                        max="30"
-                        value={issuableDays}
-                        onChange={(e) => handleIssuableDaysChange(e.target.value)}
-                      />
-                      <button
-                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={handleIncrementDays}
-                        disabled={issuableDays >= 30 || isCollected}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm font-medium">Days</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  
             </>
           ) : (
             <>
@@ -1171,10 +1278,12 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                         <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
                         <h4 className="font-medium text-gray-700">Requested Days</h4>
                       </div>
-                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                        <Clock className="w-4 h-4 mr-1" />
-                        <span>{requestData.requestedDays || "7"} Days</span>
-                      </div>
+                      <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+    <div>
+      <Clock className="w-4 h-4 mr-1 inline" />
+      <span>{requestData.requestedDays || "N/A"} Days</span>
+    </div>
+  </div>
                     </div>
                   </div>
                 </div>
@@ -1197,7 +1306,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    Admin Issue Components
+                    Admin Issued Components
                   </h3>
                   <div className="flex gap-2">
                     <button
@@ -1302,7 +1411,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           )}
 
           {/* --- Take Action Section --- */}
-          {isAccepted && requestData.CollectedDate == null ? (
+          {isAccepted && requestData.CollectedDate == null && !isReIssue ? (
   <div className="p-6 border-t border-gray-200 flex flex-col items-start">
     <div className="flex items-center mb-4">
       <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
@@ -1315,7 +1424,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
     {/* Only show the button if not in confirmation mode */}
     {action !== 'issued' ? (
       <button
-        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
         onClick={() => setAction('issued')}
       >
         <CheckCircle className="w-5 h-5 mr-2" />
@@ -1563,6 +1672,274 @@ const ComponentDropdown = ({ id, selectedValue }) => {
             </div>
           </div>
         )}
+
+        {isReIssue && requestData.reIssueRequest && (
+  <>
+    {/* --- Existing Re-Issue UI --- */}
+
+    {/* Show both original and re-issue descriptions */}
+    <div className="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center mb-2">
+          <FileText className="w-5 h-5 mr-2 text-blue-600" />
+          <h4 className="font-medium text-blue-700">Original Request Description</h4>
+        </div>
+        <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
+        {/* Show admin return message if present */}
+        {requestData.adminMessage && (
+          <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+              <h4 className="font-medium text-green-700">Admin Return Message</h4>
+            </div>
+            <p className="text-gray-700">{requestData.adminMessage}</p>
+          </div>
+        )}
+      </div>
+      <div className="bg-yellow-50 p-4 rounded-lg">
+        <div className="flex items-center mb-2">
+          <Repeat className="w-5 h-5 mr-2 text-yellow-600" />
+          <h4 className="font-medium text-yellow-700">Re-Issue User Note</h4>
+        </div>
+        <p className="text-gray-700">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
+<div className="mt-4 flex flex-col gap-2">
+  <div className="flex items-center gap-2">
+    <CalendarDays className="w-4 h-4 text-blue-600" />
+    <span className="text-gray-600">Requested Days:</span>
+    <span className="font-semibold text-gray-800">{requestData.reIssueRequest.requestedDays}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <Clock className="w-4 h-4 text-indigo-600" />
+    <span className="text-gray-600">Initial Return Date:</span>
+    <span className="font-semibold text-gray-800">
+      {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
+    </span>
+  </div>
+</div>
+      </div>
+    </div>
+
+    {/* Show Not Returned Components Table ONLY if re-issue is pending */}
+    {requestData.reIssueRequest.status === 'pending' && (
+      <div className="p-6 border-t border-gray-200">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
+          <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+          Re-Issue Request Components (Not Returned)
+        </h3>
+        <Table
+          columns={[
+            { key: 'name', label: 'Component Name' },
+            { key: 'quantity', label: 'Not Returned' }
+          ]}
+       rows={getNotReturnedComponents(requestData.adminIssueComponents, requestData.returnedComponents)}   
+          currentPage={1}
+          itemsPerPage={10}
+        />
+{requestData.reIssueRequest.status === 'pending' && showReissueDuration && (
+  <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
+    <div className="flex items-center space-x-3">
+      <CalendarDays className="w-5 h-5 text-blue-600" />
+      <h4 className="font-medium text-blue-700">Issue Duration</h4>
+      <button
+        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+        onClick={handleDecrementDays}
+        disabled={issuableDays <= 1}
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+      <input
+        type="text"
+        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        min="1"
+        max="30"
+        value={issuableDays}
+        onChange={(e) => handleIssuableDaysChange(e.target.value)}
+      />
+      <button
+        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+        onClick={handleIncrementDays}
+        disabled={issuableDays >= 30}
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <span className="text-sm font-medium">Days</span>
+    </div>
+  </div>
+)}
+    </div>
+    )}
+
+    {/* Accept/Decline Buttons */}
+{requestData.reIssueRequest.status === 'pending' && showReissueActions && !reissueAction && (
+  <div className="p-6 border-t border-gray-200 flex gap-4">
+    <button
+      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+onClick={() => {
+  setReissueAction('accept');
+  setReissueMessage('Your re-issue request has been approved.');
+  // Get the previous return date (initial return date)
+  const prevReturnDateObj = getPreviousReturnDate(requestData.issueDate, requestData.adminApprovedDays);
+  let finalReturnDate = "-";
+  if (prevReturnDateObj) {
+    const newDate = new Date(prevReturnDateObj);
+    newDate.setDate(newDate.getDate() + Number(issuableDays));
+    finalReturnDate = formatDateShort(newDate);
+  }
+  setReissueSummary({
+    status: 'accepted',
+    days: issuableDays,
+    message: 'Your re-issue request has been approved.',
+    returnDate: finalReturnDate
+  });
+}}
+    >
+      <CheckCircle className="w-5 h-5 mr-2" />
+      Accept Re-Issue
+    </button>
+    <button
+      className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+      onClick={() => {
+        setReissueAction('decline');
+        setReissueMessage('Your re-issue request has been declined due to unavailability , Return components on original return date.');
+        setReissueSummary({
+          status: 'declined',
+          days: '-',
+          message: 'Your re-issue request has been declined due to unavailability , Return components on original return date.',
+          returnDate: getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
+        });
+      }}
+    >
+      <XCircle className="w-5 h-5 mr-2" />
+      Decline Re-Issue
+    </button>
+  </div>
+)}
+
+
+{reissueSummary && reissueSummary.resStatus === 200 && (
+  <div
+    className={`mt-8 w-full rounded-2xl border shadow-lg px-0 py-0 overflow-hidden
+      ${reissueSummary.status === 'accepted'
+        ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-300'
+        : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-300'
+      }`}
+    style={{ maxWidth: "100%" }}
+  >
+    {/* Header */}
+    <div className={`flex items-center gap-4 px-8 py-6 border-b ${reissueSummary.status === 'accepted' ? 'border-green-200' : 'border-red-200'} bg-white`}>
+      <div className={`flex items-center justify-center rounded-full h-16 w-16 shadow ${reissueSummary.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'}`}>
+        {reissueSummary.status === 'accepted' ? (
+          <CheckCircle className="w-10 h-10 text-green-600" />
+        ) : (
+          <XCircle className="w-10 h-10 text-red-600" />
+        )}
+      </div>
+      <div>
+        <div className={`text-2xl font-extrabold tracking-wide ${reissueSummary.status === 'accepted' ? 'text-green-700' : 'text-red-700'}`}>
+          Re-Issue {reissueSummary.status === 'accepted' ? 'Accepted' : 'Rejected'}
+        </div>
+        <div className="text-gray-500 text-sm mt-1">
+          {reissueSummary.status === 'accepted'
+            ? 'The re-issue request has been approved. See details below.'
+            : 'The re-issue request has been declined. See details below.'}
+        </div>
+      </div>
+    </div>
+    {/* Details */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <Repeat className="w-4 h-4 text-indigo-400" />
+          Re-Issue Days
+        </div>
+        <div className="font-bold text-2xl text-gray-900">{reissueSummary.days}</div>
+      </div>
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-blue-400" />
+          Return Date
+        </div>
+        <div className="font-bold text-2xl text-gray-900">{reissueSummary.returnDate}</div>
+      </div>
+      <div className="flex flex-col items-center md:items-start px-8 py-7">
+        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-green-400" />
+          Admin Message
+        </div>
+        <div className="bg-white border border-gray-200 rounded-md px-4 py-3 text-gray-800 text-base w-full shadow-sm">
+          {reissueSummary.message}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+    {/* Confirmation Card - Styled like Take Action */}
+    {requestData.reIssueRequest.status === 'pending' && reissueAction && (
+      <div className="bg-blue-50 rounded-lg p-6 border border-blue-100 mt-4">
+        <div className="mb-4 flex items-center">
+          <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
+            reissueAction === 'accept' ? 'bg-green-100 text-green-600'
+            : 'bg-red-100 text-red-600'
+          }`}>
+            {reissueAction === 'accept'
+              ? <CheckCircle className="w-6 h-6" />
+              : <XCircle className="w-6 h-6" />}
+          </div>
+          <h4 className="text-lg font-medium">
+            You are about to {reissueAction === 'accept' ? 'accept' : 'decline'} this re-issue request
+          </h4>
+        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {reissueAction === 'accept' ? 'Approval Message' : 'Decline Reason'}
+        </label>
+        <textarea
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
+          rows={3}
+          placeholder={reissueAction === 'accept'
+            ? 'Enter approval message for the requester...'
+            : 'Enter reason for declining the re-issue...'}
+          value={reissueMessage}
+          onChange={e => setReissueMessage(e.target.value)}
+        />
+        <div className="flex space-x-4">
+          <button
+            className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+              reissueAction === 'accept'
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-red-600 hover:bg-red-700'
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+            disabled={isReissueSubmitting}
+            onClick={async () => {
+              setIsReissueSubmitting(true);
+              await handleReIssueAction(reissueAction, reissueMessage);
+              setIsReissueSubmitting(false);
+              setReissueAction(null);
+              setReissueMessage('');
+            }}
+          >
+            {isReissueSubmitting ? 'Processing...' : (
+              reissueAction === 'accept'
+                ? 'Confirm & Accept'
+                : 'Confirm & Decline'
+            )}
+          </button>
+          <button
+            className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            onClick={() => {
+              setReissueAction(null);
+              setReissueMessage('');
+            }}
+            disabled={isReissueSubmitting}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+  </>
+)}
+
 
         </div>
       </div>
