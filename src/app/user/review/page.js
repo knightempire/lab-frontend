@@ -80,11 +80,13 @@ useEffect(() => {
           name: product.productId.product_name, 
           quantity: product.quantity,
         })),
-        adminIssueComponents: data.issued.map(issued => ({
-          name: issued.issuedProductId.product_name, 
-          quantity: issued.issuedQuantity,
-          replacedQuantity: 0, 
-        })),
+  adminIssueComponents: data.issued.map(issued => ({
+    name: issued.issuedProductId.product_name,
+    quantity: issued.issuedQuantity,
+    replacedQuantity: issued.return
+      ? issued.return.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+      : 0,
+  })),
         returnedComponents: data.issued
           ? data.issued.flatMap(issued =>
               (issued.return || []).map(ret => ({
@@ -115,6 +117,13 @@ useEffect(() => {
     router.push('/user/request');
   }
 }, [searchParams, router]);
+
+useEffect(() => {
+  if (extensionSent) {
+    const timer = setTimeout(() => setExtensionSent(false), 3000);
+    return () => clearTimeout(timer);
+  }
+}, [extensionSent]);
 
   if (!requestData) {
     return <LoadingScreen />;
@@ -193,84 +202,83 @@ useEffect(() => {
     return diff > 0 ? `${diff} Days` : "Expired";
   }
 
-  function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage ,   adminIssueComponents, returnedComponents }) {
-    const notReturned = adminIssueComponents.filter(adminItem =>
-      !returnedComponents.some(retItem => retItem.name === adminItem.name)
-    );
-    return (
-      <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
-        <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
-          <Repeat className="w-5 h-5 text-yellow-500" />
-          <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
-          <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-            reIssue.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-800'
-              : reIssue.status === 'accepted' || reIssue.status === 'approved'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
-          </span>
+function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage, adminIssueComponents, returnedComponents }) {
+  // Calculate not returned for each component
+  const notReturned = adminIssueComponents
+    .map(adminItem => {
+      const totalIssued = (adminItem.quantity || 0) + (adminItem.replacedQuantity || 0);
+      const totalReturned = returnedComponents
+        .filter(retItem => retItem.name === adminItem.name)
+        .reduce((sum, retItem) => sum + (retItem.quantity || 0), 0);
+      const notReturnedQty = totalIssued - totalReturned;
+      return notReturnedQty > 0
+        ? { ...adminItem, notReturnedQty }
+        : null;
+    })
+    .filter(Boolean);
+
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
+      <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
+        <Repeat className="w-5 h-5 text-yellow-500" />
+        <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+        <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
+          reIssue.status === 'pending'
+            ? 'bg-yellow-100 text-yellow-800'
+            : reIssue.status === 'accepted' || reIssue.status === 'approved'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
+        </span>
+      </div>
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="font-semibold text-green-700">Admin Message</span>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
+            {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
+          </div>
+          <div className="mb-2 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span className="font-semibold text-blue-700">User Note / Reason</span>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
+            {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-blue-600" />
+            <span className="font-medium text-gray-700">Requested Days:</span>
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+              {reIssue.extensionDays || "N/A"} Days
+            </span>
+          </div>
         </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-700">Admin Message</span>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
-              {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
-            </div>
-            <div className="mb-2 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="font-semibold text-blue-700">User Note / Reason</span>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
-              {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-700">Requested Days:</span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-                {reIssue.extensionDays || "N/A"} Days
-              </span>
-            </div>
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="font-semibold text-green-700">Re-Issued Components</span>
           </div>
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-700">Re-Issued Components</span>
-                {reIssue.status === 'accepted'|| reIssue.status === 'approved' && (
-                <span className="ml-auto flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm">
-                  <CalendarDays className="w-4 h-4" />
-                  {reIssue.adminApprovedDays || reIssue.extensionDays} Days
-                </span>
-              )}
-            </div>
-            {notReturned.length > 0 ? (
-              <>
-                <Table
-                  columns={columns}
-                  rows={getPageRows(notReturned, userPage)}
-                  currentPage={userPage}
-                  itemsPerPage={itemsPerPage}
-                />
-                {notReturned.length > itemsPerPage && (
-                  <Pagination
-                    currentPage={userPage}
-                    totalPages={Math.ceil(notReturned.length / itemsPerPage)}
-                    setCurrentPage={setUserPage}
-                  />
-                )}
-              </>
-            ) : (
-              <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
-            )}
-          </div>
+          {notReturned.length > 0 ? (
+            <Table
+              columns={[
+                { key: 'name', label: 'Component Name' },
+                { key: 'notReturnedQty', label: 'Not Returned', className: 'text-center' }
+              ]}
+              rows={getPageRows(notReturned, userPage)}
+              currentPage={userPage}
+              itemsPerPage={itemsPerPage}
+            />
+          ) : (
+            <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const toggleRowExpansion = (itemId) => {
     setExpandedRows(prev => {
@@ -283,6 +291,20 @@ useEffect(() => {
       return newSet;
     });
   };
+
+  // Add this helper function inside UserReviewContent
+  function canShowExtension(issueDate, adminApprovedDays) {
+    if (!issueDate || !adminApprovedDays) return false;
+    const start = new Date(issueDate);
+    const halfDays = Math.floor(Number(adminApprovedDays) / 2);
+    const halfway = new Date(start);
+    halfway.setDate(start.getDate() + halfDays);
+    const now = new Date();
+    // Remove time part for comparison
+    halfway.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    return now >= halfway;
+  }
 
   return (
      <div className="bg-gray-50">
@@ -533,22 +555,26 @@ useEffect(() => {
                     <>
                       <Table
                         columns={columns}
-                        rows={getPageRows(requestData.adminIssueComponents, adminPage)}
+                        rows={getPageRows(
+                          requestData.adminIssueComponents.map(component => {
+                            // Calculate replaced quantity if available
+                            const replaced = component.replacedQuantity || 0;
+                            return {
+                              ...component,
+                              quantity: (
+                                <span>
+                                  {component.quantity}
+                                  {replaced > 0 && (
+                                    <span className="font-semibold text-orange-600">{" + " + replaced}</span>
+                                  )}
+                                </span>
+                              ),
+                            };
+                          }),
+                          adminPage
+                        )}
                         currentPage={adminPage}
                         itemsPerPage={itemsPerPage}
-                        renderCell={(key, row) => {
-                        if (key === 'quantity' && row.replacedQuantity && row.replacedQuantity > 0) {
-                          return (
-                            <span>
-                              {row.quantity}
-                              <span className="font-semibold text-orange-600">
-                                {" + " + row.replacedQuantity}
-                              </span>
-                            </span>
-                          );
-                        }
-                        return row[key];
-                      }}
                       />
                       {requestData.adminIssueComponents.length > itemsPerPage && (
                         <Pagination
@@ -688,30 +714,27 @@ useEffect(() => {
                     )}
                   </div>
                 {/* Re-Issue Details: show in addition if extended */}
-                  {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned') && requestData.reIssueRequest && requestData.adminIssueComponents &&
-                    requestData.adminIssueComponents.length > requestData.returnedComponents.length && requestData.reIssueRequest &&
-                  (
-                    requestData.reIssueRequest.userExtensionMessage?.trim() ||
-                    requestData.reIssueRequest.extensionDays
-                  ) ? (
-                    <ReIssueDetails
-                      reIssue={requestData.reIssueRequest}
-                      columns={columns}
-                      getPageRows={getPageRows}
-                      userPage={userPage}
-                      setUserPage={setUserPage}
-                      itemsPerPage={itemsPerPage}
-                      adminIssueComponents={requestData.adminIssueComponents}
-                      returnedComponents={requestData.returnedComponents}
-                    />
-                  ) : null 
-                }
+{(requestData.reIssueRequest && (
+    requestData.reIssueRequest.userExtensionMessage?.trim() ||
+    requestData.reIssueRequest.extensionDays ||
+    extensionSent // show immediately after submit
+  )) && (
+    <ReIssueDetails
+      reIssue={requestData.reIssueRequest}
+      columns={columns}
+      getPageRows={getPageRows}
+      userPage={userPage}
+      setUserPage={setUserPage}
+      itemsPerPage={itemsPerPage}
+      adminIssueComponents={requestData.adminIssueComponents}
+      returnedComponents={requestData.returnedComponents}
+    />
+)}
                 </div>
 
-                {/* Extension Request Button */}
+                {/* Extension Request Button and Message */}
                 {requestData.status !== 'returned' &&
-                requestData.adminIssueComponents &&
-                  requestData.adminIssueComponents.length > requestData.returnedComponents.length &&
+                  requestData.adminIssueComponents &&
                   (
                     !requestData.reIssueRequest ||
                     (
@@ -719,98 +742,106 @@ useEffect(() => {
                       !requestData.reIssueRequest.userExtensionMessage &&
                       !requestData.reIssueRequest.extensionDays
                     )
-                  ) && (
-                  <div className="md:col-span-2 mt-8">
-                    <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                        <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
-                        Request Extension
-                      </h3>
-                      {extensionSent ? (
-                        <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg">
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Extension request sent!
-                        </div>
-                      ) : (
-                        <form
-                          onSubmit={e => {
-                            e.preventDefault();
-                            setRequestData(prev => ({
-                              ...prev,
-                              reIssueRequest: {
-                                status: "pending",
-                                userExtensionMessage: extensionMessage,
-                                adminExtensionMessage: "",
-                                extensionDays: extensionDays,
-                                adminIssueComponents: []
-                              }
-                            }));
-                            setExtensionSent(true);
-                          }}
-                          className="space-y-4"
-                        >
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Number of additional days
-                            </label>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <button
-                                type="button"
-                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onClick={handleDecrementDays}
-                                disabled={extensionDays <= 1}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <input
-                                type="text"
-                                className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                min="1"
-                                max="30"
-                                value={extensionDays}
-                                onChange={e => handleExtensionDaysChange(e.target.value)}
-                                disabled={extensionSent}
-                              />
-                              <button
-                                type="button"
-                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onClick={handleIncrementDays}
-                                disabled={extensionDays >= 30 || extensionSent}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                              <span className="text-sm font-medium">Days</span>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Reason for extension
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={extensionMessage}
-                              onChange={e => setExtensionMessage(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              placeholder="Explain why you need more time..."
-                              required
-                              disabled={extensionSent}
-                            />
-                          </div>
-                          <div className="flex space-x-4">
-                            <button
-                              type="submit"
-                              className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                              disabled={extensionSent}
-                            >
-                              <Repeat className="w-5 h-5 mr-2" />
-                              Submit Extension Request
-                            </button>
-                          </div>
-                        </form>
-                      )}
+                  ) &&
+                  canShowExtension(requestData.issueDate, requestData.adminApprovedDays) && (
+                    <div className="md:col-span-2 mt-8">
+                      <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                    <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+                    Request Extension
+                    <span className="ml-2 relative group flex items-center">
+                      <HelpCircle className="w-5 h-5 text-blue-500 cursor-pointer" />
+                      <span className="absolute left-7 top-1/2 -translate-y-1/2 z-20 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                        You can request an extension for your components. The admin may accept or decline your request. You will be notified of the decision.
+                      </span>
+                    </span>
+                  </h3>
+                {/* Always display the extension request form/table */}
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    setRequestData(prev => ({
+                      ...prev,
+                      reIssueRequest: {
+                        status: "pending",
+                        userExtensionMessage: extensionMessage,
+                        adminExtensionMessage: "",
+                        extensionDays: extensionDays,
+                        adminIssueComponents: []
+                      }
+                    }));
+                    setExtensionSent(true);
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of additional days
+                    </label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <button
+                        type="button"
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleDecrementDays}
+                        disabled={extensionDays <= 1}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="text"
+                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        min="1"
+                        max="30"
+                        value={extensionDays}
+                        onChange={e => handleExtensionDaysChange(e.target.value)}
+                        disabled={extensionSent}
+                      />
+                      <button
+                        type="button"
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleIncrementDays}
+                        disabled={extensionDays >= 30 || extensionSent}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium">Days</span>
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reason for extension
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={extensionMessage}
+                      onChange={e => setExtensionMessage(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Explain why you need more time..."
+                      required
+                      disabled={extensionSent}
+                    />
+                  </div>
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                      disabled={extensionSent}
+                    >
+                      <Repeat className="w-5 h-5 mr-2" />
+                      Submit Extension Request
+                    </button>
+                  </div>
+                </form>
+                {/* Move the message OUTSIDE the form, so it always appears below the table/form */}
+                {extensionSent && (
+                  <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mt-4">
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Extension request sent!
+                  </div>
                 )}
+              </div>
+            </div>
+          )}
             </div>
             </>
             )}
