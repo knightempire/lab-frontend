@@ -201,9 +201,17 @@ verifyadmin();
         id: issued.issuedProductId._id,
         name: issued.issuedProductId.product_name,
         quantity: issued.issuedQuantity,
-        replacedQuantity: 0, 
       })),
-      returnedComponents: [], 
+     returnedComponents: data.issued
+    .flatMap(issued => (issued.return || []).map(ret => ({
+      issuedProductId: issued.issuedProductId._id,
+      name: issued.issuedProductId.product_name,
+      returnedQuantity: ret.returnedQuantity,
+      replacedQuantity: ret.replacedQuantity,
+      damagedQuantity: ret.damagedQuantity,
+      returnDate: ret.returnDate,
+      _id: ret._id,
+    }))),
       reIssueRequest, 
       isExtended,
       acceptedDate: data.issuedDate || null,
@@ -381,25 +389,43 @@ const handleSave = async () => {
   
 // Helper to get not returned components for re-issue
 function getNotReturnedComponents(issued, returned) {
+  console.log('Calculating not returned components...');
+  console.log('Issued components:', issued);
+  console.log('Returned components:', returned);
   return issued.map(issuedItem => {
-    // API structure
     let totalIssued = issuedItem.issuedQuantity || issuedItem.quantity || 0;
     let name = issuedItem.issuedProductId?.product_name || issuedItem.name;
-    // Sum replacedQuantity from all returns
     const totalReplaced = (issuedItem.return || []).reduce(
       (sum, ret) => sum + (ret.replacedQuantity || 0), 0
     );
-    // Sum returnedQuantity from all returns
     const totalReturned = (issuedItem.return || []).reduce(
       (sum, ret) => sum + (ret.returnedQuantity || 0), 0
     );
-    // Not Returned = (Issued + Replaced) - Returned
+    // Correct formula: issued - returned + replaced
+    const notReturned = totalIssued - totalReturned + totalReplaced;
+    // Debug print
+    console.log(`[DEBUG] ${name}: issued=${totalIssued}, returned=${totalReturned}, replaced=${totalReplaced}, notReturned=${notReturned}`);
     return {
       name,
-      quantity: (totalIssued + totalReplaced) - totalReturned
+      quantity: notReturned
     };
   }).filter(item => item.quantity > 0);
 }
+
+function getInitialReturnDate(collectedDate, adminApprovedDays) {
+  console.log('Collected Date:', collectedDate);
+  console.log('Admin Approved Days:', adminApprovedDays);
+  if (!collectedDate || !adminApprovedDays) return "-";
+  const date = new Date(collectedDate);
+  date.setDate(date.getDate() + Number(adminApprovedDays));
+  return date.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+// 
 
   // --- Admin Issue Table Handlers ---
   const handleIncrementQuantity = (id) => {
@@ -1563,6 +1589,16 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           <h4 className="font-medium text-blue-700">Original Request Description</h4>
         </div>
         <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
+        {/* Show admin return message if present */}
+        {requestData.adminMessage && (
+          <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+              <h4 className="font-medium text-green-700">Admin Return Message</h4>
+            </div>
+            <p className="text-gray-700">{requestData.adminMessage}</p>
+          </div>
+        )}
       </div>
       <div className="bg-yellow-50 p-4 rounded-lg">
         <div className="flex items-center mb-2">
@@ -1570,9 +1606,20 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           <h4 className="font-medium text-yellow-700">Re-Issue User Note</h4>
         </div>
         <p className="text-gray-700">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
-        <div className="mt-2 text-sm text-gray-500">
-          Requested Days: <span className="font-semibold">{requestData.reIssueRequest.requestedDays}</span>
-        </div>
+<div className="mt-4 flex flex-col gap-2">
+  <div className="flex items-center gap-2">
+    <CalendarDays className="w-4 h-4 text-blue-600" />
+    <span className="text-gray-600">Requested Days:</span>
+    <span className="font-semibold text-gray-800">{requestData.reIssueRequest.requestedDays}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <Clock className="w-4 h-4 text-indigo-600" />
+    <span className="text-gray-600">Initial Return Date:</span>
+    <span className="font-semibold text-gray-800">
+      {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
+    </span>
+  </div>
+</div>
       </div>
     </div>
 
@@ -1588,7 +1635,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
             { key: 'name', label: 'Component Name' },
             { key: 'quantity', label: 'Not Returned' }
           ]}
-          rows={getNotReturnedComponents(requestData.adminIssueComponents, requestData.returnedComponents)}
+       rows={getNotReturnedComponents(requestData.adminIssueComponents, requestData.returnedComponents)}   
           currentPage={1}
           itemsPerPage={10}
         />
@@ -1666,7 +1713,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
             )}
           </button>
           <button
-            className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             onClick={() => {
               setReissueAction(null);
               setReissueMessage('');
