@@ -628,17 +628,20 @@ const handleDecrementDays = () => {
 
   // --- Action Handlers ---
   const handleActionClick = (actionType) => {
-    if (actionType === 'accept' && (!adminAvailableDate || !adminAvailableTime)) {
+    // Check if date and time are selected
+    if (!adminAvailableDate || !adminAvailableTime) {
       setShowDateTimeWarning(true);
       return;
     }
+
+    // Check if selected datetime is in the future
+    if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
+      // The warning will already be shown by the JSX, just return
+      return;
+    }
+
     setShowDateTimeWarning(false);
     setAction(actionType);
-    setResponseMessage(
-      actionType === 'accept'
-        ? 'Your request has been approved.'
-        : 'Due to component shortage, your request has been declined.'
-    );
   };
 
   const handleSubmit = async () => {
@@ -993,6 +996,27 @@ const ComponentDropdown = ({ id, selectedValue }) => {
       )
     };
   });
+
+
+  const getCurrentDateTime = () => {
+  const now = new Date();
+  const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+  return { currentDate, currentTime };
+};
+
+const isValidDateTime = (selectedDate, selectedTime) => {
+  if (!selectedDate || !selectedTime) return false;
+  
+  const now = new Date();
+  const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+  
+  // Add a small buffer (1 minute) to account for processing time
+  const minAllowedTime = new Date(now.getTime() + 60000);
+  
+  return selectedDateTime >= minAllowedTime;
+};
+
 
   // --- Re-Issue Table Config ---
   const reissueColumns = [
@@ -1407,103 +1431,102 @@ const ComponentDropdown = ({ id, selectedValue }) => {
 
           {/* --- Take Action Section --- */}
           {isAccepted && requestData.CollectedDate == null && !isReIssue ? (
-  <div className="p-6 border-t border-gray-200 flex flex-col items-start">
-    <div className="flex items-center mb-4">
-      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
-        <CheckCircle className="w-5 h-5 text-green-600" />
-      </div>
-      <h3 className="text-base font-medium text-green-800">
-        Request is <span className="font-semibold">approved</span> and pending issuance.
-      </h3>
-    </div>
-    {/* Only show the button if not in confirmation mode */}
-    {action !== 'issued' ? (
-      <button
-        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
-        onClick={() => setAction('issued')}
-      >
-        <CheckCircle className="w-5 h-5 mr-2" />
-        Mark as Issued
-      </button>
-    ) : (
-      // Only show the confirmation modal if action === 'issued'
-      <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
-        <div className="mb-5">
-          <div className="flex items-center mb-4">
-            <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
-              <CheckCircle className="w-6 h-6" />
+          <div className="p-6 border-t border-gray-200 flex flex-col items-start">
+            <div className="flex items-center mb-4">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-base font-medium text-green-800">
+                Request is <span className="font-semibold">approved</span> and pending issuance.
+              </h3>
             </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800">
-                Issue Request
-              </h4>
-              <p className="text-sm text-gray-600">
-                You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
-            onClick={async () => {
-              issuing();
-              setIsSubmitting(true);
-              setTimeout(() => {
-                setRequestData({
-                  ...requestData,
-                  CollectedDate: new Date().toISOString(),
-                  ResponseMessage: responseMessage 
-                });
-                setAction(null);
-                setIsSubmitting(false);
-              }, 1000);
-            }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Processing...
-              </>
+            {/* Only show the button if not in confirmation mode */}
+            {action !== 'issued' ? (
+              <button
+                className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+                onClick={() => setAction('issued')}
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Mark as Issued
+              </button>
             ) : (
-              'Confirm & Issue'
+              // Only show the confirmation modal if action === 'issued'
+              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+                <div className="mb-5">
+                  <div className="flex items-center mb-4">
+                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
+                      <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">
+                        Issue Request
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                    onClick={async () => {
+                      issuing();
+                      setIsSubmitting(true);
+                      setTimeout(() => {
+                        setRequestData({
+                          ...requestData,
+                          CollectedDate: new Date().toISOString(),
+                          ResponseMessage: responseMessage 
+                        });
+                        setAction(null);
+                        setIsSubmitting(false);
+                      }, 1000);
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      'Confirm & Issue'
+                    )}
+                  </button>
+
+                  <button
+                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
+                    onClick={() => setAction(null)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
-          </button>
-
-          <button
-            className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
-            onClick={() => setAction(null)}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-
-    )}
-  </div>
-) : requestData.status === 'pending' ? (
+          </div>
+        ) : requestData.status === 'pending' ? (
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
               <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1521,22 +1544,36 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                       <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
                       <input
                         type="date"
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         value={adminAvailableDate}
-                        onChange={e => setAdminAvailableDate(e.target.value)}
+                        min={getCurrentDateTime().currentDate} // Disable past dates
+                        onChange={e => {
+                          setAdminAvailableDate(e.target.value);
+                          // Reset time if date changes to ensure validation
+                          if (adminAvailableTime && !isValidDateTime(e.target.value, adminAvailableTime)) {
+                            setAdminAvailableTime('');
+                          }
+                        }}
                       />
                     </div>
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
                       <input
                         type="time"
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         value={adminAvailableTime}
+                        min={
+                          adminAvailableDate === getCurrentDateTime().currentDate 
+                            ? getCurrentDateTime().currentTime 
+                            : undefined
+                        } // Only set min time if selected date is today
                         onChange={e => setAdminAvailableTime(e.target.value)}
+                        disabled={!adminAvailableDate} // Disable time selection until date is chosen
                       />
                     </div>
                   </div>
 
+                  {/* Enhanced warning messages */}
                   {showDateTimeWarning && (
                     <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                       <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
@@ -1544,10 +1581,19 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     </div>
                   )}
 
+                  {/* New validation warning for past datetime */}
+                  {adminAvailableDate && adminAvailableTime && !isValidDateTime(adminAvailableDate, adminAvailableTime) && (
+                    <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                      <span>Please select a future date and time. Past appointments cannot be scheduled.</span>
+                    </div>
+                  )}
+
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
                       onClick={() => handleActionClick('accept')}
+                      disabled={!adminAvailableDate || !adminAvailableTime || !isValidDateTime(adminAvailableDate, adminAvailableTime)}
                       aria-label="Accept Request"
                       title="Accept this request"
                     >
@@ -1556,8 +1602,9 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     </button>
 
                     <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
                       onClick={() => handleActionClick('decline')}
+                      disabled={!adminAvailableDate || !adminAvailableTime || !isValidDateTime(adminAvailableDate, adminAvailableTime)}
                       aria-label="Decline Request"
                       title="Decline this request"
                     >
