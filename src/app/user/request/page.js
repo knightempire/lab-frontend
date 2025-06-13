@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,Undo} from 'lucide-react';
+import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTriangle,Undo , Repeat} from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
@@ -127,6 +127,11 @@ export default function UserRequestsPage() {
         bg = 'bg-amber-100';
         text = 'text-amber-700';
         break;
+        case 'ReIssued':
+        icon = <Repeat size={16} className="text-indigo-700" />;
+        bg = 'bg-indigo-100';
+        text = 'text-indigo-700';
+        break;
     }
 
     return {
@@ -135,7 +140,7 @@ export default function UserRequestsPage() {
       status: (
         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${bg} ${text}`}>
           {icon}
-          {req.status}
+          {req.status === 'ReIssued' ? 'Extension' : req.status}
         </div>
       ),
       actions: (
