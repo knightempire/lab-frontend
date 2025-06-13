@@ -103,7 +103,9 @@ useEffect(() => {
           return true;
         });
 
-        const formattedRequests = filtered.map(req => ({
+        // Only declare once!
+        let formattedRequests = filtered.map(req => ({
+          // ...mapping...
           id: req._id,
           requestId: req.requestId,
           name: req.userId.name,
@@ -127,6 +129,28 @@ useEffect(() => {
           }))
         }));
 
+        // Sort after mapping
+        const statusOrder = {
+          approved: 0,
+          accepted: 0,
+          reissued: 0,
+          returned: 2,
+          closed: 3,
+          rejected: 4,
+        };
+
+        formattedRequests = formattedRequests.sort((a, b) => {
+          const statusA = statusOrder[a.status] ?? 99;
+          const statusB = statusOrder[b.status] ?? 99;
+          if (statusA !== statusB) return statusA - statusB;
+
+          // Extract numeric part of requestId for descending order
+          const numA = parseInt(a.requestId.replace(/\D/g, ''), 10);
+          const numB = parseInt(b.requestId.replace(/\D/g, ''), 10);
+          return numB - numA;
+        });
+
+        
         setRequests(formattedRequests);
       }
     } catch (err) {
@@ -170,7 +194,7 @@ const filterStatus = filters.status.toLowerCase();
 const requestStatus = req.status.toLowerCase();
 const matchesStatus =
   filterStatus === '' ||
-  (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved')) ||
+  (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved' )) ||
   requestStatus === filterStatus;
 
       
@@ -208,7 +232,7 @@ const matchesProducts =
 
   const filterList = [
     { label: 'Role', key: 'role', options: ['', 'Faculty', 'Student'], value: filters.role },
-    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Returned', 'Rejected',"Closed"], value: filters.status },
+    { label: 'Status', key: 'status', options: ['', 'Accepted', 'Returned', 'Rejected',"Closed" , "ReIssued"], value: filters.status },
   ];
 
   const columns = [
@@ -250,17 +274,17 @@ const matchesProducts =
         textColor = 'text-red-700';
         statusText = 'Rejected';
         break;
-      case 'extension':
-        statusIcon = <Repeat size={16} className="text-indigo-700" />;
-        bgColor = 'bg-indigo-100';
-        textColor = 'text-indigo-700';
-        statusText = 'Extension';
-        break;
       case 'closed':
         statusIcon = <AlertTriangle size={16} className="text-amber-700" />;
         bgColor = 'bg-amber-100';
         textColor = 'text-amber-700';
         statusText = 'Closed';
+        break;
+    case 'reissued':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
         break;
       default:
         statusIcon = <Clock size={16} className="text-gray-500" />;
