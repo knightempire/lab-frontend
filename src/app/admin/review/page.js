@@ -9,6 +9,7 @@ import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
 import RequestTimeline from '../../../components/RequestTimeline';
+import SingleDatePicker from '../../../components/DatePicker';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const AdminRequestViewContent = () => {
@@ -1542,25 +1543,27 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
-                      <input
-                        type="date"
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      <SingleDatePicker
                         value={adminAvailableDate}
-                        min={getCurrentDateTime().currentDate} // Disable past dates
-                        onChange={e => {
+                        minDate={getCurrentDateTime().currentDate} // Disable past dates
+                        onChange={(e) => {
                           setAdminAvailableDate(e.target.value);
                           // Reset time if date changes to ensure validation
                           if (adminAvailableTime && !isValidDateTime(e.target.value, adminAvailableTime)) {
                             setAdminAvailableTime('');
                           }
                         }}
-                      />
+                        disabled={false} 
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        placeholder="Pick a date" 
+                        />
+
                     </div>
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
                       <input
                         type="time"
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="px-3 py-2 border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:shadow-lg  disabled:bg-gray-100 disabled:cursor-not-allowed"
                         value={adminAvailableTime}
                         min={
                           adminAvailableDate === getCurrentDateTime().currentDate 
