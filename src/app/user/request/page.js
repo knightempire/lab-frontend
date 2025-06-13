@@ -75,22 +75,26 @@ export default function UserRequestsPage() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  const getFilteredRequests = () => {
-    return requests
-      .filter(req =>
-        statusFilter === '' || req.status.toLowerCase() === statusFilter.toLowerCase()
-      )
-      .filter(req =>
-        req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        req.items.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .sort((a, b) => {
-  // Extract numeric part from requestId
-  const idA = parseInt(a.requestId.replace(/\D/g, ''));
-  const idB = parseInt(b.requestId.replace(/\D/g, ''));
-  return idB - idA; // Descending order (high to low)
-});
-  };
+const getFilteredRequests = () => {
+  return requests
+    .filter(req => {
+      if (statusFilter === '') return true;
+      if (statusFilter.toLowerCase() === 'extension') {
+        return req.status.toLowerCase() === 'reissued';
+      }
+      return req.status.toLowerCase() === statusFilter.toLowerCase();
+    })
+    .filter(req =>
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.items.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const idA = parseInt(a.requestId.replace(/\D/g, ''));
+      const idB = parseInt(b.requestId.replace(/\D/g, ''));
+      return idB - idA;
+    });
+};
+
 
   const filteredRequests = getFilteredRequests();
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -100,7 +104,7 @@ export default function UserRequestsPage() {
   );
 
   const filterList = [
-    { label: 'Status', key: 'status', options: ['', 'Pending', 'Approved', 'Rejected','Returned','Closed'], value: statusFilter },
+    { label: 'Status', key: 'status', options: ['', 'Pending', 'Approved', 'Rejected','Returned','Closed' ,'Extension'], value: statusFilter },
   ];
 
   const rows = paginatedRequests.map((req) => {

@@ -375,7 +375,7 @@ const handleReturnSubmit = async (componentIndex) => {
       );
       const data = await response.json();
       if (!response.ok) {
-        alert(data.message || 'Failed to return component');
+        console.error('Error returning component:', data.message);
         return;
       }
 
@@ -678,6 +678,12 @@ const returnTrackingRows = returnTrackingComponents
         textColor = 'text-yellow-700';
         statusText = 'Pending';
         break;
+        case 'reIssued':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
+        break;    
     default:
       statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
       bgColor = 'bg-gray-100';
@@ -718,12 +724,12 @@ const returnTrackingRows = returnTrackingComponents
                   <h2 className="text-xl font-semibold text-blue-800">
                     Request #{requestData.id}
                   </h2>
-                  {requestData.isreissued && (
+                  {/* {requestData.isreissued && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                       <Repeat size={16} className="mr-1" />
                       Extension / Re-Issue Request
                     </span>
-                  )}
+                  )} */}
                 </div>
                 <div className="w-full mt-5">
                   <RequestTimeline 
@@ -886,7 +892,7 @@ const returnTrackingRows = returnTrackingComponents
                 </div>
               </div>
               {/* Admin Issue Components Table - Show for accepted, returned, and closed status */}
-              {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'closed') && (
+              {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'closed' ||  requestData.status === 'reIssued') && (
                 <div className="bg-white shadow rounded-lg">
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex justify-between items-center mb-4">
@@ -962,7 +968,7 @@ const returnTrackingRows = returnTrackingComponents
               </div>
             )}
             {/* Re-requested Components Tables Section - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && requestData.isreissued && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned'||  requestData.status === 'reIssued') && requestData.isreissued && (
               <div className="col-span-1 md:col-span-2 bg-white shadow rounded-lg px-3 my-6">
                 <div className="p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-700 flex items-center">
@@ -1067,7 +1073,7 @@ const returnTrackingRows = returnTrackingComponents
               </div>
             )}
             {/* Return Tracking Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned') &&
+            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned' ||  requestData.status === 'reIssued') &&
   returnTrackingComponents.some(component => component.remaining > 0) && (
     <div className="bg-white shadow rounded-lg mb-8">
       <div className="p-6 border-b border-gray-200">
@@ -1086,7 +1092,7 @@ const returnTrackingRows = returnTrackingComponents
     </div>
 )}
             {/* Return History Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reIssued') && (
               <div className="bg-white shadow rounded-lg">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">

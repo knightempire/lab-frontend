@@ -3,7 +3,7 @@ import React from 'react';
 const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
   const timelineItems = [];
 
-  // Initial Request
+  // Always show Initial Request, Accepted, Issued
   timelineItems.push({
     type: 'request',
     date: requestData.requestedDate,
@@ -11,80 +11,42 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     isCompleted: true
   });
 
-  // Initial flow based on status
-  const initialStatus = requestData.status?.toLowerCase();
-  
-  if (initialStatus === 'returned') {
-    // For returned status: Request → Accepted → Issued → Returned (all from requestData)
-    timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: 'Accepted',
-      isCompleted: !!requestData.acceptedDate,
-      status: 'accepted'
-    });
+  timelineItems.push({
+    type: 'acceptance',
+    date: requestData.acceptedDate,
+    label: 'Accepted',
+    isCompleted: !!requestData.acceptedDate,
+    status: 'accepted'
+  });
 
-    timelineItems.push({
-      type: 'issue',
-      date: requestData.issueDate,
-      label: 'Issued',
-      isCompleted: !!requestData.issueDate,
-      status: 'issued'
-    });
+  timelineItems.push({
+    type: 'issue',
+    date: requestData.issueDate,
+    label: 'Issued',
+    isCompleted: !!requestData.issueDate,
+    status: 'issued'
+  });
 
-    timelineItems.push({
-      type: 'return',
-      date: requestData.allReturnedDate,
-      label: 'Returned',
-      isCompleted: true, // Always true for returned status
-      status: 'returned'
-    });
+  // If reissued, add reissue request and accept/decline
+if (requestData.isreissued && Array.isArray(reissue) && reissue.length > 0) {
+  const latestReissue = reissue[reissue.length - 1];
 
-    
-  }  if (initialStatus === 'closed') {
-    // For returned status: Request → Accepted → Issued → Returned (all from requestData)
-    timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: 'Accepted',
-      isCompleted: !!requestData.acceptedDate,
-      status: 'accepted'
-    });
+  timelineItems.push({
+    type: 'reissue-request',
+    date: latestReissue.requestdate, // <-- use requestdate
+    label: 'Reissue Requested',
+    isCompleted: !!latestReissue.requestdate
+  });
 
+  timelineItems.push({
+    type: 'reissue-accept-decline',
+    date: latestReissue.acceptedDate, // <-- use acceptedDate
+    label: latestReissue.status === 'rejected' ? 'Reissue Declined' : 'Reissue Accepted',
+    isCompleted: !!latestReissue.acceptedDate,
+    status: latestReissue.status
+  });
+}
 
-
-    timelineItems.push({
-      type: 'closed',
-      date: requestData.returnDate,
-      label: 'closed',
-      isCompleted: true, // Always true for returned status
-      status: 'closed'
-    });
-
-    
-  }
-  
-  else {
-    // For other statuses: Request → Accepted/Rejected/Closed
-    timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: getStatusLabel(requestData.status),
-      isCompleted: !!requestData.acceptedDate,
-      status: requestData.status
-    });
-
-    // Show issue date only if accepted (and not closed/rejected)
-    if (initialStatus === 'accepted' || initialStatus === 'approved') {
-      timelineItems.push({
-        type: 'issue',
-        date: requestData.issueDate,
-        label: 'Issued',
-        isCompleted: !!requestData.issueDate,
-        status: 'issued'
-      });
-    }
-  }
 
   // Handle Reissues
   if (requestData.isreissued) {
