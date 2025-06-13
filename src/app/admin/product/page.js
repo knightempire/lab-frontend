@@ -10,8 +10,8 @@ import SuccessAlert from '../../../components/SuccessAlert';
 import { useRouter } from 'next/navigation';
 
 export default function ProductPage() {
-    const router = useRouter();
-const [products, setProducts] = useState([]);
+  const router = useRouter();
+  const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ product_name: '', quantity: '', damagedQuantity: '', inStock: '' });
   const [editIndex, setEditIndex] = useState(null);
@@ -19,16 +19,16 @@ const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [excelData, setExcelData] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-const [formErrors, setFormErrors] = useState({});
-const [successMessage, setSuccessMessage] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
   const itemsPerPage = 10;
+
+  const [sortKey, setSortKey] = useState('product_name');
+  const [sortOrder, setSortOrder] = useState('asc');
   
-
 useEffect(() => {
-
   const verifyadmin = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -86,8 +86,6 @@ const fetchProducts = async () => {
   }
 };
 
-
-
   const handleChange = (e) => {
     setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
   };
@@ -98,7 +96,26 @@ const fetchProducts = async () => {
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortKey === 'product_name' || sortKey === 'yetToGive') {
+      return sortOrder === 'asc'
+        ? (a[sortKey] || '').toString().localeCompare((b[sortKey] || '').toString())
+        : (b[sortKey] || '').toString().localeCompare((a[sortKey] || '').toString());
+    } else if (sortKey === 'issued') {
+      const aIssued = (a.quantity || 0) - (a.damagedQuantity || 0) - (a.inStock || 0);
+      const bIssued = (b.quantity || 0) - (b.damagedQuantity || 0) - (b.inStock || 0);
+      return sortOrder === 'asc'
+        ? aIssued - bIssued
+        : bIssued - aIssued;
+    } else {
+      // Numeric sort for other quantities
+      return sortOrder === 'asc'
+        ? (a[sortKey] || 0) - (b[sortKey] || 0)
+        : (b[sortKey] || 0) - (a[sortKey] || 0);
+    }
+  });
+  
+  const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -113,7 +130,6 @@ const validateProduct = (product) => {
   const quantity = parseInt(product.quantity);
   const damagedQuantity = parseInt(product.damagedQuantity);
   const inStock = parseInt(product.inStock);
-
 
   if (isNaN(quantity) || quantity < 0) {
     errors.quantity = 'Quantity must be a non-negative number.';
@@ -130,7 +146,6 @@ const validateProduct = (product) => {
   console.log('Validation errors:', errors);  
   return errors;
 };
-
 
 const addProduct = async () => {
   const errors = validateProduct(newProduct);
@@ -190,11 +205,9 @@ const addProduct = async () => {
 
 const updateProduct = async (id) => {
   console.log('Updating product at index:', id);
-
-    console.log('newProduct:', newProduct);
+  console.log('newProduct:', newProduct);
   const errors = validateProduct(newProduct);
   console.log('Validation errors:', errors); 
-
 
   if (Object.keys(errors).length > 0) {
     setFormErrors(errors);
@@ -257,14 +270,11 @@ const updateProduct = async (id) => {
   }
 };
 
-
-
 const startEdit = (product, id) => {
   setEditIndex(id); // Now using _id
   setNewProduct({ ...product });
   setShowForm(true);
 };
-
 
   const cancelForm = () => resetForm();
   
@@ -275,7 +285,6 @@ const startEdit = (product, id) => {
     setNewProduct({ name: '', quantity: '', damagedQuantity: '', inStock: '' });
   };
   
-
   const columns = [
     { key: 'product_name', label: 'Name' },
     { key: 'quantity', label: 'Total Quantity' },
@@ -404,7 +413,64 @@ const rows = paginatedProducts.map((item, idx) => ({
         {/* Table or Empty State */}
         {filteredProducts.length > 0 ? (
           <div className="space-y-4">
-            <Table columns={columns} rows={rows} currentPage={currentPage} itemsPerPage={itemsPerPage} />
+            <Table
+              columns={columns}
+              rows={rows}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              renderHeaderCell={(col) => {
+                // Make all columns except 'actions' sortable
+                if (col.key !== 'actions') {
+                  return (
+                    <button
+                      type="button"
+                      className={`
+                        group
+                        flex items-center justify-center gap-2 font-semibold uppercase
+                        w-full
+                      `}
+                      style={{ minWidth: 120 }}
+                      onClick={() => {
+                        if (sortKey === col.key) {
+                          setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortKey(col.key);
+                          setSortOrder('asc');
+                        }
+                      }}
+                    >
+                      <span>{col.label}</span>
+                      <span className="ml-1 flex flex-col text-xs leading-none">
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'asc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▲
+                        </span>
+                        <span
+                          className={
+                            sortKey === col.key && sortOrder === 'desc'
+                              ? 'text-black'
+                              : 'text-gray-400 group-hover:text-gray-600'
+                          }
+                        >
+                          ▼
+                        </span>
+                      </span>
+                    </button>
+                  );
+                }
+                // Non-sortable (actions) column
+                return (
+                  <div>
+                    {col.label}
+                  </div>
+                );
+              }}
+            />
             <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
           </div>
         ) : (
@@ -500,7 +566,7 @@ const rows = paginatedProducts.map((item, idx) => ({
         </div>
       )}
 
-      {/* Modal Form */}
+{/* Modal Form */}
 {showForm && (
   <div
     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
@@ -572,14 +638,13 @@ const rows = paginatedProducts.map((item, idx) => ({
   </div>
 )}
 
-
-      {showSuccessAlert && (
-  <SuccessAlert
-    message="Done successfully :)"
-  description={successMessage}
-    onClose={() => setShowSuccessAlert(false)}
-  />
-)}
+  {showSuccessAlert && (
+    <SuccessAlert
+      message="Done successfully :)"
+    description={successMessage}
+      onClose={() => setShowSuccessAlert(false)}
+    />
+  )}
 
     </div>
   );

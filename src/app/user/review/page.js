@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo} from 'lucide-react';
+import { FileText, CheckCircle, XCircle, RefreshCw, Repeat, Minus, Plus, Clock, CalendarDays, ArrowLeft, AlertTriangle, Undo , HelpCircle} from 'lucide-react';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
@@ -28,16 +28,13 @@ function UserReviewContent() {
 
 useEffect(() => {
   const requestId = searchParams.get('requestId');
-  console.log('requestId:', requestId);
-
   const fetchRequestData = async () => {
     try {
-      const token = localStorage.getItem('token'); 
+      const token = localStorage.getItem('token');
       if (!token) {
-        console.error('No token found in localStorage');
-        router.push('/auth/login'); 
+        router.push('/auth/login');
         return;
-      } 
+      }
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
         method: 'GET',
         headers: {
@@ -47,25 +44,30 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        localStorage.removeItem('token'); 
+        localStorage.removeItem('token');
         router.push('/auth/login');
         return;
       }
 
       const apiResponse = await response.json();
-      const data = apiResponse.request; 
+      const data = apiResponse.request;
 
+      // Prepare mappedData as before
       const mappedData = {
         requestId: data.requestId,
         name: data.userId.name,
         rollNo: data.userId.rollNo,
-        phoneNo: data.userId.phoneNo, 
+        phoneNo: data.userId.phoneNo,
         email: data.userId.email,
-        isFaculty: false, 
+        isFaculty: false,
         requestedDate: data.requestDate,
-        requestedDays: data.requestedDays,
-        adminApprovedDays: data.adminApprovedDays,
-        status: data.requestStatus.toLowerCase(), // Ensure status is in lowercase
+        acceptedDate: data.issuedDate || null,
+        issueDate: data.collectedDate || null,
+        allReturnedDate: data.AllReturnedDate || null,
+        scheduledCollectionDate: data.scheduledCollectionDate,
+        requestedDays: data.requestedDays || 0,
+        adminApprovedDays: data.adminApprovedDays || 0,
+        status: data.requestStatus.toLowerCase(),
         referenceStaff: {
           name: data.referenceId.name,
           email: data.referenceId.email,
@@ -73,13 +75,15 @@ useEffect(() => {
         userMessage: data.description,
         adminMessage: data.adminReturnMessage || "",
         components: data.requestedProducts.map(product => ({
-          name: product.productId.product_name, 
+          name: product.productId.product_name,
           quantity: product.quantity,
         })),
         adminIssueComponents: data.issued.map(issued => ({
-          name: issued.issuedProductId.product_name, 
+          name: issued.issuedProductId.product_name,
           quantity: issued.issuedQuantity,
-          replacedQuantity: 0, 
+          replacedQuantity: issued.return
+            ? issued.return.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+            : 0,
         })),
         returnedComponents: data.issued
           ? data.issued.flatMap(issued =>
@@ -94,13 +98,37 @@ useEffect(() => {
               }))
             )
           : [],
-        reIssueRequest: null, 
+        reIssueRequest: null,
       };
 
-      console.log('Mapped request data:', mappedData); // Debugging line
+      // If reIssued exists and has at least one value, fetch its details
+      if (Array.isArray(data.reIssued) && data.reIssued.length > 0 && data.reIssued[0]) {
+        const reIssuedId = data.reIssued[0];
+        const reissueRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (reissueRes.ok) {
+          const reissueData = await reissueRes.json();
+          const reIssued = reissueData.reIssued;
+          mappedData.reIssueRequest = {
+            status: reIssued.status,
+            userExtensionMessage: reIssued.requestDescription,
+            adminExtensionMessage: reIssued.adminReturnMessage || "",
+            extensionDays: reIssued.requestedDays,
+            adminIssueComponents: [], // You can fill this if your API provides
+          };
+        }
+      }
+
       setRequestData(mappedData);
     } catch (error) {
-      console.error('Error fetching request data:', error);
       router.push('/user/request');
     }
   };
@@ -111,6 +139,13 @@ useEffect(() => {
     router.push('/user/request');
   }
 }, [searchParams, router]);
+
+useEffect(() => {
+  if (extensionSent) {
+    const timer = setTimeout(() => setExtensionSent(false), 3000);
+    return () => clearTimeout(timer);
+  }
+}, [extensionSent]);
 
   if (!requestData) {
     return <LoadingScreen />;
@@ -189,84 +224,96 @@ useEffect(() => {
     return diff > 0 ? `${diff} Days` : "Expired";
   }
 
-  function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage ,   adminIssueComponents, returnedComponents }) {
-    const notReturned = adminIssueComponents.filter(adminItem =>
-      !returnedComponents.some(retItem => retItem.name === adminItem.name)
-    );
-    return (
-      <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
-        <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
-          <Repeat className="w-5 h-5 text-yellow-500" />
-          <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
-          <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-            reIssue.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-800'
-              : reIssue.status === 'accepted' || reIssue.status === 'approved'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
-          </span>
-        </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-700">Admin Message</span>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
-              {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
-            </div>
-            <div className="mb-2 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="font-semibold text-blue-700">User Note / Reason</span>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
-              {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-700">Requested Days:</span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-                {reIssue.extensionDays || "N/A"} Days
-              </span>
-            </div>
+function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, itemsPerPage, adminIssueComponents, returnedComponents }) {
+  // Calculate not returned for each component
+  const notReturned = adminIssueComponents
+    .map(adminItem => {
+      const totalIssued = (adminItem.quantity || 0) + (adminItem.replacedQuantity || 0);
+      const totalReturned = returnedComponents
+        .filter(retItem => retItem.name === adminItem.name)
+        .reduce((sum, retItem) => sum + (retItem.quantity || 0), 0);
+      const notReturnedQty = totalIssued - totalReturned;
+      return notReturnedQty > 0
+        ? { ...adminItem, notReturnedQty }
+        : null;
+    })
+    .filter(Boolean);
+
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
+
+                
+<div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
+  <Repeat className="w-5 h-5 text-yellow-500" />
+  <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+  <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
+    reIssue.status === 'pending'
+      ? 'bg-yellow-100 text-yellow-800'
+      : reIssue.status === 'accepted' || reIssue.status === 'approved'
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800'
+  }`}>
+    {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
+  </span>
+  {extensionSent && (
+    <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg ml-auto">
+      <CheckCircle className="w-5 h-5 mr-2" />
+      Extension request sent!
+    </div>
+  )}
+</div>
+      
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="font-semibold text-green-700">Admin Message</span>
           </div>
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-700">Re-Issued Components</span>
-                {reIssue.status === 'accepted'|| reIssue.status === 'approved' && (
-                <span className="ml-auto flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm">
-                  <CalendarDays className="w-4 h-4" />
-                  {reIssue.adminApprovedDays || reIssue.extensionDays} Days
-                </span>
-              )}
-            </div>
-            {notReturned.length > 0 ? (
-              <>
-                <Table
-                  columns={columns}
-                  rows={getPageRows(notReturned, userPage)}
-                  currentPage={userPage}
-                  itemsPerPage={itemsPerPage}
-                />
-                {notReturned.length > itemsPerPage && (
-                  <Pagination
-                    currentPage={userPage}
-                    totalPages={Math.ceil(notReturned.length / itemsPerPage)}
-                    setCurrentPage={setUserPage}
-                  />
-                )}
-              </>
-            ) : (
-              <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
-            )}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900 mb-4">
+            {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
+          </div>
+          <div className="mb-2 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span className="font-semibold text-blue-700">User Note / Reason</span>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900 mb-4">
+            {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-blue-600" />
+            <span className="font-medium text-gray-700">Requested Days:</span>
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+              {reIssue.extensionDays || "N/A"} Days
+            </span>
           </div>
         </div>
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="font-semibold text-green-700">Re-Issued Components</span>
+          </div>
+          {notReturned.length > 0 ? (
+            <Table
+              columns={[
+                { key: 'name', label: 'Component Name' },
+                { key: 'notReturnedQty', label: 'Not Returned', className: 'text-center' }
+              ]}
+              rows={getPageRows(notReturned, userPage)}
+              currentPage={userPage}
+              itemsPerPage={itemsPerPage}
+            />
+          ) : (
+            <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
+          )}
+        </div>
+        
       </div>
-    );
-  }
+
+                
+       
+    </div>
+  );
+}
 
   const toggleRowExpansion = (itemId) => {
     setExpandedRows(prev => {
@@ -279,6 +326,68 @@ useEffect(() => {
       return newSet;
     });
   };
+
+  // Add this helper function inside UserReviewContent
+  function canShowExtension(issueDate, adminApprovedDays) {
+    if (!issueDate || !adminApprovedDays) return false;
+    const start = new Date(issueDate);
+    const halfDays = Math.floor(Number(adminApprovedDays) / 2);
+    const halfway = new Date(start);
+    halfway.setDate(start.getDate() + halfDays);
+    const now = new Date();
+    // Remove time part for comparison
+    halfway.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    return now >= halfway;
+  }
+
+  // Add this function inside UserReviewContent
+async function handleExtensionRequestSubmit(e) {
+  e.preventDefault();
+
+  const token = localStorage.getItem('token');
+  const requestId = searchParams.get('requestId');
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/add/${requestId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requestedDays: extensionDays,
+          requestDescription: extensionMessage
+        })
+      }
+    );
+
+    const data = await res.json(); 
+    console.log('Response data:', data); 
+
+    if (res.ok) { 
+      setRequestData(prev => ({
+        ...prev,
+        reIssueRequest: {
+          status: "pending",
+          userExtensionMessage: extensionMessage,
+          adminExtensionMessage: "",
+          extensionDays: extensionDays,
+          adminIssueComponents: []
+        }
+      }));
+      setExtensionSent(true);
+    } else {
+      console.error('Failed response:', data);
+    }
+
+  } catch (err) {
+    console.error('Error submitting extension request:', err);
+  }
+}
+
 
   return (
      <div className="bg-gray-50">
@@ -435,32 +544,42 @@ useEffect(() => {
                 <span className="text-gray-700 font-medium">Allocated:</span>
                 <span className="font-semibold">{requestData.adminApprovedDays || requestData.requestedDays || "N/A"} Days</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
-                <span className="text-gray-700 font-medium">Return Date:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const days = Number(requestData.adminApprovedDays || requestData.requestedDays);
-                    if (!days || !requestData.requestedDate) return "N/A";
-                    const start = new Date(requestData.requestedDate);
-                    start.setDate(start.getDate() + days);
-                    return start.toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                  })()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-600" />
-                <span className="text-gray-700 font-medium">Time Left:</span>
-                <span className="font-semibold">
-                  {getDaysLeft(requestData.adminApprovedDays, requestData.requestedDate)}
-                </span>
-              </div>
+              {requestData.issueDate ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-5 h-5 text-indigo-600" />
+                    <span className="text-gray-700 font-medium">Return Date:</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const days = Number(requestData.adminApprovedDays || requestData.requestedDays);
+                        if (!days || !requestData.issueDate) return "N/A";
+                        const start = new Date(requestData.issueDate);
+                        start.setDate(start.getDate() + days);
+                        const pad = n => n.toString().padStart(2, '0');
+                        return `${pad(start.getDate())}/${pad(start.getMonth() + 1)}/${start.getFullYear()} ${pad(start.getHours())}:${pad(start.getMinutes())}`;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-green-600" />
+                    <span className="text-gray-700 font-medium">Time Left:</span>
+                    <span className="font-semibold">
+                      {getDaysLeft(requestData.adminApprovedDays, requestData.issueDate)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-5 h-5 text-indigo-600" />
+                  <span className="text-gray-700 font-medium">Scheduled Collection Date:</span>
+<span className="font-semibold flex items-center relative group">
+  {requestData.scheduledCollectionDate || "-"}
+  <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+      Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
+    </span>
+  </span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -516,22 +635,26 @@ useEffect(() => {
                     <>
                       <Table
                         columns={columns}
-                        rows={getPageRows(requestData.adminIssueComponents, adminPage)}
+                        rows={getPageRows(
+                          requestData.adminIssueComponents.map(component => {
+                            // Calculate replaced quantity if available
+                            const replaced = component.replacedQuantity || 0;
+                            return {
+                              ...component,
+                              quantity: (
+                                <span>
+                                  {component.quantity}
+                                  {replaced > 0 && (
+                                    <span className="font-semibold text-orange-600">{" + " + replaced}</span>
+                                  )}
+                                </span>
+                              ),
+                            };
+                          }),
+                          adminPage
+                        )}
                         currentPage={adminPage}
                         itemsPerPage={itemsPerPage}
-                        renderCell={(key, row) => {
-                        if (key === 'quantity' && row.replacedQuantity && row.replacedQuantity > 0) {
-                          return (
-                            <span>
-                              {row.quantity}
-                              <span className="font-semibold text-orange-600">
-                                {" + " + row.replacedQuantity}
-                              </span>
-                            </span>
-                          );
-                        }
-                        return row[key];
-                      }}
                       />
                       {requestData.adminIssueComponents.length > itemsPerPage && (
                         <Pagination
@@ -671,30 +794,27 @@ useEffect(() => {
                     )}
                   </div>
                 {/* Re-Issue Details: show in addition if extended */}
-                  {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned') && requestData.reIssueRequest && requestData.adminIssueComponents &&
-                    requestData.adminIssueComponents.length > requestData.returnedComponents.length && requestData.reIssueRequest &&
-                  (
-                    requestData.reIssueRequest.userExtensionMessage?.trim() ||
-                    requestData.reIssueRequest.extensionDays
-                  ) ? (
-                    <ReIssueDetails
-                      reIssue={requestData.reIssueRequest}
-                      columns={columns}
-                      getPageRows={getPageRows}
-                      userPage={userPage}
-                      setUserPage={setUserPage}
-                      itemsPerPage={itemsPerPage}
-                      adminIssueComponents={requestData.adminIssueComponents}
-                      returnedComponents={requestData.returnedComponents}
-                    />
-                  ) : null 
-                }
+{(requestData.reIssueRequest && (
+    requestData.reIssueRequest.userExtensionMessage?.trim() ||
+    requestData.reIssueRequest.extensionDays ||
+    extensionSent // show immediately after submit
+  )) && (
+    <ReIssueDetails
+      reIssue={requestData.reIssueRequest}
+      columns={columns}
+      getPageRows={getPageRows}
+      userPage={userPage}
+      setUserPage={setUserPage}
+      itemsPerPage={itemsPerPage}
+      adminIssueComponents={requestData.adminIssueComponents}
+      returnedComponents={requestData.returnedComponents}
+    />
+)}
                 </div>
 
-                {/* Extension Request Button */}
+                {/* Extension Request Button and Message */}
                 {requestData.status !== 'returned' &&
-                requestData.adminIssueComponents &&
-                  requestData.adminIssueComponents.length > requestData.returnedComponents.length &&
+                  requestData.adminIssueComponents &&
                   (
                     !requestData.reIssueRequest ||
                     (
@@ -702,98 +822,88 @@ useEffect(() => {
                       !requestData.reIssueRequest.userExtensionMessage &&
                       !requestData.reIssueRequest.extensionDays
                     )
-                  ) && (
-                  <div className="md:col-span-2 mt-8">
-                    <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                        <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
-                        Request Extension
-                      </h3>
-                      {extensionSent ? (
-                        <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg">
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Extension request sent!
-                        </div>
-                      ) : (
-                        <form
-                          onSubmit={e => {
-                            e.preventDefault();
-                            setRequestData(prev => ({
-                              ...prev,
-                              reIssueRequest: {
-                                status: "pending",
-                                userExtensionMessage: extensionMessage,
-                                adminExtensionMessage: "",
-                                extensionDays: extensionDays,
-                                adminIssueComponents: []
-                              }
-                            }));
-                            setExtensionSent(true);
-                          }}
-                          className="space-y-4"
-                        >
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Number of additional days
-                            </label>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <button
-                                type="button"
-                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onClick={handleDecrementDays}
-                                disabled={extensionDays <= 1}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <input
-                                type="text"
-                                className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                min="1"
-                                max="30"
-                                value={extensionDays}
-                                onChange={e => handleExtensionDaysChange(e.target.value)}
-                                disabled={extensionSent}
-                              />
-                              <button
-                                type="button"
-                                className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onClick={handleIncrementDays}
-                                disabled={extensionDays >= 30 || extensionSent}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                              <span className="text-sm font-medium">Days</span>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Reason for extension
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={extensionMessage}
-                              onChange={e => setExtensionMessage(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              placeholder="Explain why you need more time..."
-                              required
-                              disabled={extensionSent}
-                            />
-                          </div>
-                          <div className="flex space-x-4">
-                            <button
-                              type="submit"
-                              className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                              disabled={extensionSent}
-                            >
-                              <Repeat className="w-5 h-5 mr-2" />
-                              Submit Extension Request
-                            </button>
-                          </div>
-                        </form>
-                      )}
+                  ) &&
+                  canShowExtension(requestData.issueDate, requestData.adminApprovedDays) && (
+                    <div className="md:col-span-2 mt-8">
+                      <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                    <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+                    Request Extension
+                    <span className="ml-2 relative group flex items-center">
+                      <HelpCircle className="w-5 h-5 text-blue-500 cursor-pointer" />
+                      <span className="absolute left-7 top-1/2 -translate-y-1/2 z-20 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                        You can request an extension for your components. The admin may accept or decline your request. You will be notified of the decision.
+                      </span>
+                    </span>
+                  </h3>
+                {/* Always display the extension request form/table */}
+                <form
+                  onSubmit={handleExtensionRequestSubmit}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of additional days
+                    </label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <button
+                        type="button"
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleDecrementDays}
+                        disabled={extensionDays <= 1}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <input
+                        type="text"
+                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        min="1"
+                        max="30"
+                        value={extensionDays}
+                        onChange={e => handleExtensionDaysChange(e.target.value)}
+                        disabled={extensionSent}
+                      />
+                      <button
+                        type="button"
+                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={handleIncrementDays}
+                        disabled={extensionDays >= 30 || extensionSent}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium">Days</span>
                     </div>
                   </div>
-                )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reason for extension
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={extensionMessage}
+                      onChange={e => setExtensionMessage(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Explain why you need more time..."
+                      required
+                      disabled={extensionSent}
+                    />
+                  </div>
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                      disabled={extensionSent}
+                    >
+                      <Repeat className="w-5 h-5 mr-2" />
+                      Submit Extension Request
+                    </button>
+                  </div>
+                </form>
+ 
+          
+              </div>
+            </div>
+          )}
             </div>
             </>
             )}
@@ -836,6 +946,93 @@ useEffect(() => {
                 </div>
             </div>
             )}
+
+            {/* Closed - Failed to collect components */}
+            {requestData.status === 'closed' && (
+  <div className="space-y-8">
+    <div className="bg-white shadow rounded-lg">
+      <div className="p-6 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Requested Components Table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+              <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+              Requested Components
+            </h3>
+            {requestData.components && requestData.components.length > 0 ? (
+              <>
+                <Table
+                  columns={columns}
+                  rows={getPageRows(requestData.components, userPage)}
+                  currentPage={userPage}
+                  itemsPerPage={itemsPerPage}
+                />
+                {requestData.components.length > itemsPerPage && (
+                  <Pagination
+                    currentPage={userPage}
+                    totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                    setCurrentPage={setUserPage}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-gray-400 text-center py-6">No components found.</div>
+            )}
+          </div>
+          {/* Admin Issued Components Table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+              Admin Issued Components
+            </h3>
+            {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
+              <>
+                <Table
+                  columns={columns}
+                  rows={getPageRows(requestData.adminIssueComponents, adminPage)}
+                  currentPage={adminPage}
+                  itemsPerPage={itemsPerPage}
+                />
+                {requestData.adminIssueComponents.length > itemsPerPage && (
+                  <Pagination
+                    currentPage={adminPage}
+                    totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                    setCurrentPage={setAdminPage}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
+            )}
+          </div>
+        </div>
+        {/* Scheduled Collection Date and Failure Message */}
+        <div className="text-center py-8">
+<div className="mb-4">
+  <span className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
+    <CalendarDays className="w-5 h-5 mr-2" />
+    Scheduled Collection Date:&nbsp;
+    {requestData.scheduledCollectionDate
+      ? requestData.scheduledCollectionDate
+      : '-'}
+    <span
+      className="ml-2 cursor-pointer"
+      title="Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically."
+    >
+      {/* Import HelpCircle from lucide-react at the top */}
+      <HelpCircle className="w-4 h-4 text-blue-500 inline" />
+    </span>
+  </span>
+</div>
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-lg text-red-700 font-semibold">
+            Failed to collect components from scheduled date. 48 hrs crossed!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
           </div>
         </div>
       </div>
