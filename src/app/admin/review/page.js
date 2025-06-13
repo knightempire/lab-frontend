@@ -145,26 +145,14 @@ verifyadmin();
     // If returned/closed/collected, redirect
 if (
   data.requestStatus === 'returned' ||
-  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' ||
+  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
   (
     data.requestStatus === 'approved' &&
     data.collectedDate &&
-    // Only redirect if there is NO pending re-issue request
-    !(
-      Array.isArray(data.reIssued) &&
-      data.reIssued.length > 0 &&
-      // Check if latest re-issue is pending
-      (() => {
-        const lastReissueId = data.reIssued[data.reIssued.length - 1];
-        return lastReissueId && data.reIssuedStatus === 'pending';
-      })()
+    (
+      !Array.isArray(data.reIssued) ||
+      data.reIssued.length === 0
     )
-  ) ||
-  (
-    // If re-issue exists and is rejected, redirect
-    Array.isArray(data.reIssued) &&
-    data.reIssued.length > 0 &&
-    data.reIssuedStatus === 'rejected'
   )
 ) {
   router.push('/admin/request');
@@ -187,16 +175,23 @@ if (
           }
         }
       );
-      if (reissueRes.ok) {
-        const reissueData = await reissueRes.json();
-        if (reissueData.reIssued && reissueData.reIssued.status === 'pending') {
-          isExtended = true;
-          reIssueRequest = {
-            ...reissueData.reIssued
-          };
-        }
+  if (reissueRes.ok) {
+    const reissueData = await reissueRes.json();
+    if (reissueData.reIssued) {
+      if (reissueData.reIssued.status === 'pending') {
+        isExtended = true;
+        reIssueRequest = { ...reissueData.reIssued };
+      } else {
+        // If re-issue status is not pending, redirect
+        router.push('/admin/request');
+        return;
       }
     }
+  }
+}
+
+
+    
 
     const mappedData = {
       requestId: data.requestId,
