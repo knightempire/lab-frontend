@@ -11,150 +11,53 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     isCompleted: true
   });
 
-  // Initial flow based on status
-  const initialStatus = requestData.status?.toLowerCase();
-  
-  if (initialStatus === 'returned') {
-    // For returned status: Request → Accepted → Issued → Returned (all from requestData)
+  // Accepted
+  timelineItems.push({
+    type: 'acceptance',
+    date: requestData.acceptedDate,
+    label: 'Accepted',
+    isCompleted: !!requestData.acceptedDate,
+    status: 'accepted'
+  });
+
+  // Issued
+  timelineItems.push({
+    type: 'issue',
+    date: requestData.issueDate,
+    label: 'Issued',
+    isCompleted: !!requestData.issueDate,
+    status: 'issued'
+  });
+
+  // Insert re-issue steps here, after Issued
+  if (requestData.reIssueRequest) {
     timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: 'Accepted',
-      isCompleted: !!requestData.acceptedDate,
-      status: 'accepted'
+      type: 'reissue-request',
+      date: requestData.reIssueRequest.reviewedDate,
+      label: 'Reissue Requested',
+      isCompleted: !!requestData.reIssueRequest.reviewedDate
     });
 
+    const isRejected = requestData.reIssueRequest.status === 'rejected';
     timelineItems.push({
-      type: 'issue',
-      date: requestData.issueDate,
-      label: 'Issued',
-      isCompleted: !!requestData.issueDate,
-      status: 'issued'
-    });
-
-    timelineItems.push({
-      type: 'return',
-      date: requestData.allReturnedDate,
-      label: 'Returned',
-      isCompleted: true, // Always true for returned status
-      status: 'returned'
-    });
-
-    
-  }  if (initialStatus === 'closed') {
-    // For returned status: Request → Accepted → Issued → Returned (all from requestData)
-    timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: 'Accepted',
-      isCompleted: !!requestData.acceptedDate,
-      status: 'accepted'
-    });
-
-
-
-    timelineItems.push({
-      type: 'closed',
-      date: requestData.returnDate,
-      label: 'closed',
-      isCompleted: true, // Always true for returned status
-      status: 'closed'
-    });
-
-    
-  }
-  
-  else {
-    // For other statuses: Request → Accepted/Rejected/Closed
-    timelineItems.push({
-      type: 'acceptance',
-      date: requestData.acceptedDate,
-      label: getStatusLabel(requestData.status),
-      isCompleted: !!requestData.acceptedDate,
-      status: requestData.status
-    });
-
-    // Show issue date only if accepted (and not closed/rejected)
-    if (initialStatus === 'accepted' || initialStatus === 'approved') {
-      timelineItems.push({
-        type: 'issue',
-        date: requestData.issueDate,
-        label: 'Issued',
-        isCompleted: !!requestData.issueDate,
-        status: 'issued'
-      });
-    }
-  }
-
-  // Handle Reissues
-  if (requestData.isreissued) {
-    const requestReissues = reissue.filter(item => item.requestId === requestData.id);
-
-    requestReissues.forEach((item, index) => {
-      // Reissue Request
-      timelineItems.push({
-        type: 'reissue',
-        date: item.requestdate,
-        label: `Reissue-Request ${index + 1}`,
-        isCompleted: true
-      });
-
-      // Determine reissue status
-      const isRejected = item.admindescription?.toLowerCase().includes('rejected');
-      const reissueStatus = item.status?.toLowerCase();
-
-      if (reissueStatus === 'returned') {
-        // For returned reissue: Request → Accepted → Issued → Returned (all from reissue item)
-        timelineItems.push({
-          type: 'reacceptance',
-          date: item.acceptedDate,
-          label: `Reissue-Accepted ${index + 1}`,
-          isCompleted: !!item.acceptedDate,
-          status: 'accepted'
-        });
-
-        timelineItems.push({
-          type: 'reissue-issue',
-          date: item.issueDate,
-          label: `Reissue-Issued ${index + 1}`,
-          isCompleted: !!item.issueDate,
-          status: 'issued'
-        });
-
-        timelineItems.push({
-          type: 'reissue-return',
-          date: item.returnDate,
-          label: `Reissue-Returned ${index + 1}`,
-          isCompleted: true, // Always true for returned status
-          status: 'returned'
-        });
-      } else {
-        // For other statuses: Request → Accepted/Rejected
-        const finalStatus = isRejected ? 'rejected' : 
-                           item.acceptedDate ? 'accepted' : 'pending';
-
-        timelineItems.push({
-          type: 'reacceptance',
-          date: item.acceptedDate,
-          label: isRejected ? `Reissue-Rejected ${index + 1}` : `Reissue-Accepted ${index + 1}`,
-          isCompleted: !!item.acceptedDate,
-          status: finalStatus
-        });
-
-        // Show issue date only if accepted (and not rejected)
-        if (finalStatus === 'accepted') {
-          timelineItems.push({
-            type: 'reissue-issue',
-            date: item.issueDate,
-            label: `Reissue-Issued ${index + 1}`,
-            isCompleted: !!item.issueDate,
-            status: 'issued'
-          });
-        }
-      }
+      type: 'reissue-accept-decline',
+      date: requestData.reIssueRequest.reIssuedDate,
+      label: isRejected ? 'Reissue Rejected' : 'Reissue Accepted',
+      isCompleted: !!requestData.reIssueRequest.reIssuedDate,
+      status: requestData.reIssueRequest.status
     });
   }
 
+  // Returned (if applicable)
+const returnedDate = requestData.allReturnedDate || requestData.returnedDate;
+if (returnedDate) {
+  timelineItems.push({
+    type: 'returned',
+    date: returnedDate,
+    label: 'Returned',
+    isCompleted: true
+  });
+}
   function getStatusLabel(status) {
     switch (status?.toLowerCase()) {
       case 'accepted': return 'Accepted';
@@ -166,53 +69,53 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     }
   }
 
-function getItemColor(item) {
-  if (!item.isCompleted) {
-    // Orange for pending
-    return 'bg-orange-400 border-orange-400';
+  function getItemColor(item) {
+    if (!item.isCompleted) {
+      // Orange for pending
+      return 'bg-orange-400 border-orange-400';
+    }
+    switch (item.type) {
+      case 'request':
+      case 'reissue':
+        return 'bg-blue-500 border-blue-500';
+      case 'issue':
+      case 'reissue-issue':
+        return 'bg-purple-500 border-purple-500';
+      case 'return':
+      case 'reissue-return':
+        return 'bg-orange-500 border-orange-500';
+      default:
+        switch (item.status?.toLowerCase()) {
+          case 'rejected':
+            return 'bg-red-500 border-red-500';
+          case 'returned':
+            return 'bg-orange-500 border-orange-500';
+          case 'closed':
+            return 'bg-amber-500 border-amber-500';
+          default:
+            return 'bg-green-500 border-green-500';
+        }
+    }
   }
-  switch (item.type) {
-    case 'request':
-    case 'reissue':
-      return 'bg-blue-500 border-blue-500';
-    case 'issue':
-    case 'reissue-issue':
-      return 'bg-purple-500 border-purple-500';
-    case 'return':
-    case 'reissue-return':
-      return 'bg-orange-500 border-orange-500';
-    default:
-      switch (item.status?.toLowerCase()) {
-        case 'rejected':
-          return 'bg-red-500 border-red-500';
-        case 'returned':
-          return 'bg-orange-500 border-orange-500';
-        case 'closed':
-          return 'bg-amber-500 border-amber-500';
-        default:
-          return 'bg-green-500 border-green-500';
-      }
-  }
-}
 
-function getIcon(item) {
-  if (!item.isCompleted) {
-    // No icon for pending
-    return null;
-  }
-  if (item.status?.toLowerCase() === 'rejected') {
+  function getIcon(item) {
+    if (!item.isCompleted) {
+      // No icon for pending
+      return null;
+    }
+    if (item.status?.toLowerCase() === 'rejected') {
+      return (
+        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      );
+    }
     return (
       <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
       </svg>
     );
   }
-  return (
-    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  );
-}
   function getIcon(item) {
     if (!item.isCompleted) {
       return null;

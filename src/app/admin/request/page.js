@@ -243,7 +243,17 @@ const getFilteredResults = () => {
     router.push(`/admin/review?${params.toString()}`);
   };
 
-  const filteredRequests = getFilteredResults();
+const filteredRequests = getFilteredResults().sort((a, b) => {
+  const dateA = a.status === 'extension-pending' && a.pendingReissue?.reIssuedDate
+    ? new Date(a.pendingReissue.reIssuedDate)
+    : new Date(a.requestedDate);
+
+  const dateB = b.status === 'extension-pending' && b.pendingReissue?.reIssuedDate
+    ? new Date(b.pendingReissue.reIssuedDate)
+    : new Date(b.requestedDate);
+
+  return dateB - dateA; // Descending order: latest first
+});
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const paginatedRequests = filteredRequests.slice(
     (currentPage - 1) * itemsPerPage,
@@ -330,12 +340,16 @@ const getFilteredResults = () => {
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-      requestedDate: (
-        <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
-          <CalendarDays size={14} />
-          {item.requestedDate}
-        </div>
-      ),
+requestedDate: (
+  <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
+    <CalendarDays size={14} />
+    {
+      item.status === 'extension-pending' && item.pendingReissue?.reIssuedDate
+        ? new Date(item.pendingReissue.reIssuedDate).toISOString().split('T')[0]
+        : item.requestedDate
+    }
+  </div>
+),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
           {statusIcon}

@@ -187,6 +187,31 @@ components: (req.issued && req.issued.length > 0
         issued: req.issued, // <-- ADD THIS LINE
         isreissued: req.reIssued && req.reIssued.length > 0
       };
+
+      if (req.reIssued && req.reIssued.length > 0) {
+  try {
+    const reIssueId = req.reIssued[0]; // Assuming only one re-issue at a time
+    const reIssueRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssueId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const reIssueData = await reIssueRes.json();
+    if (reIssueRes.ok && reIssueData.reIssued) {
+  mappedRequest.reIssueRequest = { ...reIssueData.reIssued };
+  console.log('Reissue data:', mappedRequest.reIssueRequest);
+    }
+  } catch (err) {
+    // Optionally handle error
+    mappedRequest.reIssueRequest = null;
+  }
+}
+
+
+
+
       setRequestData(mappedRequest);
       setAdminIssueComponents(mappedRequest.components);
 
@@ -375,7 +400,7 @@ const handleReturnSubmit = async (componentIndex) => {
       );
       const data = await response.json();
       if (!response.ok) {
-        alert(data.message || 'Failed to return component');
+        console.error('Error returning component:', data.message);
         return;
       }
 
@@ -678,6 +703,12 @@ const returnTrackingRows = returnTrackingComponents
         textColor = 'text-yellow-700';
         statusText = 'Pending';
         break;
+        case 'reIssued':
+        statusIcon = <Repeat size={16} className="text-indigo-700" />;
+        bgColor = 'bg-indigo-100';
+        textColor = 'text-indigo-700';
+        statusText = 'Extension';
+        break;    
     default:
       statusIcon = <AlertTriangle size={16} className="text-gray-700" />;
       bgColor = 'bg-gray-100';
@@ -718,12 +749,12 @@ const returnTrackingRows = returnTrackingComponents
                   <h2 className="text-xl font-semibold text-blue-800">
                     Request #{requestData.id}
                   </h2>
-                  {requestData.isreissued && (
+                  {/* {requestData.isreissued && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                       <Repeat size={16} className="mr-1" />
                       Extension / Re-Issue Request
                     </span>
-                  )}
+                  )} */}
                 </div>
                 <div className="w-full mt-5">
                   <RequestTimeline 
@@ -886,7 +917,7 @@ const returnTrackingRows = returnTrackingComponents
                 </div>
               </div>
               {/* Admin Issue Components Table - Show for accepted, returned, and closed status */}
-              {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'closed') && (
+              {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'closed' ||  requestData.status === 'reIssued') && (
                 <div className="bg-white shadow rounded-lg">
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex justify-between items-center mb-4">
@@ -962,112 +993,76 @@ const returnTrackingRows = returnTrackingComponents
               </div>
             )}
             {/* Re-requested Components Tables Section - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && requestData.isreissued && (
-              <div className="col-span-1 md:col-span-2 bg-white shadow rounded-lg px-3 my-6">
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-700 flex items-center">
-                    <Repeat className="w-5 h-5 mr-2 text-amber-600" />
-                    Re-requested Components
-                  </h2>
-                </div>
-                {reissue.length > 0 ? (
-                  reissue.map((reissueItem, reissueIndex) => (
-                    <div key={reissueIndex} className="p-4">
-                      <div className="flex flex-col md:flex-row gap-6">
-                        {/* Left Side - Reissue Details */}
-                        <div className="border-t border-gray-200 md:w-1/2">
-                          <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center"> 
-                            <Info size={20} className="text-amber-600 mr-2"></Info>
-                            Re-Issue Details
-                          </h3>
-                          {reissueItem.admindescription && (
-                            <div className={`mt-4 p-4 rounded-lg ${reissueItem.isreissued? 
-                            "border border-green-100 bg-green-50 text-green-600" : "border border-red-100 bg-red-50 text-red-600"}`}>
-                              <div className="flex items-center mb-2">
-                                <CheckCircle className="w-5 h-5 mr-2" />
-                                <h4 className="font-medium text-700">Admin Message</h4>
-                              </div>
-                              <p className="text-gray-700">{reissueItem.admindescription}</p>
-                            </div>
-                          )}
-                          <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                            <div className="flex justify-between items-center mb-4">
-                              <h2 className="text-lg font-semibold text-gray-700 flex items-center">
-                                <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                                User Note / Reason
-                              </h2>
-                              <div className="mb-2">
-                                <div className="flex gap-2">
-                                  <div className="flex items-center">
-                                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                                    <h4 className="font-medium text-gray-700">Requested Days</h4>
-                                  </div>
-                                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    <span>{requestData.requestedDays || "N/A"} Days</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="text-gray-600">{reissueItem.description || "No description provided."}</p>
-                          </div>
-                        </div>
-                        {/* Right Side - Components Table */}
-                        <div className="p-1 border-t border-gray-200 md:w-1/2">
-                          <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-semibold text-gray-700 flex items-center">
-                              <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                              </svg>
-                              Re-Issued Components
-                            </h2>
-                            {reissueItem.isreissued && (
-                              <div className="mb-2">
-                                <div className="flex gap-4">
-                                  <div className="flex items-center">
-                                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                                    <h4 className="font-medium text-gray-700">Issued Days</h4>
-                                  </div>
-                                  <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    <span>{reissueItem.issuedays || "N/A"} Days</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          <Table 
-                            columns={reissueColumns} 
-                            rows={(reissueItem.components || []).map(c => ({
-                              name: c.product_name || c.name,
-                              quantity: c.quantity
-                            })).slice(
-                              (reissuePage - 1) * 3,
-                              reissuePage * 3
-                            )}  
-                            currentPage={reissuePage} 
-                            itemsPerPage={3}
-                          />
-                          {(reissueItem.components || []).length > 0 && (
-                            <Pagination 
-                              currentPage={reissuePage}
-                              totalPages={Math.ceil((reissueItem.components || []).length / 3)}
-                              setCurrentPage={setReissuePage}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center text-gray-500">
-                    No reissue data found for this request.
-                  </div>
-                )}
-              </div>
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned'||  requestData.status === 'reIssued') && requestData.isreissued && (
+<div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
+  {/* Header */}
+  <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
+    <Repeat className="w-5 h-5 text-yellow-500" />
+    <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
+    <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
+      requestData.reIssueRequest.status === 'approved' || requestData.reIssueRequest.status === 'accepted'
+        ? 'bg-green-100 text-green-800'
+        : 'bg-red-100 text-red-800'
+    }`}>
+      {requestData.reIssueRequest.status.charAt(0).toUpperCase() + requestData.reIssueRequest.status.slice(1)}
+    </span>
+
+    {/* Days Approved (if status is approved) */}
+    {requestData.reIssueRequest.status === 'approved' && (
+      <div className="flex items-center gap-2 ml-auto">
+        <CheckCircle className="w-4 h-4 text-green-600" />
+        <span className="font-medium text-green-700">No. of Days Approved:</span>
+        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm font-semibold">
+          {requestData.reIssueRequest.adminApprovedDays || "N/A"} Days
+        </span>
+      </div>
+    )}
+  </div>
+
+  {/* Body */}
+  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Left Column */}
+    <div className="flex flex-col gap-6">
+      {/* Admin Message */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="font-semibold text-green-700">Admin Message</span>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900">
+          {requestData.reIssueRequest.adminReturnMessage || <span className="text-gray-400">No message from admin.</span>}
+        </div>
+      </div>
+
+      {/* Requested Days */}
+      <div className="flex items-center gap-2">
+        <CalendarDays className="w-4 h-4 text-blue-600" />
+        <span className="font-medium text-gray-700">Requested Days:</span>
+        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+          {requestData.reIssueRequest.extensionDays || requestData.reIssueRequest.requestedDays || "N/A"} Days
+        </span>
+      </div>
+    </div>
+
+    {/* Right Column */}
+    <div className="flex flex-col gap-6">
+      {/* Always show this section if not pending */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-blue-600" />
+          <span className="font-semibold text-blue-700">User Note / Reason</span>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
+          {requestData.reIssueRequest.requestDescription || <span className="text-gray-400">No message provided.</span>}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
             )}
             {/* Return Tracking Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned') &&
+            {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned' ||  requestData.status === 'reIssued') &&
   returnTrackingComponents.some(component => component.remaining > 0) && (
     <div className="bg-white shadow rounded-lg mb-8">
       <div className="p-6 border-b border-gray-200">
@@ -1086,7 +1081,7 @@ const returnTrackingRows = returnTrackingComponents
     </div>
 )}
             {/* Return History Table - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned') && (
+            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reIssued') && (
               <div className="bg-white shadow rounded-lg">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
