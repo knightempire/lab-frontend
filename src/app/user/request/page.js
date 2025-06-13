@@ -84,7 +84,12 @@ export default function UserRequestsPage() {
         req.requestId.toLowerCase().includes(searchQuery.toLowerCase()) ||
         req.items.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => {
+  // Extract numeric part from requestId
+  const idA = parseInt(a.requestId.replace(/\D/g, ''));
+  const idB = parseInt(b.requestId.replace(/\D/g, ''));
+  return idB - idA; // Descending order (high to low)
+});
   };
 
   const filteredRequests = getFilteredRequests();
