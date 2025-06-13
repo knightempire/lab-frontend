@@ -131,6 +131,7 @@ useEffect(() => {
       }
 
       setRequestData(mappedData);
+      setRequestStatus(mappedData.status);
     } catch (error) {
       router.push('/user/request');
     }
@@ -486,16 +487,16 @@ async function handleExtensionRequestSubmit(e) {
             </div>
             {/* Request Status Box */}
             <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
-              ${requestStatus === 'Done' 
+              ${requestStatus === 'returned' 
                 ? 'bg-green-100 border-green-200' 
                 : 'bg-yellow-100 border-yellow-200'
               }`}>
-              {requestStatus === 'Done' 
+              {requestStatus === 'returned' 
                 ? <CheckCircle size={16} className="text-green-700 shrink-0" />
                 : <Clock size={16} className="text-yellow-700 shrink-0" />
               }
               <span className={`text-sm font-medium whitespace-nowrap ${
-                requestStatus === 'Done' ? 'text-green-700' : 'text-yellow-700'
+                requestStatus === 'returned' ? 'text-green-700' : 'text-yellow-700'
               }`}>
                 Request {requestStatus}
               </span>
