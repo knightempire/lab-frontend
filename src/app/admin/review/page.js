@@ -10,6 +10,7 @@ import DropdownPortal from '../../../components/dropDown';
 import SuccessAlert from '../../../components/SuccessAlert';
 import RequestTimeline from '../../../components/RequestTimeline';
 import SingleDatePicker from '../../../components/DatePicker';
+import TimePicker from '../../../components/TimePicker';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const AdminRequestViewContent = () => {
@@ -1561,17 +1562,15 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     </div>
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
-                      <input
-                        type="time"
-                        className="px-3 py-2 border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:shadow-lg  disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      <TimePicker
                         value={adminAvailableTime}
+                        onChange={(e) => setAdminAvailableTime(e.target.value)}
+                        disabled={!adminAvailableDate}
                         min={
                           adminAvailableDate === getCurrentDateTime().currentDate 
                             ? getCurrentDateTime().currentTime 
                             : undefined
-                        } // Only set min time if selected date is today
-                        onChange={e => setAdminAvailableTime(e.target.value)}
-                        disabled={!adminAvailableDate} // Disable time selection until date is chosen
+                        }
                       />
                     </div>
                   </div>
