@@ -116,7 +116,7 @@ const filtered = data.requests.filter(req => {
 
   // Show pending
   if (status === 'pending') return true;
-
+  
   // Show approved with pending re-issue
   if (status === 'approved') {
     const hasPendingReissue = allReIssued.some(
