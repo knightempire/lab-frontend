@@ -236,6 +236,7 @@ if (
       isExtended,
       acceptedDate: data.issuedDate || null,
       issueDate: data.collectedDate || null,
+      
       // Optionally add originalRequestedDays, originalRequestDate, etc.
     };
 
@@ -1075,28 +1076,10 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     )}
                 {/* --- Add Timeline Here --- */}
                 <div className="mt-5">
-                  <RequestTimeline
-                    requestData={requestData}
-                    reissue={requestData.reIssueRequest || []}
-                    formatDate={formatDate}
-                    timelineItems={[
-                      {
-                        label: "Initial Request",
-                        date: requestData.requestedDate,
-                        isCompleted: !!requestData.requestedDate,
-                      },
-                      {
-                        label: "accepted",
-                        date: requestData.issuedDate, // <-- use issuedDate
-                        isCompleted: !!requestData.issuedDate,
-                      },
-                      {
-                        label: "issued",
-                        date: requestData.collectedDate, // <-- use collectedDate
-                        isCompleted: !!requestData.collectedDate,
-                      },
-                    ]}
-                  />
+<RequestTimeline 
+  requestData={requestData}
+  formatDate={formatDate}
+/>
                 </div>
               </div>
               <div className="mt-4 md:mt-0">
