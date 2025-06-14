@@ -3,61 +3,96 @@ import React from 'react';
 const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
   const timelineItems = [];
 
-  // Initial Request
+  // Always show Initial Request
   timelineItems.push({
     type: 'request',
     date: requestData.requestedDate,
     label: 'Initial Request',
-    isCompleted: true
+    isCompleted: !!requestData.requestedDate
   });
 
-  // Accepted
-  timelineItems.push({
-    type: 'acceptance',
-    date: requestData.acceptedDate,
-    label: 'Accepted',
-    isCompleted: !!requestData.acceptedDate,
-    status: 'accepted'
-  });
-
-  // Issued
-  timelineItems.push({
-    type: 'issue',
-    date: requestData.issueDate,
-    label: 'Issued',
-    isCompleted: !!requestData.issueDate,
-    status: 'issued'
-  });
-
-  // Insert re-issue steps here, after Issued
-  if (requestData.reIssueRequest) {
+  if (requestData.status === 'pending') {
     timelineItems.push({
-      type: 'reissue-request',
-      date: requestData.reIssueRequest.reviewedDate,
-      label: 'Reissue Requested',
-      isCompleted: !!requestData.reIssueRequest.reviewedDate
+      type: 'admin-action-pending',
+      date: null,
+      label: 'Admin Action Pending',
+      isCompleted: false
+    });
+  } else if (requestData.status === 'rejected') {
+    timelineItems.push({
+      type: 'rejected',
+      date: requestData.acceptedDate || null,
+      label: 'Rejected',
+      isCompleted: true
+    });
+  } else if (requestData.status === 'closed') {
+    // Show Accepted
+    timelineItems.push({
+      type: 'acceptance',
+      date: requestData.acceptedDate,
+      label: 'Accepted',
+      isCompleted: !!requestData.acceptedDate,
+      status: 'accepted'
+    });
+    // Show Closed
+    timelineItems.push({
+      type: 'closed',
+      date: requestData.allReturnedDate || requestData.returnedDate|| null,
+      label: 'Closed',
+      isCompleted: true
+    });
+  } else {
+    // Accepted
+    timelineItems.push({
+      type: 'acceptance',
+      date: requestData.acceptedDate,
+      label: 'Accepted',
+      isCompleted: !!requestData.acceptedDate,
+      status: 'accepted'
     });
 
-    const isRejected = requestData.reIssueRequest.status === 'rejected';
+    // Issued
     timelineItems.push({
-      type: 'reissue-accept-decline',
-      date: requestData.reIssueRequest.reIssuedDate,
-      label: isRejected ? 'Reissue Rejected' : 'Reissue Accepted',
-      isCompleted: !!requestData.reIssueRequest.reIssuedDate,
-      status: requestData.reIssueRequest.status
+      type: 'issue',
+      date: requestData.issueDate,
+      label: 'Issued',
+      isCompleted: !!requestData.issueDate,
+      status: 'issued'
     });
+
+    // Re-issue steps here, after Issued
+    if (requestData.reIssueRequest) {
+      timelineItems.push({
+        type: 'reissue-request',
+        date: requestData.reIssueRequest.reviewedDate,
+        label: 'Reissue Requested',
+        isCompleted: !!requestData.reIssueRequest.reviewedDate
+      });
+
+      if (requestData.reIssueRequest.status !== 'pending') {
+        const isRejected = requestData.reIssueRequest.status === 'rejected';
+        timelineItems.push({
+          type: 'reissue-accept-decline',
+          date: requestData.reIssueRequest.reIssuedDate,
+          label: isRejected ? 'Reissue Rejected' : 'Reissue Accepted',
+          isCompleted: !!requestData.reIssueRequest.reIssuedDate,
+          status: requestData.reIssueRequest.status
+        });
+      }
+    }
+
+    // Returned (if applicable)
+    const returnedDate = requestData.allReturnedDate || requestData.returnedDate;
+    if (returnedDate) {
+      timelineItems.push({
+        type: 'returned',
+        date: returnedDate,
+        label: 'Returned',
+        isCompleted: true
+      });
+    }
   }
 
-  // Returned (if applicable)
-const returnedDate = requestData.allReturnedDate || requestData.returnedDate;
-if (returnedDate) {
-  timelineItems.push({
-    type: 'returned',
-    date: returnedDate,
-    label: 'Returned',
-    isCompleted: true
-  });
-}
   function getStatusLabel(status) {
     switch (status?.toLowerCase()) {
       case 'accepted': return 'Accepted';
