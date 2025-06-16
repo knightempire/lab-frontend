@@ -115,6 +115,16 @@ const Calendar = () => {
     return eventsByDate[dateKey] || [];
   };
 
+  // Get unique event types for a date (max one dot per type)
+  const getUniqueEventTypes = (date) => {
+    const events = getEventsForDate(date);
+    const uniqueTypes = [...new Set(events.map(event => event.status))];
+    return uniqueTypes.map(type => ({
+      status: type,
+      count: events.filter(event => event.status === type).length
+    }));
+  };
+
   const getEventColor = (status) => {
     const colors = {
       'Issue Date': 'bg-green-500',
@@ -272,7 +282,7 @@ const Calendar = () => {
                     const isToday = date.toDateString() === new Date().toDateString();
                     const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                     const isSelected = selectedDate === dateKey;
-                    const dayEvents = getEventsForDate(date);
+                    const uniqueEventTypes = getUniqueEventTypes(date);
                     
                     return (
                       <div
@@ -304,18 +314,16 @@ const Calendar = () => {
                           {date.getDate()}
                         </div>
                         
-                        {/* Event Dots - Centered */}
-                        {dayEvents.length > 0 && isCurrentMonth && (
+                        {/* Event Dots - Maximum one per event type */}
+                        {uniqueEventTypes.length > 0 && isCurrentMonth && (
                           <div className="absolute bottom-0.5 sm:bottom-1 flex gap-0.5 sm:gap-1 justify-center items-center">
-                            {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                            {uniqueEventTypes.map((eventType, eventIndex) => (
                               <div
                                 key={eventIndex}
-                                className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(event.status)}`}
+                                className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status)}`}
+                                title={`${eventType.status}: ${eventType.count} event${eventType.count > 1 ? 's' : ''}`}
                               />
                             ))}
-                            {dayEvents.length > 3 && (
-                              <div className="text-xs text-gray-500 font-medium ml-0.5 sm:ml-1">+{dayEvents.length - 3}</div>
-                            )}
                           </div>
                         )}
                       </div>
