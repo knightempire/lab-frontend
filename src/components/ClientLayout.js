@@ -9,7 +9,6 @@ import Footer from './Footer';
 const validPaths = [
   '/',
   '/admin/dashboard',
-  '/admin/calendar',//remove after testing of calendar and admin dashboard
   '/admin/product',
   '/admin/request',
   '/admin/users',

@@ -2,90 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
-const Calendar = () => {
-  const events = [
-    {
-      date: '24/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '24/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '24/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '25/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '28/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '1/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '4/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '14/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '15/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '20/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '6/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '9/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-  ];
-
-  // Sample overdue data
-  const overdueItems = [
-    {
-      reqid: 'req-s-20001',
-      duedate: '15/06/2025'
-    },
-    {
-      reqid: 'req-s-20005',
-      duedate: '10/06/2025'
-    },
-    {
-      reqid: 'req-s-20008',
-      duedate: '12/06/2025'
-    },
-    {
-      reqid: 'req-s-20011',
-      duedate: '13/06/2025'
-    }
-  ];
-
+const Calendar = ({ events, overdueItems }) => {
   // Get today's date key consistently
   const getTodayKey = () => {
     const today = new Date();
@@ -239,7 +156,7 @@ const Calendar = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
+    <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Calendar Section */}
