@@ -12,6 +12,7 @@ export default function DashboardPage() {
     active_requests: 34,
     pending_requests: 7
   })
+
   const events = [
       {
         date: '24/06/2025',
@@ -103,7 +104,9 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+        Dashboard Overview
+      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <StatsCard
@@ -128,6 +131,7 @@ export default function DashboardPage() {
           color="yellow"
         />
       </div>
+
       {/* Calendar Section */}
       <div className="bg-white rounded-xl shadow mb-10">
         <Calendar 
@@ -135,6 +139,7 @@ export default function DashboardPage() {
           overdueItems={overdueItems}
         />
       </div>
+
       {/* Inventory Radar Chart Section */}
       <div className="bg-white rounded-xl shadow p-6 mb-10">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Inventory Overview</h2>
