@@ -50,8 +50,8 @@ const InventoryRadarChart = ({ data }) => {
       icon: 'circle',
     },
     radar: {
-      shape: 'circle',
-      radius: '65%',
+      shape: 'polygon',
+      radius: '70%',
       center: ['50%', '55%'],
       splitNumber: 5,
       indicator: [
@@ -64,6 +64,9 @@ const InventoryRadarChart = ({ data }) => {
           color: '#334155', 
           fontSize: 14,
           fontWeight: 500,
+          backgroundColor: '#f1f5f9', 
+          padding: [6, 14],           
+          borderRadius: 6,     
         },
       },
       splitLine: {
