@@ -1558,10 +1558,10 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     </div>
                   </div>
 
-                  {/* Enhanced warning messages */}
-                  {showDateTimeWarning && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                  {/* Enhanced warning messages - moved above buttons */}
+                  {(!adminAvailableDate || !adminAvailableTime) && (
+                    <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
                       <span>Please select both date and time to proceed with the action.</span>
                     </div>
                   )}
@@ -1576,9 +1576,8 @@ const isValidDateTime = (selectedDate, selectedTime) => {
 
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
                       onClick={() => handleActionClick('accept')}
-                      disabled={!adminAvailableDate || !adminAvailableTime || !isValidDateTime(adminAvailableDate, adminAvailableTime)}
                       aria-label="Accept Request"
                       title="Accept this request"
                     >
@@ -1587,9 +1586,8 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     </button>
 
                     <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
                       onClick={() => handleActionClick('decline')}
-                      disabled={!adminAvailableDate || !adminAvailableTime || !isValidDateTime(adminAvailableDate, adminAvailableTime)}
                       aria-label="Decline Request"
                       title="Decline this request"
                     >
