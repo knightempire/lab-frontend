@@ -194,8 +194,10 @@ const addProduct = async () => {
     }]);
 
     resetForm();
+        fetchProducts(); 
     setShowSuccessAlert(true);
     setTimeout(() => setShowSuccessAlert(false), 3000);
+
 
   } catch (error) {
     console.error('Error adding product:', error);
