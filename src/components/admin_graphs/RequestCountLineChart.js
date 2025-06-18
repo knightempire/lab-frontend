@@ -152,7 +152,7 @@ const MonthlyRequestLineChart = ({ data }) => {
         )}
         </div>
 
-        <div className="flex items-center justify-center gap-4 mb-2 mt-1">
+        <div className="flex items-center justify-start gap-4 mb-2 mt-1 ml-2">
           <h2 className="text-lg md:text-xl font-bold text-gray-800 text-center">
             Monthly Requests Overview
           </h2>
