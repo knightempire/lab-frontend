@@ -197,7 +197,7 @@ if (
 
     const mappedData = {
       requestId: data.requestId,
-      name: data.userId.name,
+      name: data.userId.name || "Unknown User",
       rollNo: data.userId.rollNo,
       phoneNo: data.userId.phoneNo, 
       email: data.userId.email,
@@ -207,8 +207,8 @@ if (
       adminApprovedDays: data.adminApprovedDays,
       status: data.requestStatus,
       referenceStaff: {
-        name: data.referenceId.name,
-        email: data.referenceId.email,
+        name: data.referenceId.name || null,
+        email: data.referenceId.email || null,
       },
       userMessage: data.description ,
       adminMessage: data.adminReturnMessage || "",
