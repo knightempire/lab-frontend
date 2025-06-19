@@ -201,15 +201,15 @@ if (
       rollNo: data.userId.rollNo,
       phoneNo: data.userId.phoneNo, 
       email: data.userId.email,
-      isFaculty: false, 
+      isFaculty: data.userId.isFaculty ,
       requestedDate: data.requestDate,
       requestedDays: data.requestedDays,
       adminApprovedDays: data.adminApprovedDays,
       status: data.requestStatus,
-      referenceStaff: {
-        name: data.referenceId.name || null,
-        email: data.referenceId.email || null,
-      },
+        referenceStaff: {
+          name: data.referenceId?.name || null,
+          email: data.referenceId?.email || null,
+        },
       userMessage: data.description ,
       adminMessage: data.adminReturnMessage || "",
       components: data.requestedProducts.map(product => ({
@@ -1134,16 +1134,20 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 </svg>
                 Reference Staff
               </h3>
-              <div className="space-y-3">
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Name:</span>
-                  <span className="font-medium">{requestData.referenceStaff?.name}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.referenceStaff?.email}</span>
-                </div>
-              </div>
+        {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
+    <div className="text-gray-500 italic">No reference staff</div>
+  ) : (
+    <div className="space-y-3">
+      <div className="flex">
+        <span className="text-gray-500 w-32">Name:</span>
+        <span className="font-medium">{requestData.referenceStaff?.name}</span>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-32">Email:</span>
+        <span className="font-medium">{requestData.referenceStaff?.email}</span>
+      </div>
+    </div>
+  )}
             </div>
           </div>
 
