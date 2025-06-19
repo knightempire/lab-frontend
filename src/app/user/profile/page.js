@@ -6,29 +6,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../../../components/loading/loadingscreen";
 
-const dummyUserDetails = {
-  name: "Akshay KS",
-  rollNo: "CB.SC.U4CSE23104",
-  email: "akshay@gmail.com",
-  phoneNo: "9876543210",
-  isFaculty: false,
-  damageCount: 3,
-  totalHistoryCount: 15,
-  status: "active",
-  requests: [
-    { requestId: "REQ123", totalComponents: 3, status: "pending", isReturned: false },
-    { requestId: "REQ124", totalComponents: 1, status: "accepted", isReturned: true },
-    { requestId: "REQ125", totalComponents: 5, status: "accepted", isReturned: false },
-    { requestId: "REQ126", totalComponents: 2, status: "rejected", isReturned: false },
-    { requestId: "REQ127", totalComponents: 4, status: "accepted", isReturned: true },
-  ]
-};
-
 const UserProfile = () => {
   const router = useRouter();
-  const [userDetails, setUserDetails] = useState(dummyUserDetails);
+  const [userDetails, setUserDetails] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({ name: dummyUserDetails.name, phoneNo: dummyUserDetails.phoneNo });
+  const [editData, setEditData] = useState({ name: "", phoneNo: "" });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,7 +21,8 @@ const UserProfile = () => {
       }
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/endpoint`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/get-user`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -47,23 +30,23 @@ const UserProfile = () => {
         });
         if (!res.ok) {
           localStorage.removeItem('token');
-          // router.push('/auth/login');
+          router.push('/auth/login');
           return;
         }
 
         const data = await res.json();
-        // Merge API data with dummy data as fallback
-        const merged = {
-          ...dummyUserDetails,
-          ...data,
-          requests: Array.isArray(data.requests) && data.requests.length > 0 ? data.requests : dummyUserDetails.requests,
-        };
-        setUserDetails(merged);
-        setEditData({ name: merged.name, phoneNo: merged.phoneNo });
+        if (data && data.user) {
+          setUserDetails({
+            ...data.user,
+            status: data.user.isActive ? "active" : "deactivated",
+            damageCount: 0, // You may want to fetch this from another endpoint
+            totalHistoryCount: 0, // You may want to fetch this from another endpoint
+            requests: [], // You may want to fetch this from another endpoint
+          });
+          setEditData({ name: data.user.name, phoneNo: data.user.phoneNo });
+        }
       } catch (e) {
-        // On error, fallback to dummy data
-        setUserDetails(dummyUserDetails);
-        setEditData({ name: dummyUserDetails.name, phoneNo: dummyUserDetails.phoneNo });
+        setUserDetails(null);
       }
     };
     fetchUser();
@@ -226,58 +209,6 @@ const UserProfile = () => {
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                 {userDetails.damageCount ?? 0}
               </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Analytics Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-6">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h3 className="text-lg font-medium text-gray-800">Request Analytics</h3>
-          <div className="bg-blue-50 p-2 rounded-full">
-            <BarChart2 size={18} className="text-blue-600" />
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border rounded-lg p-4 bg-white shadow-sm">
-              <h4 className="text-sm font-medium text-gray-500 mb-4">Request Status Distribution</h4>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={requestStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {requestStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="border rounded-lg p-4 bg-white shadow-sm">
-              <h4 className="text-sm font-medium text-gray-500 mb-4">Components Per Request</h4>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={componentBarData}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="components" fill="#3B82F6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
             </div>
           </div>
         </div>

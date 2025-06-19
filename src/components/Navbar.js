@@ -80,12 +80,12 @@ export default function Navbar({ toggleSidebar }) {
                   Your Profile
                 </Link>
               )}
-              <Link 
+              {/* <Link 
                 href={isAdmin ? "/admin/settings" : "/user/settings"}
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
                 Settings
-              </Link>
+              </Link> */}
               <button
                 onClick={handleSignOut}
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
