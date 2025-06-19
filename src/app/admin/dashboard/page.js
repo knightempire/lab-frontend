@@ -6,6 +6,8 @@ import StatsCard from "../../../components/StatsCard"
 import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadarChart"
 import Calendar from "../../../components/dashboard-calendar"
 import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCountLineChart"
+import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown"
+import LowStockItemsTable from '../../../components/admin_graphs/LowStockTable'
 
 export default function DashboardPage() {
   const [stats] = useState({
@@ -141,6 +143,23 @@ export default function DashboardPage() {
     { month: 'Jun 2025', count: 75 }
   ];
 
+  const piechartdata = {
+    accepted: 320,
+    closed: 540,
+    reissued: 65,
+    rejected: 80
+  };
+
+   const [lowStockData] = useState([
+    { product_name: "Pi", total_items: 10, in_stock:5 },
+    { product_name: "Arduino Uno", total_items: 10, in_stock:3 },
+    { product_name: "USB Type-C Cable", total_items: 10, in_stock:5 },
+    { product_name: "Breadboard", total_items: 10, in_stock:2 },
+    { product_name: "Resistor Pack", total_items: 10, in_stock:4 },
+    { product_name: "LED Strip", total_items: 10, in_stock:1 },
+    { product_name: "Jumper Wires", total_items: 10, in_stock:6 }
+  ]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
@@ -187,6 +206,13 @@ export default function DashboardPage() {
 
       {/* Monthly Request Line Chart Section */}
       <MonthlyRequestLineChart data={MonthlyData} />
+
+      {/* Request Status Chart Section */}
+      <RequestStatusChart data={piechartdata} />
+
+      {/* Low Stock Items Section */}
+      <LowStockItemsTable data={lowStockData} />
+
     </div>
   )
 }
