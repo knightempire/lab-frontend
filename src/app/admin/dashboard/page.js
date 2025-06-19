@@ -6,6 +6,7 @@ import StatsCard from "../../../components/StatsCard"
 import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadarChart"
 import Calendar from "../../../components/dashboard-calendar"
 import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCountLineChart"
+import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown"
 
 export default function DashboardPage() {
   const [stats] = useState({
@@ -141,6 +142,13 @@ export default function DashboardPage() {
     { month: 'Jun 2025', count: 75 }
   ];
 
+  const piechartdata = {
+    accepted: 320,
+    closed: 540,
+    reissued: 65,
+    rejected: 80
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
@@ -187,6 +195,10 @@ export default function DashboardPage() {
 
       {/* Monthly Request Line Chart Section */}
       <MonthlyRequestLineChart data={MonthlyData} />
+
+      {/* Request Status Chart Section */}
+      <RequestStatusChart data={piechartdata} />
+
     </div>
   )
 }
