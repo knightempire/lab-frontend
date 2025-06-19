@@ -61,13 +61,21 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     });
 
     // Re-issue steps here, after Issued
-    if (requestData.reIssueRequest) {
-      timelineItems.push({
-        type: 'reissue-request',
-        date: requestData.reIssueRequest.reviewedDate,
-        label: 'Reissue Requested',
-        isCompleted: !!requestData.reIssueRequest.reviewedDate
-      });
+if (requestData.reIssueRequest) {
+  timelineItems.push({
+    type: 'reissue-request',
+    date: requestData.reIssueRequest.reIssuedDate,
+    label: 'Reissue Requested',
+    isCompleted: !!requestData.reIssueRequest.reIssuedDate
+  });
+
+  // Add admin reissue status after reissue request
+  timelineItems.push({
+    type: 'reissue-admin-status',
+    date: requestData.reIssueRequest.adminActionDate || null, 
+    label: `Admin Reissue Status`,
+    isCompleted: requestData.reIssueRequest.status !== 'pending'
+  });
 
       if (requestData.reIssueRequest.status !== 'pending') {
         const isRejected = requestData.reIssueRequest.status === 'rejected';
