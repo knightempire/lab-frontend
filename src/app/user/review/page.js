@@ -69,8 +69,8 @@ useEffect(() => {
         adminApprovedDays: data.adminApprovedDays || 0,
         status: data.requestStatus.toLowerCase(),
         referenceStaff: {
-          name: data.referenceId.name,
-          email: data.referenceId.email,
+          name: data.referenceId?.name || data.userId.name,
+          email: data.referenceId?.email || data.userId.email,
         },
         userMessage: data.description,
         adminMessage: data.adminReturnMessage || "",
