@@ -23,7 +23,7 @@ const AdminRequestViewContent = () => {
   const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
-
+const [successMessage, setSuccessMessage] = useState('');
     // Action states
   const [action, setAction] = useState(null); // 'accept' or 'decline'
   const [responseMessage, setResponseMessage] = useState('');
@@ -125,6 +125,15 @@ useEffect(() => {
 verifyadmin();
 
   }, [searchParams, router]);
+
+
+  useEffect(() => {
+  if (requestData?.reIssueRequest?.requestedDays) {
+    setIssuableDays(requestData.reIssueRequest.requestedDays);
+  }
+  // ...existing logic for other cases...
+}, [requestData]);
+
 
     const fetchRequestData = async () => {
       try {
@@ -453,7 +462,15 @@ const handleReIssueAction = async (action, message) => {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
+
+      if (action === 'accept') {
+      setSuccessMessage('ReIssue approved successfully!');
+      }else if (action === 'decline') {
+         setSuccessMessage('ReIssue approved successfully!');
+      }
       setShowSuccess(true);
+      setSuccessMessage('');
+      
        setReissueAction(null); // Hide the buttons
       setReissueMessage('');
       setShowReissueDuration(false); // Hide the re-issue duration input
@@ -596,7 +613,7 @@ function formatDateShort(dateObj) {
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
-  
+
 const handleAddComponent = () => {
   if (isCollected) {
     setCollectedError('Components already issued. You cannot add more.');
@@ -711,7 +728,9 @@ const handleActionClick = (actionType) => {
       console.log('Request approved successfully:', data);
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'accepted' }));
+         setSuccessMessage('Request approved successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
       setAction(null); 
     } catch (error) {
       console.error('Error during API call:', error);
@@ -742,7 +761,9 @@ const handleActionClick = (actionType) => {
       console.log('Request rejected successfully:', data);
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'rejected' }));
+      setSuccessMessage('Request rejected successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
     } catch (error) {
       console.error('Error during API call:', error);
     }
@@ -771,8 +792,9 @@ const issuing = async () => {
       const errorData = await response.json();
       console.error('API Error:', errorData);
     } else {
-      const data = await response.json();
+      setSuccessMessage('Component issued successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
       // Set CollectedDate in state to disable UI
       setRequestData(prev => ({
         ...prev,
@@ -1387,13 +1409,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
 )}
                     </div>
 
-                    {showSuccess && (
-                      <SuccessAlert
-                        message="Issued components saved!"
-                        description="Changes have been successfully recorded."
-                        onClose={() => setShowSuccess(false)}
-                      />
-                    )}
+           
                   </>
                 {/* Issuable days */}
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -1991,6 +2007,13 @@ onClick={() => {
 )}
 
 
+{showSuccess && (
+  <SuccessAlert
+    message={successMessage || "Issued components saved!"}
+    description="Changes have been successfully recorded."
+    onClose={() => setShowSuccess(false)}
+  />
+)}
         </div>
       </div>
     </div>
