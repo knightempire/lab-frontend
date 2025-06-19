@@ -3,7 +3,7 @@
 import Notifications from './Notifications';
 import { useRouter } from 'next/navigation';
 import { Menu, User, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,15 +11,35 @@ export default function Navbar({ toggleSidebar }) {
   const router = useRouter();
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const isAdmin = pathname.startsWith('/admin');
   const userName = isAdmin ? "Admin" : "User";
 
-    const handleSignOut = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('selectedProducts');
-      router.push('/auth/login');
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('selectedProducts');
+    router.push('/auth/login');
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
     };
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileMenuOpen]);
 
   return (
     <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
@@ -34,9 +54,10 @@ export default function Navbar({ toggleSidebar }) {
       </div>
       
       <div className="flex items-center space-x-4">
-          <Notifications isAdmin={isAdmin} />
+        {/* Show notifications only for admin */}
+        {isAdmin && <Notifications isAdmin={isAdmin} />}
         
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button 
             className="flex items-center space-x-2 p-2 rounded-md text-gray-700 hover:bg-gray-100"
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
@@ -50,19 +71,22 @@ export default function Navbar({ toggleSidebar }) {
           
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-60">
-              <Link
-                href={isAdmin ? "" : "/user/profile"}
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                Your Profile
-              </Link>
+              {/* Show profile option only for users (not admin) */}
+              {!isAdmin && (
+                <Link
+                  href="/user/profile"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                >
+                  Your Profile
+                </Link>
+              )}
               <Link 
                 href={isAdmin ? "/admin/settings" : "/user/settings"}
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
                 Settings
               </Link>
-          <button
+              <button
                 onClick={handleSignOut}
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
               >
