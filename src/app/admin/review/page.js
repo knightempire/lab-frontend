@@ -30,7 +30,7 @@ const AdminRequestViewContent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [validationMessage, setValidationMessage] = useState('');
-
+const [triedAccept, setTriedAccept] = useState(false);
 
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
@@ -61,6 +61,18 @@ const [reissueSummary, setReissueSummary] = useState(null);
     return () => clearTimeout(timer);
   }
 }, [issueError]);
+
+
+useEffect(() => {
+  if (action === 'accept') {
+    setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
+  } else if (action === 'decline') {
+    setResponseMessage('Your request has been declined due to unavailability.');
+  } else {
+    setResponseMessage('');
+  }
+}, [action]);
+
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -584,11 +596,19 @@ function formatDateShort(dateObj) {
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
+  
 const handleAddComponent = () => {
   if (isCollected) {
     setCollectedError('Components already issued. You cannot add more.');
     return;
   }
+  // Check if the last component is filled (name and quantity > 0)
+  const last = adminIssueComponents[adminIssueComponents.length - 1];
+  if (last && (!last.name || last.name.trim() === '' || !last.quantity || last.quantity <= 0)) {
+    setIssueError('Please fill the previous component before adding another.');
+    return;
+  }
+  setIssueError('');
   setAdminIssueComponents([
     ...adminIssueComponents,
     { id: '', name: '', quantity: 0, description: '' }
@@ -630,22 +650,23 @@ const handleDecrementDays = () => {
 };
 
   // --- Action Handlers ---
-  const handleActionClick = (actionType) => {
-    // Check if date and time are selected
+const handleActionClick = (actionType) => {
+  if (actionType === 'accept') {
+    setTriedAccept(true); // Mark that user tried to accept
     if (!adminAvailableDate || !adminAvailableTime) {
       setShowDateTimeWarning(true);
       return;
     }
-
-    // Check if selected datetime is in the future
     if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
-      // The warning will already be shown by the JSX, just return
       return;
     }
-
     setShowDateTimeWarning(false);
     setAction(actionType);
-  };
+  } else if (actionType === 'decline') {
+    setAction(actionType);
+  }
+};
+
 
   const handleSubmit = async () => {
   if (action === 'accept') {
@@ -1563,12 +1584,12 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </div>
 
                   {/* Enhanced warning messages - moved above buttons */}
-                  {(!adminAvailableDate || !adminAvailableTime) && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-                      <span>Please select both date and time to proceed with the action.</span>
-                    </div>
-                  )}
+{action !== 'accept' && triedAccept && (!adminAvailableDate || !adminAvailableTime) && (
+  <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+    <span>Please select both date and time to proceed with the action.</span>
+  </div>
+)}
 
                   {/* New validation warning for past datetime */}
                   {adminAvailableDate && adminAvailableTime && !isValidDateTime(adminAvailableDate, adminAvailableTime) && (
