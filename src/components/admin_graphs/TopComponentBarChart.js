@@ -50,9 +50,10 @@ const TopComponentsBarChart = ({ data }) => {
       data: componentNames,
       axisLabel: {
         interval: 0,
-        rotate: 20,
+        rotate: 0,
         color: '#475569',
         fontSize: 12,
+        formatter: (value) => value.length > 12 ? value.slice(0, 12) + '…' : value,
       },
       axisLine: {
         lineStyle: { color: '#cbd5e1' },
@@ -100,7 +101,7 @@ const TopComponentsBarChart = ({ data }) => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white border border-gray-200 rounded-xl shadow-md p-4">
+    <div className="w-full mx-auto bg-white border border-gray-200 rounded-xl shadow-md p-4">
       <ReactECharts option={option} style={{ height: 420 }} />
     </div>
   );

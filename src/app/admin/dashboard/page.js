@@ -176,9 +176,14 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        Dashboard Overview
-      </h1>
+
+    <div className="mb-8 p-6 rounded-xl bg-blue-50 border border-blue-100 shadow-sm">
+      <h2 className="text-2xl font-semibold text-blue-800">Hi, Admin 👋</h2>
+      <p className="mt-1 text-sm text-blue-600">
+        Here's a quick overview of inventory and request stats.
+      </p>
+    </div>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <StatsCard
