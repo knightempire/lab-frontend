@@ -13,17 +13,6 @@ const TopComponentsBarChart = ({ data }) => {
   const requestCounts = topComponents.map(item => item.count);
 
   const option = {
-    title: {
-      text: 'Top 10 Requested Components',
-      left: 'center',
-      top: 10,
-      textStyle: {
-        fontSize: 18,
-        fontWeight: 600,
-        color: '#1e293b',
-        fontFamily: 'Inter, sans-serif',
-      },
-    },
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
@@ -50,7 +39,7 @@ const TopComponentsBarChart = ({ data }) => {
       data: componentNames,
       axisLabel: {
         interval: 0,
-        rotate: 0,
+        rotate: 30,
         color: '#475569',
         fontSize: 12,
         formatter: (value) => value.length > 12 ? value.slice(0, 12) + '…' : value,
@@ -101,7 +90,7 @@ const TopComponentsBarChart = ({ data }) => {
   };
 
   return (
-    <div className="w-full mx-auto bg-white border border-gray-200 rounded-xl shadow-md p-4">
+    <div className="w-full mx-auto p-2">
       <ReactECharts option={option} style={{ height: 420 }} />
     </div>
   );

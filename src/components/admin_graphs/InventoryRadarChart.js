@@ -8,17 +8,6 @@ const InventoryRadarChart = ({ data }) => {
 
   const chartOptions = {
     backgroundColor: 'transparent',
-    title: {
-      text: 'Product Inventory Distribution',
-      left: 'center',
-      top: 10,
-      textStyle: {
-        fontSize: 18,
-        fontWeight: 600,
-        fontFamily: 'Inter, sans-serif',
-        color: '#1f2937', 
-      },
-    },
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',

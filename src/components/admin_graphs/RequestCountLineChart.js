@@ -115,7 +115,7 @@ const MonthlyRequestLineChart = ({ data }) => {
   };
 
   return (
-    <div className="w-full mx-auto bg-white border border-gray-200 rounded-xl shadow-sm p-4 relative">
+    <div className="w-full mx-auto p-4 relative">
       <div className="absolute right-6 top-6 z-10">
         <button
             ref={buttonRef}

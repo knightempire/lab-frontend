@@ -119,7 +119,7 @@ function Table({ columns, rows, currentPage, itemsPerPage, renderCell, renderHea
 // Low Stock Items Table Component
 export default function LowStockItemsTable({ data = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 4;
 
   const totalItems = data.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -149,10 +149,7 @@ export default function LowStockItemsTable({ data = [] }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 mb-10">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Low Stock Items</h2>
-      </div>
+    <div className="p-6 mb-8">
       
       <Table
         columns={columns}

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 
-const RequestStatusChart = ({ data, title = "Request Status Breakdown", chartType = "pie" }) => {
+const RequestStatusChart = ({ data, title = "", chartType = "pie" }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -33,16 +33,6 @@ const RequestStatusChart = ({ data, title = "Request Status Breakdown", chartTyp
     }));
 
     const option = {
-      title: {
-        text: title,
-        left: 'center',
-        top: 20,
-        textStyle: {
-          fontSize: 18,
-          fontWeight: 'bold',
-          color: '#374151'
-        }
-      },
       tooltip: {
         trigger: 'item',
         formatter: function(params) {
@@ -59,7 +49,7 @@ const RequestStatusChart = ({ data, title = "Request Status Breakdown", chartTyp
       },
       legend: {
         orient: 'horizontal',
-        bottom: 30,
+        bottom: 35,
         left: 'center',
         itemGap: 20,
         textStyle: {
@@ -73,7 +63,7 @@ const RequestStatusChart = ({ data, title = "Request Status Breakdown", chartTyp
           name: 'Request Status',
           type: chartType === 'doughnut' ? 'pie' : 'pie',
           radius: chartType === 'doughnut' ? ['40%', '70%'] : '60%',
-          center: ['50%', '55%'],
+          center: ['50%', '45%'],
           data: pieData,
           emphasis: {
             itemStyle: {
@@ -119,12 +109,12 @@ const RequestStatusChart = ({ data, title = "Request Status Breakdown", chartTyp
   }, [chartData, title, chartType]);
 
   return (
-    <div className="w-full mx-auto bg-white border border-gray-200 rounded-xl shadow-sm m-4 relative">
+    <div className="w-full relative">
       <div 
         ref={chartRef} 
         style={{ 
           width: '100%', 
-          height: '400px',
+          height: '450px',
           minHeight: '400px'
         }}
         className="bg-white rounded-lg"

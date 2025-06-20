@@ -177,11 +177,16 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
 
-    <div className="mb-8 p-6 rounded-xl bg-blue-50 border border-blue-100 shadow-sm">
-      <h2 className="text-2xl font-semibold text-blue-800">Hi, Admin 👋</h2>
-      <p className="mt-1 text-sm text-blue-600">
-        Here's a quick overview of inventory and request stats.
-      </p>
+    <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-blue-50 via-white to-blue-100 border border-blue-100 shadow flex items-center gap-4">
+      <div className="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-blue-100">
+        <span className="text-3xl">👋</span>
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold text-blue-900 mb-1">Welcome back, Admin!</h2>
+          <p className="text-base text-blue-700">
+            Here&apos;s a quick overview of lab&apos;s inventory and requests.
+          </p>
+      </div>
     </div>
 
 
@@ -217,23 +222,33 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Inventory Radar Chart Section */}
-      <div className="bg-white rounded-xl shadow p-6 mb-10">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Inventory Overview</h2>
-        <InventoryRadarChart data={inventoryData} />
+      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Inventory Overview</h2>
+          <InventoryRadarChart data={inventoryData} />
+        </div>
+        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Request Status</h2>
+          <RequestStatusChart data={piechartdata} />
+        </div>
       </div>
 
-      {/* Monthly Request Line Chart Section */}
-      <MonthlyRequestLineChart data={MonthlyData} />
+      <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+        <MonthlyRequestLineChart data={MonthlyData} />
+      </div>
 
-      {/* Request Status Chart Section */}
-      <RequestStatusChart data={piechartdata} />
-
-      {/* Low Stock Items Section */}
-      <LowStockItemsTable data={lowStockData} />
-
-      {/* Top Components Bar Chart Section */}
-      <TopComponentsBarChart data={BarData} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Top Components</h2>
+          <TopComponentsBarChart data={BarData} />
+        </div>
+        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Low Stock Items</h2>
+          <LowStockItemsTable data={lowStockData} />
+        </div>
+      </div>
+    </div>
 
     </div>
   )
