@@ -177,7 +177,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
 
-    <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-blue-50 via-white to-blue-100 border border-blue-100 shadow flex items-center gap-4">
+    {/* <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-blue-50 via-white to-blue-100 border border-blue-100 shadow flex items-center gap-4">
       <div className="flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-blue-100">
         <span className="text-3xl">👋</span>
       </div>
@@ -187,8 +187,7 @@ export default function DashboardPage() {
             Here&apos;s a quick overview of lab&apos;s inventory and requests.
           </p>
       </div>
-    </div>
-
+    </div> */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <StatsCard
