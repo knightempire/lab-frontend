@@ -8,6 +8,7 @@ import Calendar from "../../../components/dashboard-calendar"
 import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCountLineChart"
 import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown"
 import LowStockItemsTable from '../../../components/admin_graphs/LowStockTable'
+import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart"
 
 export default function DashboardPage() {
   const [stats] = useState({
@@ -160,6 +161,19 @@ export default function DashboardPage() {
     { product_name: "Jumper Wires", total_items: 10, in_stock:6 }
   ]);
 
+  const BarData = [
+    { component: "Raspberry Pi 4", count: 95 },
+    { component: "ESP32", count: 88 },
+    { component: "Arduino UNO", count: 76 },
+    { component: "Jumper Wires", count: 60 },
+    { component: "Breadboard", count: 55 },
+    { component: "LCD Display", count: 52 },
+    { component: "Relay Module", count: 47 },
+    { component: "IR Sensor", count: 45 },
+    { component: "L293D Motor Driver", count: 42 },
+    { component: "Ultrasonic Sensor", count: 40 },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
@@ -212,6 +226,9 @@ export default function DashboardPage() {
 
       {/* Low Stock Items Section */}
       <LowStockItemsTable data={lowStockData} />
+
+      {/* Top Components Bar Chart Section */}
+      <TopComponentsBarChart data={BarData} />
 
     </div>
   )
