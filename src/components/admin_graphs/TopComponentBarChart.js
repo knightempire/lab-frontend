@@ -39,9 +39,10 @@ const TopComponentsBarChart = ({ data }) => {
       data: componentNames,
       axisLabel: {
         interval: 0,
-        rotate: 30,
+        rotate: 45,
         color: '#475569',
         fontSize: 12,
+        overflow: 'break',
         formatter: (value) => value.length > 12 ? value.slice(0, 12) + '…' : value,
       },
       axisLine: {
