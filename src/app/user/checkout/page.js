@@ -10,7 +10,35 @@ import DropdownPortal from '../../../components/dropDown';
 export default function CheckoutPage() {
   const router = useRouter(); 
   const [selectedProducts, setSelectedProducts] = useState([]);
-  
+  const [isFaculty, setIsFaculty] = useState(false);
+
+
+useEffect(() => {
+  const verifyuser = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.user?.isActive) {
+      router.push('/auth/login');
+    } else {
+      setIsFaculty(data.user.isFaculty === true);
+    }
+  };
+
+  verifyuser();
+}, []);
+
   useEffect(() => {
     const storedProducts = localStorage.getItem('selectedProducts');
     if (storedProducts) {
@@ -297,7 +325,8 @@ export default function CheckoutPage() {
         validationErrors.purpose = 'Purpose is required';
       }
       
-      if (!referenceStaff) {
+      // Only validate reference staff if not faculty
+      if (!isFaculty && !referenceStaff) {
         validationErrors.referenceStaff = 'Reference staff is required';
       }
       
@@ -644,22 +673,28 @@ export default function CheckoutPage() {
                       Reference Staff <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div 
+                      <div
                         ref={staffDropdownRef}
                         className={`w-full px-4 py-2 border ${
                           submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between`}
-                        onClick={() => setShowStaffDropdown(!showStaffDropdown)}
+                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between
+                        ${isFaculty ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
+                        onClick={() => {
+                          if (!isFaculty) setShowStaffDropdown(!showStaffDropdown);
+                        }}
+                        aria-disabled={isFaculty}
                       >
                         <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
-                          {referenceStaff || 'Select reference staff...'}
+                          {isFaculty
+                            ? 'You are a staff member. No reference staff needed.'
+                            : referenceStaff || 'Select reference staff...'}
                         </span>
                         <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      
-                      {showStaffDropdown && (
+                      {/* Only show dropdown if not faculty */}
+                      {!isFaculty && showStaffDropdown && (
                         <DropdownPortal 
                           targetRef={staffDropdownRef} 
                           onClose={() => setShowStaffDropdown(false)}

@@ -23,14 +23,14 @@ const AdminRequestViewContent = () => {
   const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
-
+const [successMessage, setSuccessMessage] = useState('');
     // Action states
   const [action, setAction] = useState(null); // 'accept' or 'decline'
   const [responseMessage, setResponseMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [validationMessage, setValidationMessage] = useState('');
-
+const [triedAccept, setTriedAccept] = useState(false);
 
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
@@ -61,6 +61,18 @@ const [reissueSummary, setReissueSummary] = useState(null);
     return () => clearTimeout(timer);
   }
 }, [issueError]);
+
+
+useEffect(() => {
+  if (action === 'accept') {
+    setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
+  } else if (action === 'decline') {
+    setResponseMessage('Your request has been declined due to unavailability.');
+  } else {
+    setResponseMessage('');
+  }
+}, [action]);
+
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -113,6 +125,15 @@ const [reissueSummary, setReissueSummary] = useState(null);
 verifyadmin();
 
   }, [searchParams, router]);
+
+
+  useEffect(() => {
+  if (requestData?.reIssueRequest?.requestedDays) {
+    setIssuableDays(requestData.reIssueRequest.requestedDays);
+  }
+  // ...existing logic for other cases...
+}, [requestData]);
+
 
     const fetchRequestData = async () => {
       try {
@@ -197,19 +218,19 @@ if (
 
     const mappedData = {
       requestId: data.requestId,
-      name: data.userId.name,
+      name: data.userId.name || "Unknown User",
       rollNo: data.userId.rollNo,
       phoneNo: data.userId.phoneNo, 
       email: data.userId.email,
-      isFaculty: false, 
+      isFaculty: data.userId.isFaculty ,
       requestedDate: data.requestDate,
       requestedDays: data.requestedDays,
       adminApprovedDays: data.adminApprovedDays,
       status: data.requestStatus,
-      referenceStaff: {
-        name: data.referenceId.name,
-        email: data.referenceId.email,
-      },
+        referenceStaff: {
+          name: data.referenceId?.name || null,
+          email: data.referenceId?.email || null,
+        },
       userMessage: data.description ,
       adminMessage: data.adminReturnMessage || "",
       components: data.requestedProducts.map(product => ({
@@ -441,7 +462,15 @@ const handleReIssueAction = async (action, message) => {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
+
+      if (action === 'accept') {
+      setSuccessMessage('ReIssue approved successfully!');
+      }else if (action === 'decline') {
+         setSuccessMessage('ReIssue approved successfully!');
+      }
       setShowSuccess(true);
+      setSuccessMessage('');
+      
        setReissueAction(null); // Hide the buttons
       setReissueMessage('');
       setShowReissueDuration(false); // Hide the re-issue duration input
@@ -584,11 +613,19 @@ function formatDateShort(dateObj) {
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
+
 const handleAddComponent = () => {
   if (isCollected) {
     setCollectedError('Components already issued. You cannot add more.');
     return;
   }
+  // Check if the last component is filled (name and quantity > 0)
+  const last = adminIssueComponents[adminIssueComponents.length - 1];
+  if (last && (!last.name || last.name.trim() === '' || !last.quantity || last.quantity <= 0)) {
+    setIssueError('Please fill the previous component before adding another.');
+    return;
+  }
+  setIssueError('');
   setAdminIssueComponents([
     ...adminIssueComponents,
     { id: '', name: '', quantity: 0, description: '' }
@@ -630,22 +667,23 @@ const handleDecrementDays = () => {
 };
 
   // --- Action Handlers ---
-  const handleActionClick = (actionType) => {
-    // Check if date and time are selected
+const handleActionClick = (actionType) => {
+  if (actionType === 'accept') {
+    setTriedAccept(true); // Mark that user tried to accept
     if (!adminAvailableDate || !adminAvailableTime) {
       setShowDateTimeWarning(true);
       return;
     }
-
-    // Check if selected datetime is in the future
     if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
-      // The warning will already be shown by the JSX, just return
       return;
     }
-
     setShowDateTimeWarning(false);
     setAction(actionType);
-  };
+  } else if (actionType === 'decline') {
+    setAction(actionType);
+  }
+};
+
 
   const handleSubmit = async () => {
   if (action === 'accept') {
@@ -690,7 +728,9 @@ const handleDecrementDays = () => {
       console.log('Request approved successfully:', data);
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'accepted' }));
+         setSuccessMessage('Request approved successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
       setAction(null); 
     } catch (error) {
       console.error('Error during API call:', error);
@@ -721,7 +761,9 @@ const handleDecrementDays = () => {
       console.log('Request rejected successfully:', data);
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'rejected' }));
+      setSuccessMessage('Request rejected successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
     } catch (error) {
       console.error('Error during API call:', error);
     }
@@ -750,8 +792,9 @@ const issuing = async () => {
       const errorData = await response.json();
       console.error('API Error:', errorData);
     } else {
-      const data = await response.json();
+      setSuccessMessage('Component issued successfully!');
       setShowSuccess(true);
+      setSuccessMessage('');
       // Set CollectedDate in state to disable UI
       setRequestData(prev => ({
         ...prev,
@@ -1134,16 +1177,20 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 </svg>
                 Reference Staff
               </h3>
-              <div className="space-y-3">
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Name:</span>
-                  <span className="font-medium">{requestData.referenceStaff?.name}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.referenceStaff?.email}</span>
-                </div>
-              </div>
+        {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
+    <div className="text-gray-500 italic">No reference staff</div>
+  ) : (
+    <div className="space-y-3">
+      <div className="flex">
+        <span className="text-gray-500 w-32">Name:</span>
+        <span className="font-medium">{requestData.referenceStaff?.name}</span>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-32">Email:</span>
+        <span className="font-medium">{requestData.referenceStaff?.email}</span>
+      </div>
+    </div>
+  )}
             </div>
           </div>
 
@@ -1362,13 +1409,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
 )}
                     </div>
 
-                    {showSuccess && (
-                      <SuccessAlert
-                        message="Issued components saved!"
-                        description="Changes have been successfully recorded."
-                        onClose={() => setShowSuccess(false)}
-                      />
-                    )}
+           
                   </>
                 {/* Issuable days */}
                 <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -1559,12 +1600,12 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </div>
 
                   {/* Enhanced warning messages - moved above buttons */}
-                  {(!adminAvailableDate || !adminAvailableTime) && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-                      <span>Please select both date and time to proceed with the action.</span>
-                    </div>
-                  )}
+{action !== 'accept' && triedAccept && (!adminAvailableDate || !adminAvailableTime) && (
+  <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+    <span>Please select both date and time to proceed with the action.</span>
+  </div>
+)}
 
                   {/* New validation warning for past datetime */}
                   {adminAvailableDate && adminAvailableTime && !isValidDateTime(adminAvailableDate, adminAvailableTime) && (
@@ -1966,6 +2007,13 @@ onClick={() => {
 )}
 
 
+{showSuccess && (
+  <SuccessAlert
+    message={successMessage || "Issued components saved!"}
+    description="Changes have been successfully recorded."
+    onClose={() => setShowSuccess(false)}
+  />
+)}
         </div>
       </div>
     </div>
