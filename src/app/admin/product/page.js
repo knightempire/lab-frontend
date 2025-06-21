@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, X, Edit2, Save, Package, Search } from 'lucide-react';
+import { Plus, X, Edit2, Save, Package, Search ,Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import Table from '../../../components/table';
@@ -365,6 +365,30 @@ const rows = paginatedProducts.map((item, idx) => ({
     toast.success('Products imported successfully!');
   };
 
+  const handleDownloadProducts = () => {
+    const exportData = sortedProducts.map((item) => ({
+      Name: item.product_name,
+      'Total Quantity': item.quantity,
+      'Issued Quantity': (item.quantity || 0) - (item.damagedQuantity || 0) - (item.inStock || 0),
+      'Damaged Quantity': item.damagedQuantity,
+      'In Stock': item.inStock,
+    }));
+
+    // Create worksheet and workbook
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+
+    // Generate filename with timestamp
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `products_${timestamp}.xlsx`;
+
+    // Trigger download
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="h-full w-full">
       {/* Backdrop for modal */}
@@ -375,24 +399,33 @@ const rows = paginatedProducts.map((item, idx) => ({
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
               Product Management
-              <span className="ml-4 text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
                 Total Products: {products.length}
               </span>
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3 mt-2">
+            <button
+              onClick={handleDownloadProducts}
+              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-md transition-colors duration-200 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Download Products</span>
+            </button>
+
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg shadow-sm"
+              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-md transition-colors duration-200 bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Upload Excel</span>
             </button>
+
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg shadow-sm"
+              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-md transition-colors duration-200 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Add Product</span>
