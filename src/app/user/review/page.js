@@ -620,52 +620,92 @@ async function handleExtensionRequestSubmit(e) {
 </div>
               {requestData.issueDate ? (
                 <>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
-                <span className="text-gray-700 font-medium">Return Date:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const baseDate = requestData.collectedDate || requestData.issueDate;
-                    if (!baseDate) return "N/A";
-                    const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
-                    const reIssueDays =
-                      requestData.reIssueRequest && requestData.reIssueRequest.status === "approved"
-                        ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
-                        : 0;
-                    console.log("DEBUG Return Date Days:", {
-                      mainDays,
-                      reIssueDays,
-                      totalDays: mainDays + reIssueDays,
-                      baseDate,
-                    });
-                    const date = new Date(baseDate);
-                    date.setDate(date.getDate() + mainDays + reIssueDays);
-                    const pad = n => n.toString().padStart(2, '0');
-                    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
-                  })()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-600" />
-                <span className="text-gray-700 font-medium">Time Left:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const baseDate = requestData.collectedDate || requestData.issueDate;
-                    if (!baseDate) return "N/A";
-                    const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
-                    const reIssueDays =
-                      requestData.reIssueRequest && requestData.reIssueRequest.status === "approved"
-                        ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
-                        : 0;
-                    const endDate = new Date(baseDate);
-                    endDate.setDate(endDate.getDate() + mainDays + reIssueDays);
-                    const now = new Date();
-                    const diffTime = endDate - now;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays > 0 ? `${diffDays} Days` : "Expired";
-                  })()}
-                </span>
-              </div>
+        <div className="flex items-center gap-2">
+      <CalendarDays className="w-5 h-5 text-indigo-600" />
+      <span className="text-gray-700 font-medium">Return Date:</span>
+      <span className="font-semibold">
+        {(() => {
+          // Always show the expected return date (from calculation)
+          const baseDate = requestData.collectedDate || requestData.issueDate;
+          if (!baseDate) return "N/A";
+          const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+          const reIssueDays =
+            requestData.reIssueRequest &&
+            (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+              ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+              : 0;
+          const date = new Date(baseDate);
+          date.setDate(date.getDate() + mainDays + reIssueDays);
+          const pad = n => n.toString().padStart(2, '0');
+          return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+        })()}
+      </span>
+    </div>
+
+    {/* Delay or Time Left */}
+    {(() => {
+      const baseDate = requestData.collectedDate || requestData.issueDate;
+      if (!baseDate) return null;
+      const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reIssueDays =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      const expectedReturnDate = new Date(baseDate);
+      expectedReturnDate.setDate(expectedReturnDate.getDate() + mainDays + reIssueDays);
+
+      // If returned, show only Delay (compare AllReturnedDate with expectedReturnDate)
+      if (requestData.status === 'returned' && requestData.allReturnedDate) {
+        const allReturnedDate = new Date(requestData.allReturnedDate);
+        // Zero out the time for both dates to compare only the date part
+        expectedReturnDate.setHours(0,0,0,0);
+        allReturnedDate.setHours(0,0,0,0);
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const delayDays = Math.floor((allReturnedDate - expectedReturnDate) / msPerDay);
+        return (
+          <div className="flex items-center gap-2">
+            <Clock className={`w-5 h-5 ${delayDays > 0 ? 'text-red-600' : 'text-green-600'}`} />
+            <span className="text-gray-700 font-medium">Delay:</span>
+            <span className="font-semibold">
+              {delayDays > 0
+                ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                : 'No Delay'}
+            </span>
+          </div>
+        );
+      }
+
+      // If not returned, show Time Left or Delay as before
+      if (requestData.status !== 'returned') {
+        const now = new Date();
+        const diffDays = Math.ceil((expectedReturnDate - now) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-green-600" />
+              <span className="text-gray-700 font-medium">Time Left:</span>
+              <span className="font-semibold">{`${diffDays} Day${diffDays > 1 ? 's' : ''}`}</span>
+            </div>
+          );
+        } else {
+          const delayDays = Math.abs(diffDays);
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-red-600" />
+              <span className="text-gray-700 font-medium">Delay:</span>
+              <span className="font-semibold">
+                {delayDays > 0
+                  ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                  : 'No Delay'}
+              </span>
+            </div>
+          );
+        }
+      }
+
+      return null;
+    })()}
                 </>
               ) : (
                 <div className="flex items-center gap-2">
