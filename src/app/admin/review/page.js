@@ -820,7 +820,8 @@ const issuing = async () => {
       // Set CollectedDate in state to disable UI
       setRequestData(prev => ({
         ...prev,
-        CollectedDate: new Date().toISOString()
+        CollectedDate: new Date().toISOString(), // (optional, for your own use)
+        issueDate: new Date().toISOString()      // <-- This is what the timeline uses!
       }));
     }
   } catch (error) {
