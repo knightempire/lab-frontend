@@ -59,7 +59,7 @@ useEffect(() => {
         rollNo: data.userId.rollNo,
         phoneNo: data.userId.phoneNo,
         email: data.userId.email,
-        isFaculty: false,
+        isFaculty: data.userId.isFaculty,
         requestedDate: data.requestDate,
         acceptedDate: data.issuedDate || null,
         issueDate: data.collectedDate || null,
