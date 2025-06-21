@@ -37,7 +37,7 @@ const RequestTimeline = ({ requestData, reissue = [], formatDate }) => {
     // Show Closed
     timelineItems.push({
       type: 'closed',
-      date: requestData.allReturnedDate || requestData.returnedDate|| null,
+      date: requestData.allReturnedDate ||  null,
       label: 'Closed',
       isCompleted: true
     });
@@ -137,7 +137,7 @@ function getItemColor(item) {
     case 'returned':
       return 'bg-rose-500 border-rose-500';          // Returned: Pink
     case 'closed':
-      return 'bg-gray-700 border-gray-700';          // Closed: Dark Gray
+      return 'bg-orange-700 border-orange-700';          // Closed: Dark Gray
          case 'rejected':
       return 'bg-red-500 border-red-500';    
     default:

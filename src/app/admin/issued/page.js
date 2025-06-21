@@ -316,12 +316,19 @@ const matchesProducts =
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-      requestedDate: (
-        <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
-          <CalendarDays size={14} />
-          {item.requestedDate}
-        </div>
-      ),
+requestedDate: (
+  <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
+    <CalendarDays size={14} />
+    {(() => {
+      if (!item.requestedDate) return "-";
+      const d = new Date(item.requestedDate);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    })()}
+  </div>
+),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
           {statusIcon}

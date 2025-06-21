@@ -315,16 +315,24 @@ export default function RequestsPage() {
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-      requestedDate: (
-        <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
-          <CalendarDays size={14} />
-          {
-            item.status === 'extension-pending' && item.pendingReissue?.reIssuedDate
-              ? new Date(item.pendingReissue.reIssuedDate).toISOString().split('T')[0]
-              : new Date(item.requestedDate).toISOString().split('T')[0]
-          }
-        </div>
-      ),
+requestedDate: (
+  <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
+    <CalendarDays size={14} />
+    {
+      (() => {
+        const rawDate = item.status === 'extension-pending' && item.pendingReissue?.reIssuedDate
+          ? item.pendingReissue.reIssuedDate
+          : item.requestedDate;
+        if (!rawDate) return "-";
+        const d = new Date(rawDate);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      })()
+    }
+  </div>
+),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
           {statusIcon}
