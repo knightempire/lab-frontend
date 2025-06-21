@@ -112,7 +112,7 @@ useEffect(() => {
           rollNo: req.userId.rollNo,
           phoneNo: req.userId.phoneNo,
           email: req.userId.email,
-          isFaculty: false,
+          isFaculty: req.userId.isFaculty,
           requestedDate: new Date(req.requestDate).toISOString().split('T')[0],
           requestedDays: req.requestedDays,
           status: req.requestStatus?.toLowerCase() || 'pending',
