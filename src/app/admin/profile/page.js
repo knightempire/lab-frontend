@@ -581,9 +581,9 @@ verifyToken();
       className="object-cover w-full h-full opacity-60 blur-[1.5px]"
     />
     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-indigo-500/30" />
-    <svg className="absolute bottom-0 left-0 w-full" height="56" viewBox="0 0 500 56" fill="none">
+    {/* <svg className="absolute bottom-0 left-0 w-full" height="56" viewBox="0 0 500 56" fill="none">
       <path d="M0 0C150 56 350 0 500 56V56H0V0Z" fill="#fff" fillOpacity="0.8"/>
-    </svg>
+    </svg> */}
     <button
       onClick={handleEditProfile}
       className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white/80 p-2 rounded-full hover:bg-blue-100 transition-colors shadow"
@@ -616,10 +616,10 @@ verifyToken();
   {/* Name & Roll */}
   <h3 className="text-2xl font-extrabold text-gray-800 mt-2 tracking-tight">{userDetails.name || 'Loading...'}</h3>
   <p className="text-indigo-400 text-base font-medium">{userDetails.rollNo || ''}</p>
-  <span className={`mt-2 mb-4 px-4 py-1 rounded-full text-xs font-semibold shadow-sm uppercase tracking-wide
+  {/* <span className={`mt-2 mb-4 px-4 py-1 rounded-full text-xs font-semibold shadow-sm uppercase tracking-wide
     ${userDetails.isFaculty ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
     {userDetails.isFaculty ? 'Staff' : 'Student'}
-  </span>
+  </span> */}
   {/* Info Grid */}
   <div className="w-full px-6 pb-8">
     <div className="grid grid-cols-1 gap-4">
