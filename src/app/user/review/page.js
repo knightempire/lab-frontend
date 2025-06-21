@@ -59,7 +59,7 @@ useEffect(() => {
         rollNo: data.userId.rollNo,
         phoneNo: data.userId.phoneNo,
         email: data.userId.email,
-        isFaculty: false,
+        isFaculty: data.userId.isFaculty,
         requestedDate: data.requestDate,
         acceptedDate: data.issuedDate || null,
         issueDate: data.collectedDate || null,
@@ -275,38 +275,53 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
       
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
   {/* Left Column */}
-  <div className="flex flex-col gap-6">
-    {/* Admin Message */}
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <CheckCircle className="w-5 h-5 text-green-600" />
-        <span className="font-semibold text-green-700">Admin Message</span>
-      </div>
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900">
-        {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
-      </div>
+<div className="flex flex-col gap-6">
+  {/* Admin Message */}
+  <div>
+    <div className="mb-2 flex items-center gap-2">
+      <CheckCircle className="w-5 h-5 text-indigo-600" />
+      <span className="font-semibold text-indigo-700">Admin Message</span>
     </div>
-    {/* User Note / Reason */}
-      {reIssue.status === 'pending' && (
+    <div
+      className={`border rounded-lg p-4 ${
+        reIssue.status === 'pending'
+          ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+          : reIssue.status === 'accepted' || reIssue.status === 'approved'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'
+      }`}
+    >
+      {reIssue.adminExtensionMessage || (
+        <span className="text-gray-400">No message from admin.</span>
+      )}
+    </div>
+  </div>
+
+  {/* User Note / Reason */}
+  {reIssue.status === 'pending' && (
     <div>
       <div className="mb-2 flex items-center gap-2">
         <FileText className="w-4 h-4 text-blue-600" />
         <span className="font-semibold text-blue-700">User Note / Reason</span>
       </div>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
-        {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+        {reIssue.userExtensionMessage || (
+          <span className="text-gray-400">No message provided.</span>
+        )}
       </div>
     </div>
-)}
-    {/* Requested Days */}
-    <div className="flex items-center gap-2">
-      <CalendarDays className="w-4 h-4 text-blue-600" />
-      <span className="font-medium text-gray-700">Requested Days:</span>
-      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-        {reIssue.extensionDays || reIssue.requestedDays || "N/A"} Days
-      </span>
-    </div>
+  )}
+
+  {/* Requested Days */}
+  <div className="flex items-center gap-2">
+    <CalendarDays className="w-4 h-4 text-blue-600" />
+    <span className="font-medium text-gray-700">Requested Days:</span>
+    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+      {reIssue.extensionDays || reIssue.requestedDays || 'N/A'} Days
+    </span>
   </div>
+</div>
+
 
   {/* Right Column */}
   <div className="flex flex-col gap-6">
@@ -314,7 +329,7 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
       <>
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <Repeat className="w-5 h-5 text-green-600" />
             <span className="font-semibold text-green-700">Re-Issued Components</span>
           </div>
           {notReturned.length > 0 ? (
@@ -586,59 +601,111 @@ async function handleExtensionRequestSubmit(e) {
             {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reissued' ) && (
             <>
             <div className="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <span className="text-gray-700 font-medium">Allocated:</span>
-                <span className="font-semibold">{requestData.adminApprovedDays || requestData.requestedDays || "N/A"} Days</span>
-              </div>
+<div className="flex items-center gap-2">
+  <Clock className="w-5 h-5 text-blue-600" />
+  <span className="text-gray-700 font-medium">Allocated:</span>
+  <span className="font-semibold">
+    {(() => {
+      const main = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reissue =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      return reissue > 0
+        ? `${main} + ${reissue} Days`
+        : `${main} Days`;
+    })()}
+  </span>
+</div>
               {requestData.issueDate ? (
                 <>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
-                <span className="text-gray-700 font-medium">Return Date:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const baseDate = requestData.collectedDate || requestData.issueDate;
-                    if (!baseDate) return "N/A";
-                    const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
-                    const reIssueDays =
-                      requestData.reIssueRequest && requestData.reIssueRequest.status === "approved"
-                        ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
-                        : 0;
-                    console.log("DEBUG Return Date Days:", {
-                      mainDays,
-                      reIssueDays,
-                      totalDays: mainDays + reIssueDays,
-                      baseDate,
-                    });
-                    const date = new Date(baseDate);
-                    date.setDate(date.getDate() + mainDays + reIssueDays);
-                    const pad = n => n.toString().padStart(2, '0');
-                    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
-                  })()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-green-600" />
-                <span className="text-gray-700 font-medium">Time Left:</span>
-                <span className="font-semibold">
-                  {(() => {
-                    const baseDate = requestData.collectedDate || requestData.issueDate;
-                    if (!baseDate) return "N/A";
-                    const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
-                    const reIssueDays =
-                      requestData.reIssueRequest && requestData.reIssueRequest.status === "approved"
-                        ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
-                        : 0;
-                    const endDate = new Date(baseDate);
-                    endDate.setDate(endDate.getDate() + mainDays + reIssueDays);
-                    const now = new Date();
-                    const diffTime = endDate - now;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays > 0 ? `${diffDays} Days` : "Expired";
-                  })()}
-                </span>
-              </div>
+        <div className="flex items-center gap-2">
+      <CalendarDays className="w-5 h-5 text-indigo-600" />
+      <span className="text-gray-700 font-medium">Return Date:</span>
+      <span className="font-semibold">
+        {(() => {
+          // Always show the expected return date (from calculation)
+          const baseDate = requestData.collectedDate || requestData.issueDate;
+          if (!baseDate) return "N/A";
+          const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+          const reIssueDays =
+            requestData.reIssueRequest &&
+            (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+              ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+              : 0;
+          const date = new Date(baseDate);
+          date.setDate(date.getDate() + mainDays + reIssueDays);
+          const pad = n => n.toString().padStart(2, '0');
+          return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+        })()}
+      </span>
+    </div>
+
+    {/* Delay or Time Left */}
+    {(() => {
+      const baseDate = requestData.collectedDate || requestData.issueDate;
+      if (!baseDate) return null;
+      const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reIssueDays =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      const expectedReturnDate = new Date(baseDate);
+      expectedReturnDate.setDate(expectedReturnDate.getDate() + mainDays + reIssueDays);
+
+      // If returned, show only Delay (compare AllReturnedDate with expectedReturnDate)
+      if (requestData.status === 'returned' && requestData.allReturnedDate) {
+        const allReturnedDate = new Date(requestData.allReturnedDate);
+        // Zero out the time for both dates to compare only the date part
+        expectedReturnDate.setHours(0,0,0,0);
+        allReturnedDate.setHours(0,0,0,0);
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const delayDays = Math.floor((allReturnedDate - expectedReturnDate) / msPerDay);
+        return (
+          <div className="flex items-center gap-2">
+            <Clock className={`w-5 h-5 ${delayDays > 0 ? 'text-red-600' : 'text-green-600'}`} />
+            <span className="text-gray-700 font-medium">Delay:</span>
+            <span className="font-semibold">
+              {delayDays > 0
+                ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                : 'No Delay'}
+            </span>
+          </div>
+        );
+      }
+
+      // If not returned, show Time Left or Delay as before
+      if (requestData.status !== 'returned') {
+        const now = new Date();
+        const diffDays = Math.ceil((expectedReturnDate - now) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-green-600" />
+              <span className="text-gray-700 font-medium">Time Left:</span>
+              <span className="font-semibold">{`${diffDays} Day${diffDays > 1 ? 's' : ''}`}</span>
+            </div>
+          );
+        } else {
+          const delayDays = Math.abs(diffDays);
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-red-600" />
+              <span className="text-gray-700 font-medium">Delay:</span>
+              <span className="font-semibold">
+                {delayDays > 0
+                  ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                  : 'No Delay'}
+              </span>
+            </div>
+          );
+        }
+      }
+
+      return null;
+    })()}
                 </>
               ) : (
                 <div className="flex items-center gap-2">
@@ -646,7 +713,8 @@ async function handleExtensionRequestSubmit(e) {
                   <span className="text-gray-700 font-medium">Scheduled Collection Date:</span>
 <span className="font-semibold flex items-center relative group">
   {requestData.scheduledCollectionDate || "-"}
-  <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+        <HelpCircle className=" w-4 h-4 le text-blue-500 inline" />
+  <span className="absolute left-36 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
       Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
     </span>
   </span>

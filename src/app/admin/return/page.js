@@ -164,6 +164,7 @@ return {
         issueDate: req.collectedDate,
         returnedDate: req.returnedDate,
         requestedDays: req.requestedDays,
+        adminApprovedDays: req.adminApprovedDays || null,
          allReturnedDate: req.AllReturnedDate || null,
         status: req.requestStatus,
         referenceStaff: {
@@ -872,6 +873,125 @@ const returnTrackingRows = returnTrackingComponents
               </div>
             </div>
           </div>
+
+{(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reIssued') && (
+  <div className="mx-6 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
+    {/* Allocated Days */}
+    <div className="flex items-center gap-2">
+      <Clock className="w-5 h-5 text-blue-600" />
+      <span className="text-gray-700 font-medium">Allocated:</span>
+      <span className="font-semibold">
+        {(() => {
+          const main = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+          const reissue =
+            requestData.reIssueRequest &&
+            (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+              ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+              : 0;
+          return reissue > 0
+            ? `${main} + ${reissue} Days`
+            : `${main} Days`;
+        })()}
+      </span>
+    </div>
+
+
+{/* If issued, show Return Date and Delay/Time Left */}
+{requestData.issueDate && (
+  <>
+    {/* Return Date */}
+    <div className="flex items-center gap-2">
+      <CalendarDays className="w-5 h-5 text-indigo-600" />
+      <span className="text-gray-700 font-medium">Return Date:</span>
+      <span className="font-semibold">
+        {(() => {
+          // Always show the expected return date (from calculation)
+          const baseDate = requestData.collectedDate || requestData.issueDate;
+          if (!baseDate) return "N/A";
+          const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+          const reIssueDays =
+            requestData.reIssueRequest &&
+            (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+              ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+              : 0;
+          const date = new Date(baseDate);
+          date.setDate(date.getDate() + mainDays + reIssueDays);
+          const pad = n => n.toString().padStart(2, '0');
+          return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+        })()}
+      </span>
+    </div>
+
+    {/* Delay or Time Left */}
+    {(() => {
+      const baseDate = requestData.collectedDate || requestData.issueDate;
+      if (!baseDate) return null;
+      const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reIssueDays =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      const expectedReturnDate = new Date(baseDate);
+      expectedReturnDate.setDate(expectedReturnDate.getDate() + mainDays + reIssueDays);
+
+      // If returned, show only Delay (compare AllReturnedDate with expectedReturnDate)
+      if (requestData.status === 'returned' && requestData.allReturnedDate) {
+        const allReturnedDate = new Date(requestData.allReturnedDate);
+        // Zero out the time for both dates to compare only the date part
+        expectedReturnDate.setHours(0,0,0,0);
+        allReturnedDate.setHours(0,0,0,0);
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const delayDays = Math.floor((allReturnedDate - expectedReturnDate) / msPerDay);
+        return (
+          <div className="flex items-center gap-2">
+            <Clock className={`w-5 h-5 ${delayDays > 0 ? 'text-red-600' : 'text-green-600'}`} />
+            <span className="text-gray-700 font-medium">Delay:</span>
+            <span className="font-semibold">
+              {delayDays > 0
+                ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                : 'No Delay'}
+            </span>
+          </div>
+        );
+      }
+
+      // If not returned, show Time Left or Delay as before
+      if (requestData.status !== 'returned') {
+        const now = new Date();
+        const diffDays = Math.ceil((expectedReturnDate - now) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-green-600" />
+              <span className="text-gray-700 font-medium">Time Left:</span>
+              <span className="font-semibold">{`${diffDays} Day${diffDays > 1 ? 's' : ''}`}</span>
+            </div>
+          );
+        } else {
+          const delayDays = Math.abs(diffDays);
+          return (
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-red-600" />
+              <span className="text-gray-700 font-medium">Delay:</span>
+              <span className="font-semibold">
+                {delayDays > 0
+                  ? `${delayDays} Day${delayDays > 1 ? 's' : ''}`
+                  : 'No Delay'}
+              </span>
+            </div>
+          );
+        }
+      }
+
+      return null;
+    })()}
+  </>
+)}
+  </div>
+)}
+
+
           {/* Components Tables Section */}
           <div className="p-6">
             <div className={`grid ${isLargeScreen ? 'grid-cols-2 gap-6' : 'grid-cols-1 gap-8'} mb-8`}>
@@ -935,7 +1055,7 @@ const returnTrackingRows = returnTrackingComponents
                           </div>
                           <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
                             <Clock className="w-4 h-4 mr-1" />
-                            <span>{requestData.requestedDays || "N/A"} Days</span>
+                            <span>{requestData.adminApprovedDays || "N/A"} Days</span>
                           </div>
                         </div>
                       </div>
