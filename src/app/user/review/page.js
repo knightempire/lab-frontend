@@ -601,11 +601,23 @@ async function handleExtensionRequestSubmit(e) {
             {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reissued' ) && (
             <>
             <div className="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <span className="text-gray-700 font-medium">Allocated:</span>
-                <span className="font-semibold">{requestData.adminApprovedDays || requestData.requestedDays || "N/A"} Days</span>
-              </div>
+<div className="flex items-center gap-2">
+  <Clock className="w-5 h-5 text-blue-600" />
+  <span className="text-gray-700 font-medium">Allocated:</span>
+  <span className="font-semibold">
+    {(() => {
+      const main = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reissue =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      return reissue > 0
+        ? `${main} + ${reissue} Days`
+        : `${main} Days`;
+    })()}
+  </span>
+</div>
               {requestData.issueDate ? (
                 <>
               <div className="flex items-center gap-2">
