@@ -572,104 +572,127 @@ verifyToken();
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Section: User Details */}
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 xl:col-span-1 relative">
-          <button
-            onClick={handleEditProfile}
-            className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-colors"
-          >
-            <Edit size={16} />
-          </button>
-
-          <div className="flex flex-col items-center mb-6">
-            <div className="flex items-center justify-center w-24 h-24 bg-blue-500 text-white text-3xl font-bold rounded-full mb-4">
-              {userDetails.name
-                ?.split(' ')
-                .map((word) => word[0])
-                .join('')
-                .toUpperCase() || 'U'}
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">{userDetails.name || 'Loading...'}</h3>
-            <p className="text-gray-500 text-sm">{userDetails.rollNo || ''}</p>
+<div className="relative bg-white/90 rounded-3xl shadow-2xl border border-blue-100 p-0 overflow-hidden flex flex-col items-center group transition-all duration-300 hover:shadow-blue-200">
+  {/* Decorative Cover */}
+  <div className="w-full h-36 md:h-48 bg-gradient-to-r from-indigo-600 via-blue-500 to-purple-600 relative">
+    <img
+      src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
+      alt="cover"
+      className="object-cover w-full h-full opacity-60 blur-[1.5px]"
+    />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-indigo-500/30" />
+    <svg className="absolute bottom-0 left-0 w-full" height="56" viewBox="0 0 500 56" fill="none">
+      <path d="M0 0C150 56 350 0 500 56V56H0V0Z" fill="#fff" fillOpacity="0.8"/>
+    </svg>
+    <button
+      onClick={handleEditProfile}
+      className="absolute top-4 right-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white/80 p-2 rounded-full hover:bg-blue-100 transition-colors shadow"
+      title="Edit Profile"
+    >
+      <Edit size={18} />
+    </button>
+  </div>
+  {/* Avatar */}
+  <div className="relative -mt-20 mb-2">
+    <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-indigo-400 to-blue-400 flex items-center justify-center hover:scale-105 transition-transform duration-300">
+      <span className="text-5xl font-extrabold text-white drop-shadow-lg select-none">
+        {userDetails.name
+          ?.split(' ')
+          .map((word) => word[0])
+          .join('')
+          .toUpperCase() || 'U'}
+      </span>
+    </div>
+    {/* Status Badge */}
+    <span className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white
+      ${userDetails.isActive ? 'bg-green-500' : 'bg-red-500'}`}>
+      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        {userDetails.isActive
+          ? <circle cx="10" cy="10" r="8" />
+          : <path d="M6 6l8 8M6 14L14 6" stroke="white" strokeWidth="2" strokeLinecap="round" />}
+      </svg>
+    </span>
+  </div>
+  {/* Name & Roll */}
+  <h3 className="text-2xl font-extrabold text-gray-800 mt-2 tracking-tight">{userDetails.name || 'Loading...'}</h3>
+  <p className="text-indigo-400 text-base font-medium">{userDetails.rollNo || ''}</p>
+  <span className={`mt-2 mb-4 px-4 py-1 rounded-full text-xs font-semibold shadow-sm uppercase tracking-wide
+    ${userDetails.isFaculty ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+    {userDetails.isFaculty ? 'Staff' : 'Student'}
+  </span>
+  {/* Info Grid */}
+  <div className="w-full px-6 pb-8">
+    <div className="grid grid-cols-1 gap-4">
+      {/* Email & Phone */}
+      <div className="flex flex-col md:flex-row justify-between gap-4 bg-white/90 rounded-xl p-4 shadow">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-500">Email</p>
+          <p className="font-medium text-sm break-all">{userDetails.email || 'N/A'}</p>
+        </div>
+        <div className="flex-shrink-0 md:text-right">
+          <p className="text-xs text-gray-500">Phone Number</p>
+          <p className="font-medium">{userDetails.phoneNo || 'N/A'}</p>
+        </div>
+      </div>
+      {/* Status, Role, History, Damage */}
+      <div className="grid grid-cols-2 gap-4 mt-2">
+        {/* Account Status */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-green-100 to-green-50 rounded-xl px-4 py-3 shadow group-hover:scale-105 transition-transform">
+          <CheckCircle size={20} className={userStatus === 'active' ? 'text-green-600' : 'text-red-600'} />
+          <div>
+            <span className="block text-xs text-gray-500">Account Status</span>
+            <span className={`font-semibold text-sm ${userStatus === 'active' ? 'text-green-700' : 'text-red-700'}`}>
+              {userStatus === 'active' ? 'Active' : 'Deactivated'}
+            </span>
           </div>
-
-          <div className="space-y-4">
-            {/* Basic Information */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="space-y-2 flex-1 min-w-0">
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-sm break-all">{userDetails.email || 'N/A'}</p>
-              </div>
-              <div className="space-y-2 flex-shrink-0 sm:text-right">
-                <p className="text-sm text-gray-500">Phone Number</p>
-                <p className="font-medium">{userDetails.phoneNo || 'N/A'}</p>
-              </div>
-            </div>
-
-            {/* Status Section */}
-            <div className="border-t border-gray-100 pt-4">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${userStatus === 'active' ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <CheckCircle size={20} className={userStatus === 'active' ? 'text-green-600' : 'text-red-600'} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-gray-700 font-medium">Account Status</span>
-                    <span className={`text-sm font-medium ${userStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                      {userStatus === 'active' ? 'Active' : 'Deactivated'}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleStatusToggle}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  style={{ backgroundColor: userStatus === 'active' ? '#10B981' : '#6B7280' }}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      userStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-purple-50 p-2 rounded-full">
-                    <GraduationCap size={20} className="text-purple-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">Role</span>
-                </div>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
-                  {userDetails.isFaculty ? 'Staff' : 'Student'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-full">
-                    <History size={20} className="text-blue-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">Total History</span>
-                </div>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                  {userDetails.totalHistoryCount || 0}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="bg-red-50 p-2 rounded-full">
-                    <XCircle size={20} className="text-red-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">Damage Count</span>
-                </div>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                  {userDetails.damageCount ?? 0}
-                </span>
-              </div>
-            </div>
+          <button
+            onClick={handleStatusToggle}
+            className="ml-auto relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            style={{ backgroundColor: userStatus === 'active' ? '#10B981' : '#6B7280' }}
+            title="Toggle Status"
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                userStatus === 'active' ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+        {/* Role */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl px-4 py-3 shadow group-hover:scale-105 transition-transform">
+          <GraduationCap size={20} className="text-purple-600" />
+          <div>
+            <span className="block text-xs text-gray-500">Role</span>
+            <span className="font-semibold text-sm text-purple-700">
+              {userDetails.isFaculty ? 'Staff' : 'Student'}
+            </span>
           </div>
         </div>
+        {/* Total History */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl px-4 py-3 shadow group-hover:scale-105 transition-transform">
+          <History size={20} className="text-blue-600" />
+          <div>
+            <span className="block text-xs text-gray-500">Total History</span>
+            <span className="font-semibold text-sm text-blue-700">
+              {userDetails.totalHistoryCount || 0}
+            </span>
+          </div>
+        </div>
+        {/* Damage Count */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-red-100 to-red-50 rounded-xl px-4 py-3 shadow group-hover:scale-105 transition-transform">
+          <XCircle size={20} className="text-red-600" />
+          <div>
+            <span className="block text-xs text-gray-500">Damage Count</span>
+            <span className="font-semibold text-sm text-red-700">
+              {userDetails.damageCount ?? 0}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
         {/* Right Section: User Requests Table */}
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 xl:col-span-2">
