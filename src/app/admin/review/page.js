@@ -166,21 +166,21 @@ verifyadmin();
     const data = apiResponse.request; 
 
     // If returned/closed/collected, redirect
-// if (
-//   data.requestStatus === 'returned' ||
-//   data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
-//   (
-//     data.requestStatus === 'approved' &&
-//     data.collectedDate &&
-//     (
-//       !Array.isArray(data.reIssued) ||
-//       data.reIssued.length === 0
-//     )
-//   )
-// ) {
-//   router.push('/admin/request');
-//   return;
-// }
+if (
+  data.requestStatus === 'returned' ||
+  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
+  (
+    data.requestStatus === 'approved' &&
+    data.collectedDate &&
+    (
+      !Array.isArray(data.reIssued) ||
+      data.reIssued.length === 0
+    )
+  )
+) {
+  router.push('/admin/request');
+  return;
+}
 
     // --- Check for re-issue ---
     let isExtended = false;
