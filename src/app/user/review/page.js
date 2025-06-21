@@ -275,38 +275,53 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
       
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
   {/* Left Column */}
-  <div className="flex flex-col gap-6">
-    {/* Admin Message */}
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <CheckCircle className="w-5 h-5 text-green-600" />
-        <span className="font-semibold text-green-700">Admin Message</span>
-      </div>
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900">
-        {reIssue.adminExtensionMessage || <span className="text-gray-400">No message from admin.</span>}
-      </div>
+<div className="flex flex-col gap-6">
+  {/* Admin Message */}
+  <div>
+    <div className="mb-2 flex items-center gap-2">
+      <CheckCircle className="w-5 h-5 text-indigo-600" />
+      <span className="font-semibold text-indigo-700">Admin Message</span>
     </div>
-    {/* User Note / Reason */}
-      {reIssue.status === 'pending' && (
+    <div
+      className={`border rounded-lg p-4 ${
+        reIssue.status === 'pending'
+          ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+          : reIssue.status === 'accepted' || reIssue.status === 'approved'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'
+      }`}
+    >
+      {reIssue.adminExtensionMessage || (
+        <span className="text-gray-400">No message from admin.</span>
+      )}
+    </div>
+  </div>
+
+  {/* User Note / Reason */}
+  {reIssue.status === 'pending' && (
     <div>
       <div className="mb-2 flex items-center gap-2">
         <FileText className="w-4 h-4 text-blue-600" />
         <span className="font-semibold text-blue-700">User Note / Reason</span>
       </div>
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
-        {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+        {reIssue.userExtensionMessage || (
+          <span className="text-gray-400">No message provided.</span>
+        )}
       </div>
     </div>
-)}
-    {/* Requested Days */}
-    <div className="flex items-center gap-2">
-      <CalendarDays className="w-4 h-4 text-blue-600" />
-      <span className="font-medium text-gray-700">Requested Days:</span>
-      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-        {reIssue.extensionDays || reIssue.requestedDays || "N/A"} Days
-      </span>
-    </div>
+  )}
+
+  {/* Requested Days */}
+  <div className="flex items-center gap-2">
+    <CalendarDays className="w-4 h-4 text-blue-600" />
+    <span className="font-medium text-gray-700">Requested Days:</span>
+    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
+      {reIssue.extensionDays || reIssue.requestedDays || 'N/A'} Days
+    </span>
   </div>
+</div>
+
 
   {/* Right Column */}
   <div className="flex flex-col gap-6">
@@ -314,7 +329,7 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
       <>
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <Repeat className="w-5 h-5 text-green-600" />
             <span className="font-semibold text-green-700">Re-Issued Components</span>
           </div>
           {notReturned.length > 0 ? (
