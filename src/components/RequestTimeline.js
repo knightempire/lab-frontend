@@ -70,12 +70,14 @@ if (requestData.reIssueRequest) {
   });
 
   // Add admin reissue status after reissue request
+if (requestData.reIssueRequest.status === 'pending') {
   timelineItems.push({
     type: 'reissue-admin-status',
     date: requestData.reIssueRequest.adminActionDate || null, 
     label: `Admin Reissue Status`,
-    isCompleted: requestData.reIssueRequest.status !== 'pending'
+    isCompleted: false
   });
+}
 
       if (requestData.reIssueRequest.status !== 'pending') {
         const isRejected = requestData.reIssueRequest.status === 'rejected';
@@ -112,34 +114,36 @@ if (requestData.reIssueRequest) {
     }
   }
 
-  function getItemColor(item) {
-    if (!item.isCompleted) {
-      // Orange for pending
-      return 'bg-orange-400 border-orange-400';
-    }
-    switch (item.type) {
-      case 'request':
-      case 'reissue':
-        return 'bg-blue-500 border-blue-500';
-      case 'issue':
-      case 'reissue-issue':
-        return 'bg-purple-500 border-purple-500';
-      case 'return':
-      case 'reissue-return':
-        return 'bg-orange-500 border-orange-500';
-      default:
-        switch (item.status?.toLowerCase()) {
-          case 'rejected':
-            return 'bg-red-500 border-red-500';
-          case 'returned':
-            return 'bg-orange-500 border-orange-500';
-          case 'closed':
-            return 'bg-amber-500 border-amber-500';
-          default:
-            return 'bg-green-500 border-green-500';
-        }
-    }
+function getItemColor(item) {
+  if (!item.isCompleted) {
+    // Orange for pending
+    return 'bg-orange-400 border-orange-400';
   }
+  switch (item.type) {
+    case 'request':
+      return 'bg-blue-500 border-blue-500';         // Initial Request: Blue
+    case 'acceptance':
+      return 'bg-green-500 border-green-500';        // Accepted: Green
+    case 'issue':
+      return 'bg-purple-500 border-purple-500';      // Issued: Purple
+    case 'reissue-request':
+      return 'bg-cyan-500 border-cyan-500';      // Reissue Requested: Yellow
+    case 'reissue-admin-status':
+      return 'bg-yellow-500 border-yellow-500';          // Admin Reissue Status: Cyan
+    case 'reissue-accept-decline':
+      return item.status === 'rejected'
+        ? 'bg-red-500 border-red-500'               // Reissue Rejected: Red
+        : 'bg-green-600 border-green-600';          // Reissue Accepted: Dark Green
+    case 'returned':
+      return 'bg-rose-500 border-rose-500';          // Returned: Pink
+    case 'closed':
+      return 'bg-gray-700 border-gray-700';          // Closed: Dark Gray
+         case 'rejected':
+      return 'bg-red-500 border-red-500';    
+    default:
+      return 'bg-gray-400 border-gray-400';          // Fallback: Gray
+  }
+}
 
   function getIcon(item) {
     if (!item.isCompleted) {

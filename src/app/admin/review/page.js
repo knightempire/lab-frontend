@@ -204,7 +204,8 @@ if (
       if (reissueData.reIssued.status === 'pending') {
         isExtended = true;
         reIssueRequest = { ...reissueData.reIssued };
-      } else {
+      } 
+      else {
         // If re-issue status is not pending, redirect
         router.push('/admin/request');
         return;
@@ -428,16 +429,11 @@ const handleSave = async () => {
   }
 };
 
-
 // Add this function inside your AdminRequestViewContent component
 
 const handleReIssueAction = async (action, message) => {
-  console.log('reIssueRequest:', requestData?.reIssueRequest);
-
   const token = localStorage.getItem('token');
   const reissueId = requestData.reIssueRequest?.reIssuedId; 
-
-  console.log(reissueId, "reissueId");
   let url = '';
   let payload = {
     adminReturnMessage: message
@@ -462,23 +458,49 @@ const handleReIssueAction = async (action, message) => {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
+      // Get current Asia/Kolkata date/time
+      const kolkataDate = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
 
+      // Update state immediately so timeline updates without refresh
+      setRequestData(prev => ({
+        ...prev,
+        reIssueRequest: {
+          ...prev.reIssueRequest,
+          status: action === 'accept' ? 'accepted' : 'rejected',
+          reIssuedDate: kolkataDate
+        }
+      }));
+
+      // Calculate new return date if accepted, else show initial return date
+      let newReturnDate = "-";
       if (action === 'accept') {
-      setSuccessMessage('ReIssue approved successfully!');
-      }else if (action === 'decline') {
-         setSuccessMessage('ReIssue approved successfully!');
+        // Add issuableDays to previous return date
+        const prevReturnDateObj = getPreviousReturnDate(requestData.issueDate, requestData.adminApprovedDays);
+        if (prevReturnDateObj) {
+          const newDate = new Date(prevReturnDateObj);
+          newDate.setDate(newDate.getDate() + Number(issuableDays));
+          newReturnDate = formatDateShort(newDate);
+        }
+      } else {
+        newReturnDate = getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays);
       }
+
+      setReissueSummary({
+        status: action === 'accept' ? 'accepted' : 'rejected',
+        days: action === 'accept' ? issuableDays : '-',
+        message: message,
+        returnDate: newReturnDate,
+        resStatus: 200
+      });
+
+      setSuccessMessage(
+        action === 'accept'
+          ? 'Re-Issue approved successfully!'
+          : 'Re-Issue declined successfully!'
+      );
       setShowSuccess(true);
-      setSuccessMessage('');
-      
-       setReissueAction(null); // Hide the buttons
-      setReissueMessage('');
-      setShowReissueDuration(false); // Hide the re-issue duration input
-        setShowReissueActions(false);
-         setReissueSummary({
-    ...yourSummaryData,
-    resStatus: 200
-  });
+      setShowReissueDuration(false);
+      setShowReissueActions(false);
     } else {
       const data = await res.json();
       setIssueError(data.message || 'Failed to process re-issue action.');
@@ -487,7 +509,6 @@ const handleReIssueAction = async (action, message) => {
     setIssueError('Network error.');
   }
 };
-  
 // Helper to get not returned components for re-issue
 function getNotReturnedComponents(issued, returned) {
   console.log('Calculating not returned components...');
@@ -732,6 +753,7 @@ const handleActionClick = (actionType) => {
       setShowSuccess(true);
       setSuccessMessage('');
       setAction(null); 
+      fetchRequestData(); // Refresh request data
     } catch (error) {
       console.error('Error during API call:', error);
     }
@@ -798,7 +820,8 @@ const issuing = async () => {
       // Set CollectedDate in state to disable UI
       setRequestData(prev => ({
         ...prev,
-        CollectedDate: new Date().toISOString()
+        CollectedDate: new Date().toISOString(), // (optional, for your own use)
+        issueDate: new Date().toISOString()      // <-- This is what the timeline uses!
       }));
     }
   } catch (error) {
@@ -1119,8 +1142,16 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     )}
                 {/* --- Add Timeline Here --- */}
                 <div className="mt-5">
-<RequestTimeline 
+<RequestTimeline
   requestData={requestData}
+  reissue={
+    requestData.reIssueRequest
+      ? [{
+          requestdate: requestData.reIssueRequest.reIssuedDate,
+          status: requestData.reIssueRequest.status
+        }]
+      : []
+  }
   formatDate={formatDate}
 />
                 </div>
@@ -1756,7 +1787,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
           <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
             <div className="flex items-center mb-2">
               <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-              <h4 className="font-medium text-green-700">Admin Return Message</h4>
+              <h4 className="font-medium text-green-700">Admin Issue Message</h4>
             </div>
             <p className="text-gray-700">{requestData.adminMessage}</p>
           </div>
@@ -1786,7 +1817,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
     </div>
 
     {/* Show Not Returned Components Table ONLY if re-issue is pending */}
-    {requestData.reIssueRequest.status === 'pending' && (
+{['pending', 'accepted','rejected'].includes(requestData.reIssueRequest.status) && (
       <div className="p-6 border-t border-gray-200">
         <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
           <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
@@ -1884,24 +1915,27 @@ onClick={() => {
 
 {reissueSummary && reissueSummary.resStatus === 200 && (
   <div
-    className={`mt-8 w-full rounded-2xl border shadow-lg px-0 py-0 overflow-hidden
+    className={`mt-10 w-full rounded-3xl border-2 shadow-2xl overflow-hidden
       ${reissueSummary.status === 'accepted'
-        ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-300'
-        : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-300'
+        ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-400'
+        : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-400'
       }`}
     style={{ maxWidth: "100%" }}
   >
     {/* Header */}
-    <div className={`flex items-center gap-4 px-8 py-6 border-b ${reissueSummary.status === 'accepted' ? 'border-green-200' : 'border-red-200'} bg-white`}>
-      <div className={`flex items-center justify-center rounded-full h-16 w-16 shadow ${reissueSummary.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'}`}>
+    <div className={`flex items-center gap-4 px-8 py-4 border-b-2
+      ${reissueSummary.status === 'accepted' ? 'border-green-200' : 'border-red-200'} bg-white`}>
+      <div className={`flex items-center justify-center rounded-full h-12 w-12 shadow-lg
+        ${reissueSummary.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'}`}>
         {reissueSummary.status === 'accepted' ? (
-          <CheckCircle className="w-10 h-10 text-green-600" />
+          <CheckCircle className="w-7 h-7 text-green-600" />
         ) : (
-          <XCircle className="w-10 h-10 text-red-600" />
+          <XCircle className="w-7 h-7 text-red-600" />
         )}
       </div>
       <div>
-        <div className={`text-2xl font-extrabold tracking-wide ${reissueSummary.status === 'accepted' ? 'text-green-700' : 'text-red-700'}`}>
+        <div className={`text-xl font-bold tracking-wide
+          ${reissueSummary.status === 'accepted' ? 'text-green-700' : 'text-red-700'}`}>
           Re-Issue {reissueSummary.status === 'accepted' ? 'Accepted' : 'Rejected'}
         </div>
         <div className="text-gray-500 text-sm mt-1">
@@ -1912,27 +1946,33 @@ onClick={() => {
       </div>
     </div>
     {/* Details */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
-      <div className="flex flex-col items-center md:items-start px-8 py-7">
+    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
+      <div className="flex flex-col items-center md:items-start px-8 py-4">
         <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
           <Repeat className="w-4 h-4 text-indigo-400" />
           Re-Issue Days
         </div>
-        <div className="font-bold text-2xl text-gray-900">{reissueSummary.days}</div>
+        <div className="font-bold text-lg text-gray-900">{reissueSummary.days}</div>
       </div>
-      <div className="flex flex-col items-center md:items-start px-8 py-7">
+      <div className="flex flex-col items-center md:items-start px-8 py-4">
         <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
           <CalendarDays className="w-4 h-4 text-blue-400" />
           Return Date
         </div>
-        <div className="font-bold text-2xl text-gray-900">{reissueSummary.returnDate}</div>
+        <div className="font-bold text-lg text-gray-900">
+          {reissueSummary.status === 'accepted'
+            ? reissueSummary.returnDate
+            : getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
+          }
+        </div>
       </div>
-      <div className="flex flex-col items-center md:items-start px-8 py-7">
+      <div className="flex flex-col items-center md:items-start px-8 py-4 w-full">
         <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-green-400" />
           Admin Message
         </div>
-        <div className="bg-white border border-gray-200 rounded-md px-4 py-3 text-gray-800 text-base w-full shadow-sm">
+        <div className={`rounded-xl px-4 py-3 text-gray-900 text-sm w-full shadow
+          ${reissueSummary.status === 'accepted' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
           {reissueSummary.message}
         </div>
       </div>
@@ -1978,7 +2018,7 @@ onClick={() => {
             disabled={isReissueSubmitting}
             onClick={async () => {
               setIsReissueSubmitting(true);
-              await handleReIssueAction(reissueAction, reissueMessage);
+              await handleReIssueAction(reissueAction, reissueMessage); 
               setIsReissueSubmitting(false);
               setReissueAction(null);
               setReissueMessage('');
