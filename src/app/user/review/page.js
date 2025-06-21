@@ -646,7 +646,8 @@ async function handleExtensionRequestSubmit(e) {
                   <span className="text-gray-700 font-medium">Scheduled Collection Date:</span>
 <span className="font-semibold flex items-center relative group">
   {requestData.scheduledCollectionDate || "-"}
-  <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+        <HelpCircle className=" w-4 h-4 le text-blue-500 inline" />
+  <span className="absolute left-36 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
       Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
     </span>
   </span>
