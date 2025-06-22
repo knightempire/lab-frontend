@@ -1122,76 +1122,68 @@ const returnTrackingRows = returnTrackingComponents
 
             
             {/* Re-requested Components Tables Section - Only show for accepted and returned */}
-            {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned'||  requestData.status === 'reIssued') && requestData.isreissued && (
-<div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
-  {/* Header */}
-  <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
-    <Repeat className="w-5 h-5 text-yellow-500" />
-    <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
-    <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-      requestData.reIssueRequest.status === 'approved' || requestData.reIssueRequest.status === 'accepted'
-        ? 'bg-green-100 text-green-800'
-        : 'bg-red-100 text-red-800'
-    }`}>
-      {requestData.reIssueRequest.status.charAt(0).toUpperCase() + requestData.reIssueRequest.status.slice(1)}
-    </span>
-
-    {/* Days Approved (if status is approved) */}
-    {requestData.reIssueRequest.status === 'approved' && (
-      <div className="flex items-center gap-2 ml-auto">
-        <CheckCircle className="w-4 h-4 text-green-600" />
-        <span className="font-medium text-green-700">No. of Days Approved:</span>
-        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm font-semibold">
-          {requestData.reIssueRequest.adminApprovedDays || "N/A"} Days
-        </span>
+{(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reIssued') && requestData.isreissued && (
+  <div className="w-full my-10 px-0 md:px-4">
+    <div className="relative w-full rounded-lg shadow-lg border-0 bg-gradient-to-r from-yellow-50 via-white to-yellow-100 flex flex-col md:flex-row items-stretch overflow-hidden">
+      {/* Ribbon */}
+      <div className="absolute left-0 top-0 bg-yellow-400 text-white px-6 py-1 rounded-br-lg font-bold text-xs tracking-widest z-10 shadow">
+        RE-ISSUE
       </div>
-    )}
-  </div>
-
-  {/* Body */}
-  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Left Column */}
-    <div className="flex flex-col gap-6">
-      {/* Admin Message */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
+      {/* Left: Admin Message */}
+      <div className="flex-1 flex flex-col justify-center p-8 border-r-0 md:border-r-2 border-yellow-200 bg-gradient-to-br from-green-50 to-white min-h-[180px]">
+        <div className="flex items-center gap-2 mb-2">
           <CheckCircle className="w-5 h-5 text-green-600" />
-          <span className="font-semibold text-green-700">Admin Message</span>
+          <span className="font-semibold text-green-700 text-base">Admin Message</span>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900">
+        <div className="text-green-900 text-base bg-green-50 border border-green-100 rounded-lg p-4 min-h-[48px]">
           {requestData.reIssueRequest.adminReturnMessage || <span className="text-gray-400">No message from admin.</span>}
         </div>
-      </div>
 
-      {/* Requested Days */}
-      <div className="flex items-center gap-2">
-        <CalendarDays className="w-4 h-4 text-blue-600" />
-        <span className="font-medium text-gray-700">Requested Days:</span>
-        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-          {requestData.reIssueRequest.extensionDays || requestData.reIssueRequest.requestedDays || "N/A"} Days
-        </span>
-      </div>
-    </div>
-
-    {/* Right Column */}
-    <div className="flex flex-col gap-6">
-      {/* Always show this section if not pending */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-blue-600" />
-          <span className="font-semibold text-blue-700">User Note / Reason</span>
+               <div className="flex items-center gap-2 mt-4">
+          <Repeat className="w-5 h-5 text-yellow-600" />
+          <span className="text-yellow-700 text-sm font-semibold">Status:</span>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest shadow-sm ${
+            requestData.reIssueRequest.status === 'approved' || requestData.reIssueRequest.status === 'accepted'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {requestData.reIssueRequest.status.charAt(0).toUpperCase() + requestData.reIssueRequest.status.slice(1)}
+          </span>
+          {requestData.reIssueRequest.status === 'approved' && (
+            <span className="flex items-center gap-1 ml-2 text-green-700 text-xs font-semibold">
+              <CheckCircle className="w-4 h-4" />
+              {requestData.reIssueRequest.adminApprovedDays || "N/A"} Days Approved
+            </span>
+          )}
         </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
+
+     
+      </div>
+      {/* Right: Details */}
+      <div className="flex-1 flex flex-col justify-center p-8 bg-gradient-to-br from-blue-50 to-white min-h-[180px]">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="w-5 h-5 text-blue-600" />
+          <span className="font-semibold text-blue-700 text-base">User Note / Reason</span>
+        </div>
+        <div className="text-blue-900 text-base bg-blue-50 border border-blue-100 rounded-lg p-4 min-h-[48px]">
           {requestData.reIssueRequest.requestDescription || <span className="text-gray-400">No message provided.</span>}
         </div>
+ 
+   <div className="flex items-center gap-2 mt-4">
+          <CalendarDays className="w-4 h-4 text-blue-600" />
+          <span className="text-gray-700 text-sm">Requested Days:</span>
+          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+            {requestData.reIssueRequest.extensionDays || requestData.reIssueRequest.requestedDays || "N/A"} Days
+          </span>
+        </div>
+
+
       </div>
     </div>
   </div>
-</div>
+)}
 
-            )}
 
-            
             {/* Return Tracking Table - Only show for accepted and returned */}
             {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned' ||  requestData.status === 'reIssued') &&
   returnTrackingComponents.some(component => component.remaining > 0) && (
