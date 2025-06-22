@@ -146,9 +146,10 @@ export default function DashboardPage() {
 
   const piechartdata = {
     accepted: 320,
-    closed: 540,
+    closed: 120,
     reissued: 65,
-    rejected: 80
+    rejected: 80,
+    returned: 149
   };
 
    const [lowStockData] = useState([
@@ -227,8 +228,8 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Inventory Overview</h2>
           <InventoryRadarChart data={inventoryData} />
         </div>
-        <div className="bg-white rounded-xl shadow p-6 flex flex-col">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Request Status</h2>
+        <div className="bg-white rounded-xl shadow flex flex-col">
+          <h2 className="text-xl font-semibold text-gray-800 pt-6 pl-6">Request Status</h2>
           <RequestStatusChart data={piechartdata} />
         </div>
       </div>
