@@ -794,86 +794,92 @@ const returnTrackingRows = returnTrackingComponents
             </div>
           </div>
           {/* User and Reference Information */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                Requester Information
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-gray-500 w-32">Name:</span>
-                    <span className="font-medium">{requestData.name}</span>
-                  </div>
-                  <button
-                    className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"                  
-                    onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
-                  >
-                    View Profile
-                  </button>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.email}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Roll Number:</span>
-                  <span className="font-medium">{requestData.rollNo}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Phone Number:</span>
-                  <span className="font-medium">{requestData.phoneNo || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-            {/* Description and requested days */}
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <h4 className="font-medium text-gray-700">Request Description</h4>
-                </div>
-                <p className="text-gray-600">
-                  {requestData.description || "No description provided."}
-                </p>
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  <h4 className="font-medium text-gray-700">Admin Description</h4>
-                </div>
-                <p className="text-gray-600">
-                  {requestData.admindescription||"No description available"}
-                </p>
-              </div>
-            </div>            
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-                Reference Staff
-              </h3>
-              <div className="space-y-3">
-                <div className="flex">
-                  <span className="text-gray-500 w-15">Name:</span>
-                  <span className="font-medium">{requestData.referenceStaff.name}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-15">Email:</span>
-                  <span className="font-medium">{requestData.referenceStaff.email}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+<div className="p-0 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+  {/* Requester Information */}
+  <div className="flex flex-col bg-white border border-blue-100 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <div className="flex items-center gap-3 px-6 pt-6 pb-3 border-b border-blue-100 bg-blue-50">
+      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 shadow-inner">
+        <FileText className="w-6 h-6 text-blue-700" />
+      </div>
+      <div>
+        <div className="text-base font-bold text-blue-900">Requester</div>
+        <div className="text-xs text-blue-500 font-semibold uppercase tracking-wider">User Info</div>
+      </div>
+    </div>
+    <div className="flex-1 px-6 py-6 space-y-4 text-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <span className="text-gray-500 w-24">Name:</span>
+          <span className="font-semibold text-blue-900">{requestData.name}</span>
+        </div>
+        <button
+          className="ml-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-semibold"
+          onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
+        >
+          View Profile
+        </button>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-24">Email:</span>
+        <span className="font-semibold text-blue-900">{requestData.email}</span>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-24">Roll Number:</span>
+        <span className="font-semibold text-blue-900">{requestData.rollNo}</span>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-24">Phone Number:</span>
+        <span className="font-semibold text-blue-900">{requestData.phoneNo || 'N/A'}</span>
+      </div>
+    </div>
+  </div>
 
+  {/* Request Description */}
+  <div className="flex flex-col bg-white border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <div className="flex items-center gap-3 px-6 pt-6 pb-3 border-b border-indigo-100 bg-indigo-50">
+      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 shadow-inner">
+        <Info className="w-6 h-6 text-indigo-700" />
+      </div>
+      <div>
+        <div className="text-base font-bold text-indigo-900">Request Details</div>
+        <div className="text-xs text-indigo-500 font-semibold uppercase tracking-wider">Description</div>
+      </div>
+    </div>
+    <div className="flex-1 px-6 py-6 space-y-4 text-sm">
+      <div>
+        <h4 className="font-semibold text-indigo-700 mb-1">User Note</h4>
+        <p className="text-gray-700">{requestData.description || "No description provided."}</p>
+      </div>
+      <div>
+        <h4 className="font-semibold text-indigo-700 mb-1">Admin Note</h4>
+        <p className="text-gray-700">{requestData.admindescription || "No description available"}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Reference Staff */}
+  <div className="flex flex-col bg-white border border-yellow-100 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <div className="flex items-center gap-3 px-6 pt-6 pb-3 border-b border-yellow-100 bg-yellow-50">
+      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-yellow-100 shadow-inner">
+        <Repeat className="w-6 h-6 text-yellow-700" />
+      </div>
+      <div>
+        <div className="text-base font-bold text-yellow-700">Reference Staff</div>
+        <div className="text-xs text-yellow-600 font-semibold uppercase tracking-wider">Staff Info</div>
+      </div>
+    </div>
+    <div className="flex-1 px-6 py-6 space-y-4 text-sm">
+      <div className="flex">
+        <span className="text-gray-500 w-20">Name:</span>
+        <span className="font-semibold text-yellow-900">{requestData.referenceStaff.name}</span>
+      </div>
+      <div className="flex">
+        <span className="text-gray-500 w-20">Email:</span>
+        <span className="font-semibold text-yellow-900">{requestData.referenceStaff.email}</span>
+      </div>
+    </div>
+  </div>
+</div>
 {(requestData.status === 'accepted' || requestData.status === 'approved' || requestData.status === 'returned' || requestData.status === 'reIssued') && (
   <div className="mx-6 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row md:items-center gap-4">
     {/* Allocated Days */}
@@ -1112,6 +1118,9 @@ const returnTrackingRows = returnTrackingComponents
                 </div>
               </div>
             )}
+
+
+            
             {/* Re-requested Components Tables Section - Only show for accepted and returned */}
             {(requestData.status === 'accepted'  || requestData.status === 'approved' || requestData.status === 'returned'||  requestData.status === 'reIssued') && requestData.isreissued && (
 <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
@@ -1181,6 +1190,8 @@ const returnTrackingRows = returnTrackingComponents
 </div>
 
             )}
+
+            
             {/* Return Tracking Table - Only show for accepted and returned */}
             {(requestData.status === 'accepted'  || requestData.status === 'approved'  || requestData.status === 'returned' ||  requestData.status === 'reIssued') &&
   returnTrackingComponents.some(component => component.remaining > 0) && (

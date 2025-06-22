@@ -608,50 +608,53 @@ async function handleExtensionRequestSubmit(e) {
         </div>
 
             {/* --- User and Reference Info --- */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* User Message */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                User Message
-                </h3>
-                <div className="text-gray-700 text-sm flex-1">
-                {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
-                </div>
-            </div>
+<div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+  {/* User Message */}
+  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-blue-200">
+    <div className="flex items-center gap-2 mb-4">
+      <FileText className="w-6 h-6 text-blue-500" />
+      <span className="text-base font-bold text-blue-800 tracking-wide">User Message</span>
+    </div>
+    <div className="flex-1">
+      <div className="rounded-lg px-4 py-3  text-blue-900 text-sm  flex items-center">
+        {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
+      </div>
+    </div>
+  </div>
 
-            {/* Admin Message */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 20.5a8.38 8.38 0 01-7.45-4.4 8.5 8.5 0 1114.9 0A8.38 8.38 0 0112 20.5z" />
-                </svg>
-                Admin Message
-                </h3>
-                <div className="text-gray-700 text-sm flex-1">
-                {requestData.adminMessage
-                    ? requestData.adminMessage
-                    : <span className="text-gray-400">No message from admin.</span>}
-                </div>
-            </div>
+  {/* Admin Message */}
+  <div className="bg-gradient-to-br from-green-50 via-white to-green-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-green-200">
+    <div className="flex items-center gap-2 mb-4">
+      <CheckCircle className="w-6 h-6 text-green-500" />
+      <span className="text-base font-bold text-green-800 tracking-wide">Admin Message</span>
+    </div>
+    <div className="flex-1">
+      <div className="rounded-lg px-4 py-3  text-green-900 text-sm  flex items-center">
+        {requestData.adminMessage
+          ? requestData.adminMessage
+          : <span className="text-gray-400">No message from admin.</span>}
+      </div>
+    </div>
+  </div>
 
-            {/* Reference Staff */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-                Reference Staff
-                </h3>
-                <div className="space-y-3 text-sm">
-                <div className="flex"><span className="text-gray-500 w-28">Name:</span><span className="font-medium">{requestData.referenceStaff?.name}</span></div>
-                <div className="flex"><span className="text-gray-500 w-28">Email:</span><span className="font-medium">{requestData.referenceStaff?.email}</span></div>
-                </div>
-            </div>
-            </div>
+  {/* Reference Staff */}
+  <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-indigo-200">
+    <div className="flex items-center gap-2 mb-4">
+      <RefreshCw className="w-6 h-6 text-indigo-500" />
+      <span className="text-base font-bold text-indigo-800 tracking-wide">Reference Staff</span>
+    </div>
+    <div className="space-y-3 text-sm">
+      <div className="flex items-center">
+        <span className="text-gray-500 w-24 font-medium">Name:</span>
+        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.name}</span>
+      </div>
+      <div className="flex items-center">
+        <span className="text-gray-500 w-24 font-medium">Email:</span>
+        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.email}</span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* --- Conditional Tables --- */}
           <div className="p-6 border-t border-gray-200">

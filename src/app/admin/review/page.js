@@ -1166,65 +1166,75 @@ const isValidDateTime = (selectedDate, selectedTime) => {
           </div>
 
           {/* --- User and Reference Info --- */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                Requester Information
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-gray-500 w-32">Name:</span>
-                    <span className="font-medium">{requestData.name}</span>
-                  </div>
-                  <button
-                    className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
-                    onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
-                  >
-                    View Profile
-                  </button>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.email}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Roll Number:</span>
-                  <span className="font-medium">{requestData.rollNo}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Phone Number:</span>
-                  <span className="font-medium">{requestData.phoneNo || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-                Reference Staff
-              </h3>
-        {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
-    <div className="text-gray-500 italic">No reference staff</div>
-  ) : (
-    <div className="space-y-3">
-      <div className="flex">
-        <span className="text-gray-500 w-32">Name:</span>
-        <span className="font-medium">{requestData.referenceStaff?.name}</span>
+<div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Requester Information */}
+  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-xl shadow-md border border-blue-200 flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
+    <div className="flex items-center gap-3 px-6 pt-6 pb-2 border-b border-blue-100">
+      <div className="bg-blue-500/10 rounded-full p-2">
+        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
       </div>
-      <div className="flex">
-        <span className="text-gray-500 w-32">Email:</span>
-        <span className="font-medium">{requestData.referenceStaff?.email}</span>
+      <span className="text-lg font-bold text-blue-900 tracking-wide">Requester Information</span>
+    </div>
+    <div className="flex-1 px-6 py-6">
+      <div className="space-y-4 text-base">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="text-gray-500 w-32 font-medium">Name:</span>
+            <span className="font-semibold text-blue-900">{requestData.name}</span>
+          </div>
+          <button
+            className="ml-4 px-4 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-semibold shadow"
+            onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
+          >
+            View Profile
+          </button>
+        </div>
+        <div className="flex">
+          <span className="text-gray-500 w-32 font-medium">Email:</span>
+          <span className="font-semibold text-blue-900">{requestData.email}</span>
+        </div>
+        <div className="flex">
+          <span className="text-gray-500 w-32 font-medium">Roll Number:</span>
+          <span className="font-semibold text-blue-900">{requestData.rollNo}</span>
+        </div>
+        <div className="flex">
+          <span className="text-gray-500 w-32 font-medium">Phone Number:</span>
+          <span className="font-semibold text-blue-900">{requestData.phoneNo || 'N/A'}</span>
+        </div>
       </div>
     </div>
-  )}
-            </div>
-          </div>
+  </div>
 
+  {/* Reference Staff */}
+  <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 rounded-xl shadow-md border border-indigo-200 flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
+    <div className="flex items-center gap-3 px-6 pt-6 pb-2 border-b border-indigo-100">
+      <div className="bg-indigo-500/10 rounded-full p-2">
+        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+      </div>
+      <span className="text-lg font-bold text-indigo-900 tracking-wide">Reference Staff</span>
+    </div>
+    <div className="flex-1 px-6 py-6">
+      {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
+        <div className="text-gray-400 italic text-base">No reference staff</div>
+      ) : (
+        <div className="space-y-4 text-base">
+          <div className="flex">
+            <span className="text-gray-500 w-32 font-medium">Name:</span>
+            <span className="font-semibold text-indigo-900">{requestData.referenceStaff?.name}</span>
+          </div>
+          <div className="flex">
+            <span className="text-gray-500 w-32 font-medium">Email:</span>
+            <span className="font-semibold text-indigo-900">{requestData.referenceStaff?.email}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
           {/* --- Main Section: Re-Issue or New Request --- */}
           {isReIssue ? (
             <>
