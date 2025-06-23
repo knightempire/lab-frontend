@@ -1821,46 +1821,54 @@ const isValidDateTime = (selectedDate, selectedTime) => {
               {/* --- Existing Re-Issue UI --- */}
 
               {/* Show both original and re-issue descriptions */}
-              <div className="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-blue-700">Original Request Description</h4>
-                  </div>
-                  <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
-                  {/* Show admin return message if present */}
-                  {requestData.adminMessage && (
-                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
-                      <div className="flex items-center mb-2">
-                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                        <h4 className="font-medium text-green-700">Admin Issue Message</h4>
-                      </div>
-                      <p className="text-gray-700">{requestData.adminMessage}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <Repeat className="w-5 h-5 mr-2 text-yellow-600" />
-                    <h4 className="font-medium text-yellow-700">Re-Issue User Note</h4>
-                  </div>
-                  <p className="text-gray-700">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
-                  <div className="mt-4 flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4 text-blue-600" />
-                      <span className="text-gray-600">Requested Days:</span>
-                      <span className="font-semibold text-gray-800">{requestData.reIssueRequest.requestedDays}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-indigo-600" />
-                      <span className="text-gray-600">Initial Return Date:</span>
-                      <span className="font-semibold text-gray-800">
-                        {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  <div className="p-6 border-t border-gray-200">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Original Request Description Card */}
+    <div className="bg-white rounded-2xl shadow border border-blue-100 p-6 flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-blue-100 p-2 rounded-full">
+          <FileText className="w-6 h-6 text-blue-600" />
+        </div>
+        <h4 className="font-semibold text-blue-800 text-lg">Original Request Description</h4>
+      </div>
+      <p className="text-gray-700 mb-2">{requestData.userMessage || "No description provided."}</p>
+      {/* Show admin return message if present */}
+      {requestData.adminMessage && (
+        <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 mt-1 text-green-600" />
+          <div>
+            <h5 className="font-medium text-green-700 mb-1">Admin Issue Message</h5>
+            <p className="text-gray-800">{requestData.adminMessage}</p>
+          </div>
+        </div>
+      )}
+    </div>
+    {/* Re-Issue User Note Card */}
+    <div className="bg-yellow-50 rounded-2xl shadow border border-yellow-200 p-6 flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-yellow-100 p-2 rounded-full">
+          <Repeat className="w-6 h-6 text-yellow-600" />
+        </div>
+        <h4 className="font-semibold text-yellow-800 text-lg">Re-Issue User Note</h4>
+      </div>
+      <p className="text-gray-800 mb-4">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-blue-600" />
+          <span className="text-gray-600">Requested Days:</span>
+          <span className="font-semibold text-gray-900">{requestData.reIssueRequest.requestedDays}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-indigo-600" />
+          <span className="text-gray-600">Initial Return Date:</span>
+          <span className="font-semibold text-gray-900">
+            {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
               {/* Show Not Returned Components Table ONLY if re-issue is pending */}
               {['pending', 'accepted', 'rejected'].includes(requestData.reIssueRequest.status) && (
