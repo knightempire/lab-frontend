@@ -1252,7 +1252,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                   {/* Requested Components Table */}
                   <div className="bg-white shadow rounded-lg">
-                    <div className="p-6 border-b border-gray-200">
+                    <div className="p-6 border-gray-200">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1284,7 +1284,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
 
                   {/* Admin Issue Components Table (Read-only) */}
                   <div className="bg-white shadow rounded-lg">
-                    <div className="p-6 border-b border-gray-200">
+                    <div className="p-6 border-gray-200">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
