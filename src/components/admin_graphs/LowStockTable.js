@@ -132,7 +132,6 @@ export default function LowStockItemsTable({ data = [] }) {
   // Define table columns
   const columns = [
     { key: 'product_name', label: 'Component Name' },
-    { key: 'total_items', label: 'Total Items' },
     { key: 'in_stock', label: 'Available Count' }
   ];
 

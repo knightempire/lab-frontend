@@ -128,9 +128,9 @@ verifyadmin();
 
 
   useEffect(() => {
-  if (requestData?.reIssueRequest?.requestedDays) {
-    setIssuableDays(requestData.reIssueRequest.requestedDays);
-  }
+    if (requestData?.reIssueRequest?.requestedDays) {
+      setIssuableDays(requestData.reIssueRequest.requestedDays);
+    }
   // ...existing logic for other cases...
 }, [requestData]);
 
@@ -284,31 +284,35 @@ if (
     router.push('/admin/request');
   }
 };
-      const fetchProducts = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const data = await res.json();
-        if (res.ok && data.products) {
-          // Transform API data to simplified format used in component
-const simplified = data.products.map(item => ({
-  _id: item.product._id, // Add this line
-  name: item.product.product_name,
-  inStock: item.product.inStock
-}));
-          setProducts(simplified);
-        } else {
-          console.error('Failed to fetch products:', data.message);
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error);
+      // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
+
+const fetchProducts = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    };
+    });
+    const data = await res.json();
+    if (res.ok && data.products) {
+      // Transform API data to simplified format used in component
+      const simplified = data.products.map(item => ({
+        _id: item.product._id,
+        name: item.product.product_name,
+        inStock: item.product.inStock,
+        yetToGive: item.product.yetToGive || 0,
+        available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
+      }));
+      setProducts(simplified);
+    } else {
+      console.error('Failed to fetch products:', data.message);
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -565,7 +569,7 @@ function formatDateShort(dateObj) {
     setAdminIssueComponents(adminIssueComponents.map(component => {
       if (component.id === id) {
         const product = products.find(p => p.name === component.name);
-        const maxStock = product ? product.inStock : 0;
+        const maxStock = product ? product.available : 0;
         const newQuantity = Math.min(component.quantity + 1, maxStock);
         return { ...component, quantity: newQuantity };
       }
@@ -602,7 +606,7 @@ function formatDateShort(dateObj) {
     setAdminIssueComponents(prev => prev.map(component => {
       if (component.id === id) {
         const product = products.find(p => p.name === component.name);
-        const maxStock = product ? product.inStock : 0;
+        const maxStock = product ? product.available : 0;
         const limitedQuantity = Math.min(Math.max(0, parseInt(newQuantity) || 0), maxStock);
         return { ...component, quantity: limitedQuantity };
       }
@@ -863,7 +867,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
   // Use local search term instead of parent state
   const filteredProducts = products
     .filter(product =>
-      product.inStock > 0 &&
+      product.available > 0 &&
       !existingComponentNames.includes(product.name) &&
       product.name.toLowerCase().includes(localSearchTerm.toLowerCase())
     );
@@ -962,7 +966,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
                     onClick={() => handleNameSelect(product.name)}
                   >
                     <span>{product.name}</span>
-                    <span className="text-sm text-gray-500">Stock: {product.inStock}</span>
+                    <span className="text-sm text-gray-500">Stock: {product.available}</span>
                   </div>
                 ))
               ) : (
@@ -1006,53 +1010,59 @@ const ComponentDropdown = ({ id, selectedValue }) => {
   console.log('Is collected:', isCollected);
   const adminComponentsRows = adminIssueComponents.map(component => {
     const product = products.find(p => p.name === component.name);
-    const maxStock = product ? product.inStock : 0;
+    const maxStock = product ? product.available : 0;
+    const yetToGive = product ? product.yetToGive : 0;
+    const requested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
+    // Show warning if requested > available and yetToGive > 0
+    const showWarning = component.quantity > maxStock && yetToGive > 0;
+
     return {
       ...component,
       name: (
         <ComponentDropdown
           id={component.id}
           selectedValue={component.name}
-          isCollected={isCollected} // optionally pass as prop
+          isCollected={isCollected}
         />
       ),
- quantity: (
-  <div className="flex items-center justify-center space-x-2">
-    <button
-      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      onClick={() => handleDecrementQuantity(component.id)}
-      disabled={component.quantity <= 0 || !component.name || isCollected}
-    >
-      <Minus className="w-4 h-4" />
-    </button>
-    <input
-      type="text"
-      className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      min="0"
-      max={maxStock}
-      value={component.quantity}
-      onChange={(e) => handleQuantityChange(component.id, e.target.value)}
-      disabled={isCollected || !component.name}
-    />
-    <button
-      className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      onClick={() => handleIncrementQuantity(component.id)}
-      disabled={component.quantity >= maxStock || !component.name || isCollected}
-    >
-      <Plus className="w-4 h-4" />
-    </button>
-    <span className="text-xs text-gray-500 ml-1">
-      Available: {component.name ? maxStock : 'N/A'}
-    </span>
-    {/* Show warning if issued < requested */}
-    {(() => {
-      const userRequested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
-      return component.quantity < userRequested ? (
-        <AlertTriangle className="w-4 h-4 text-yellow-500 ml-2" title="Issued quantity is less than requested!" />
-      ) : null;
-    })()}
-  </div>
-),
+      quantity: (
+        <div className="flex items-center justify-center space-x-2">
+          <button
+            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={() => handleDecrementQuantity(component.id)}
+            disabled={component.quantity <= 0 || !component.name || isCollected}
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <input
+            type="text"
+            className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            min="0"
+            max={maxStock}
+            value={component.quantity}
+            onChange={(e) => handleQuantityChange(component.id, e.target.value)}
+            disabled={isCollected || !component.name}
+          />
+          <button
+            className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={() => handleIncrementQuantity(component.id)}
+            disabled={component.quantity >= maxStock || !component.name || isCollected}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <span className="text-xs text-gray-500 ml-1 flex items-center relative group">
+            Available: {component.name ? maxStock : 'N/A'}
+            {showWarning && (
+              <span className="ml-1 relative flex items-center group">
+                <AlertTriangle className="w-4 h-4 text-amber-500 cursor-pointer" />
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                  Requested quantity exceeds available stock. Reduce another accepted request in the Requests page to free up stock.
+                </span>
+              </span>
+            )}
+          </span>
+        </div>
+      ),
       actions: (
         <button
           className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition duration-150"
@@ -1133,27 +1143,27 @@ const isValidDateTime = (selectedDate, selectedTime) => {
               <div>
                 <h2 className="text-xl font-semibold text-blue-800 mb-2">
                   Request #{requestData.requestId || requestData.id}
-                  </h2>
-                  {requestData.isExtended && (
-                      <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                        <Repeat className="w-4 h-4 mr-1" />
-                        Extension / Re-Issue Request
-                      </span>
-                    )}
+                </h2>
+                {requestData.isExtended && (
+                  <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                    <Repeat className="w-4 h-4 mr-1" />
+                    Extension / Re-Issue Request
+                  </span>
+                )}
                 {/* --- Add Timeline Here --- */}
                 <div className="mt-5">
-<RequestTimeline
-  requestData={requestData}
-  reissue={
-    requestData.reIssueRequest
-      ? [{
-          requestdate: requestData.reIssueRequest.reIssuedDate,
-          status: requestData.reIssueRequest.status
-        }]
-      : []
-  }
-  formatDate={formatDate}
-/>
+                  <RequestTimeline
+                    requestData={requestData}
+                    reissue={
+                      requestData.reIssueRequest
+                        ? [{
+                          requestdate: requestData.reIssueRequest.reIssuedDate,
+                          status: requestData.reIssueRequest.status
+                        }]
+                        : []
+                    }
+                    formatDate={formatDate}
+                  />
                 </div>
               </div>
               <div className="mt-4 md:mt-0">
@@ -1167,64 +1177,74 @@ const isValidDateTime = (selectedDate, selectedTime) => {
 
           {/* --- User and Reference Info --- */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                Requester Information
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-gray-500 w-32">Name:</span>
-                    <span className="font-medium">{requestData.name}</span>
+            {/* Requester Information */}
+            <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-xl shadow-md border border-blue-200 flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
+              <div className="flex items-center gap-3 px-6 pt-6 pb-2 border-b border-blue-100">
+                <div className="bg-blue-500/10 rounded-full p-2">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                </div>
+                <span className="text-lg font-bold text-blue-900 tracking-wide">Requester Information</span>
+              </div>
+              <div className="flex-1 px-6 py-6">
+                <div className="space-y-4 text-base">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-gray-500 w-32 font-medium">Name:</span>
+                      <span className="font-semibold text-blue-900">{requestData.name}</span>
+                    </div>
+                    <button
+                      className="ml-4 px-4 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition font-semibold shadow"
+                      onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
+                    >
+                      View Profile
+                    </button>
                   </div>
-                  <button
-                    className="ml-4 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
-                    onClick={() => router.push(`/admin/profile?rollNo=${requestData.rollNo}`)}
-                  >
-                    View Profile
-                  </button>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Email:</span>
-                  <span className="font-medium">{requestData.email}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Roll Number:</span>
-                  <span className="font-medium">{requestData.rollNo}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-32">Phone Number:</span>
-                  <span className="font-medium">{requestData.phoneNo || 'N/A'}</span>
+                  <div className="flex">
+                    <span className="text-gray-500 w-32 font-medium">Email:</span>
+                    <span className="font-semibold text-blue-900">{requestData.email}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-32 font-medium">Roll Number:</span>
+                    <span className="font-semibold text-blue-900">{requestData.rollNo}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-32 font-medium">Phone Number:</span>
+                    <span className="font-semibold text-blue-900">{requestData.phoneNo || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 p-5 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-                Reference Staff
-              </h3>
-        {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
-    <div className="text-gray-500 italic">No reference staff</div>
-  ) : (
-    <div className="space-y-3">
-      <div className="flex">
-        <span className="text-gray-500 w-32">Name:</span>
-        <span className="font-medium">{requestData.referenceStaff?.name}</span>
-      </div>
-      <div className="flex">
-        <span className="text-gray-500 w-32">Email:</span>
-        <span className="font-medium">{requestData.referenceStaff?.email}</span>
-      </div>
-    </div>
-  )}
+
+            {/* Reference Staff */}
+            <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 rounded-xl shadow-md border border-indigo-200 flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
+              <div className="flex items-center gap-3 px-6 pt-6 pb-2 border-b border-indigo-100">
+                <div className="bg-indigo-500/10 rounded-full p-2">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                  </svg>
+                </div>
+                <span className="text-lg font-bold text-indigo-900 tracking-wide">Reference Staff</span>
+              </div>
+              <div className="flex-1 px-6 py-6">
+                {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
+                  <div className="text-gray-400 italic text-base">No reference staff</div>
+                ) : (
+                  <div className="space-y-4 text-base">
+                    <div className="flex">
+                      <span className="text-gray-500 w-32 font-medium">Name:</span>
+                      <span className="font-semibold text-indigo-900">{requestData.referenceStaff?.name}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-gray-500 w-32 font-medium">Email:</span>
+                      <span className="font-semibold text-indigo-900">{requestData.referenceStaff?.email}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
           {/* --- Main Section: Re-Issue or New Request --- */}
           {isReIssue ? (
             <>
@@ -1232,7 +1252,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                   {/* Requested Components Table */}
                   <div className="bg-white shadow rounded-lg">
-                    <div className="p-6 border-b border-gray-200">
+                    <div className="p-6 border-gray-200">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1246,11 +1266,11 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                             <h4 className="font-medium text-gray-700">Requested Days</h4>
                           </div>
                           <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-    <div>
-      <Clock className="w-4 h-4 mr-1 inline" />
-      <span>{requestData.requestedDays || "N/A"} Days</span>
-    </div>
-  </div>
+                            <div>
+                              <Clock className="w-4 h-4 mr-1 inline" />
+                              <span>{requestData.requestedDays || "N/A"} Days</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <Table
@@ -1263,9 +1283,8 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </div>
 
                   {/* Admin Issue Components Table (Read-only) */}
-                  
                   <div className="bg-white shadow rounded-lg">
-                    <div className="p-6 border-b border-gray-200">
+                    <div className="p-6 border-gray-200">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                           <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1279,52 +1298,52 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                             <h4 className="font-medium text-gray-700">Issued Days</h4>
                           </div>
                           <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-    <div>
-      <Clock className="w-4 h-4 mr-1 inline" />
-      <span>{requestData.adminApprovedDays || "N/A"} Days</span>
-    </div>
-  </div>
+                            <div>
+                              <Clock className="w-4 h-4 mr-1 inline" />
+                              <span>{requestData.adminApprovedDays || "N/A"} Days</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-<Table
-  columns={[
-    { key: 'name', label: 'Component Name' },
-    { key: 'quantity', label: 'Quantity' }
-  ]}
-  rows={adminIssueComponents
-    .filter(({ quantity }) => quantity > 0)
-    .map(({ name, quantity, id }) => {
-      // Calculate replaced count from returnedComponents
-      const replaced = requestData.returnedComponents
-        ? requestData.returnedComponents
-            .filter(ret => ret.issuedProductId === id)
-            .reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
-        : 0;
-      // DEBUG LOG
-      console.log(`[DEBUG] AdminIssuedTable: name=${name}, issued=${quantity}, replaced=${replaced}`);
+                      <Table
+                        columns={[
+                          { key: 'name', label: 'Component Name' },
+                          { key: 'quantity', label: 'Quantity' }
+                        ]}
+                        rows={adminIssueComponents
+                          .filter(({ quantity }) => quantity > 0)
+                          .map(({ name, quantity, id }) => {
+                            // Calculate replaced count from returnedComponents
+                            const replaced = requestData.returnedComponents
+                              ? requestData.returnedComponents
+                                .filter(ret => ret.issuedProductId === id)
+                                .reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
+                              : 0;
+                            // DEBUG LOG
+                            console.log(`[DEBUG] AdminIssuedTable: name=${name}, issued=${quantity}, replaced=${replaced}`);
 
-      return {
-        name,
-        quantity: (
-          <span>
-            {quantity}
-            {replaced > 0 && (
-              <span className="text-xs text-gray-500"> + {replaced}</span>
-            )}
-          </span>
-        )
-      };
-    })
-  }
-  currentPage={1}
-  itemsPerPage={10}
-/>
+                            return {
+                              name,
+                              quantity: (
+                                <span>
+                                  {quantity}
+                                  {replaced > 0 && (
+                                    <span className="text-xs text-gray-500"> + {replaced}</span>
+                                  )}
+                                </span>
+                              )
+                            };
+                          })
+                        }
+                        currentPage={1}
+                        itemsPerPage={10}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
-    
-  
+
+
             </>
           ) : (
             <>
@@ -1344,716 +1363,742 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     itemsPerPage={10}
                   />
                 </div>
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                      </svg>
-                      <h4 className="font-medium text-gray-700">Request Description</h4>
-                    </div>
-                    <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-end gap-4">
-                      <div className="flex items-center">
-                        <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                        <h4 className="font-medium text-gray-700">Requested Days</h4>
-                      </div>
-                      <div className="flex flex-col items-start bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-    <div>
-      <Clock className="w-4 h-4 mr-1 inline" />
-      <span>{requestData.requestedDays || "N/A"} Days</span>
+          <div className="mt-4 flex flex-col md:flex-row gap-6 w-full">
+      <div className="flex-1 bg-gray-50 p-5 rounded-xl border border-blue-100 shadow-sm">
+        <div className="flex items-center mb-2">
+          <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <h4 className="font-medium text-blue-700">Request Description</h4>
+        </div>
+        <p className="text-gray-700">{requestData.userMessage || "No description provided."}</p>
+      </div>
+      <div className="flex-1 flex items-center justify-end">
+        <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+          <Clock className="w-5 h-5 text-indigo-600" />
+          <span className="text-gray-700 font-medium">Duration:</span>
+          <span className="font-semibold text-blue-900">{requestData.requestedDays || "N/A"} Days</span>
+        </div>
+      </div>
     </div>
-  </div>
+                {requestData.status === "accepted" && requestData.originalAdminMessage && (
+                  <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
+                    <div className="flex items-center mb-2">
+                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                      <h4 className="font-medium text-green-700">Admin Approval Message</h4>
                     </div>
+                    <p className="text-gray-700">{requestData.originalAdminMessage}</p>
                   </div>
-                </div>
-                  {requestData.status === "accepted" && requestData.originalAdminMessage && (
-                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
-                      <div className="flex items-center mb-2">
-                        <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-                        <h4 className="font-medium text-green-700">Admin Approval Message</h4>
-                      </div>
-                      <p className="text-gray-700">{requestData.originalAdminMessage}</p>
-                    </div>
-                  )}
+                )}
               </div>
 
               {/* --- Admin Issue Components --- */}
-            {!isRejected && (
-              <div className="p-6 border-t border-gray-200 bg-gray-50">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Admin Issued Components
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleResetComponents}
-                      className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-                      disabled={isCollected}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Reset
-                    </button>
-                    <button
-                      onClick={handleAddComponent}
-                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                      disabled={isCollected}
+              {!isRejected && (
+                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Admin Issued Components
+                    </h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleResetComponents}
+                        className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                        disabled={isCollected}
                       >
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Add Component
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <Table
-                    columns={adminComponentsColumns}
-                    rows={adminComponentsRows}
-                    currentPage={1}
-                    itemsPerPage={10}
-                    customClasses={{ table: "min-w-full divide-y divide-gray-200" }}
-                  />
-                  {adminIssueComponents.length === 0 && (
-                    <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
-                      <p className="text-gray-500">No components added. Click &ldquo;Add Component&rdquo; to add one.</p>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reset
+                      </button>
+                      <button
+                        onClick={handleAddComponent}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        disabled={isCollected}
+                      >
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Add Component
+                      </button>
                     </div>
-                  )}
-                </div>
-                {/* Submit Button for Admin Issued Components */}
+                  </div>
+                  <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <Table
+                      columns={adminComponentsColumns}
+                      rows={adminComponentsRows}
+                      currentPage={1}
+                      itemsPerPage={10}
+                      customClasses={{ table: "min-w-full divide-y divide-gray-200" }}
+                    />
+                    {adminIssueComponents.length === 0 && (
+                      <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
+                        <p className="text-gray-500">No components added. Click “Add Component” to add one.</p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Submit Button for Admin Issued Components */}
                   <>
                     <div className="flex justify-end mt-4">
-                       {issueError && (
-    <div className="text-red-600 font-medium mb-2 mr-4">{issueError}</div>
-  )}
-                {!isCollected && (
-  <button
-    className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-    onClick={handleSave}
-  >
-    <CheckCircle className="w-5 h-5 mr-2" />
-    Save Issued Components
-  </button>
-)}
+                      {issueError && (
+                        <div className=" mr-4 flex items-center gap-3 px-4 py-2 rounded-lg border border-red-300 bg-red-50 shadow-sm">
+                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                          <span className="text-red-700 font-semibold text-base">{issueError}</span>
+                        </div>
+                      )}
+                      {!isCollected && (
+                        <button
+                          className="inline-flex items-center px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                          onClick={() => {
+                            // --- Quantity validation before saving ---
+                            let hasError = false;
+                            for (const component of adminIssueComponents) {
+                              const product = products.find(p => p.name === component.name);
+                              const maxStock = product ? product.available : 0;
+                              // Find the requested quantity for this component
+                              const requested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
+                              if (component.quantity > maxStock) {
+                                setIssueError(
+                                  `The issued quantity for "${component.name}" (${component.quantity}) is greater than available (${maxStock})!`
+                                );
+                                hasError = true;
+                                break;
+                              }
+                              if (component.quantity > requested) {
+                                setIssueError(
+                                  `The issued quantity for "${component.name}" (${component.quantity}) is greater than requested (${requested})!`
+                                );
+                                hasError = true;
+                                break;
+                              }
+                            }
+                            if (!hasError) {
+                              setIssueError("");
+                              handleSave();
+                            }
+                          }}
+                        >
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Save Issued Components
+                        </button>
+                      )}
                     </div>
-
-           
                   </>
-                {/* Issuable days */}
-                <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <div className="flex items-center mb-2">
-                    <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
-                    <h4 className="font-medium text-blue-700">Issuable Days</h4>
-                  </div>
-                  <div className="flex items-center mt-2 gap-4">
-                    <span className="text-gray-600">Requested:</span>
-                    <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
-                  </div>
-                  <div className="flex items-center mt-3">
-                    <span className="text-gray-600 w-32">Issue Duration:</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={handleDecrementDays}
-                        disabled={issuableDays <= 0}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <input
-                        type="text"
-                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        min="0"
-                        max="30"
-                        value={issuableDays}
-                        onChange={(e) => handleIssuableDaysChange(e.target.value)}
-                      />
-                      <button
-                        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={handleIncrementDays}
-                        disabled={issuableDays >= 30}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm font-medium">Days</span>
+                  {/* Issuable days */}
+                  <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <div className="flex items-center mb-2">
+                      <CalendarDays className="w-5 h-5 mr-2 text-blue-600" />
+                      <h4 className="font-medium text-blue-700">Issuable Days</h4>
+                    </div>
+                    <div className="flex items-center mt-2 gap-4">
+                      <span className="text-gray-600">Requested:</span>
+                      <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
+                    </div>
+                    <div className="flex items-center mt-3">
+                      <span className="text-gray-600 w-32">Issue Duration:</span>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onClick={handleDecrementDays}
+                          disabled={issuableDays <= 0}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="text"
+                          className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="0"
+                          max="30"
+                          value={issuableDays}
+                          onChange={(e) => handleIssuableDaysChange(e.target.value)}
+                        />
+                        <button
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onClick={handleIncrementDays}
+                          disabled={issuableDays >= 30}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-medium">Days</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
               )}
+
+
             </>
           )}
 
           {/* --- Take Action Section --- */}
           {isAccepted && requestData.CollectedDate == null && !isReIssue ? (
-          <div className="p-6 border-t border-gray-200 flex flex-col items-start">
-            <div className="flex items-center mb-4">
-              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="p-6 border-t border-gray-200 flex flex-col items-start">
+              <div className="flex items-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <h3 className="text-base font-medium text-green-800">
+                  Request is <span className="font-semibold">approved</span> and pending issuance.
+                </h3>
               </div>
-              <h3 className="text-base font-medium text-green-800">
-                Request is <span className="font-semibold">approved</span> and pending issuance.
-              </h3>
-            </div>
-            {/* Only show the button if not in confirmation mode */}
-            {action !== 'issued' ? (
-              <button
-                className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
-                onClick={() => setAction('issued')}
-              >
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Mark as Issued
-              </button>
-            ) : (
-              // Only show the confirmation modal if action === 'issued'
-              <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
-                <div className="mb-5">
-                  <div className="flex items-center mb-4">
-                    <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
-                      <CheckCircle className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-800">
-                        Issue Request
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
-                    onClick={async () => {
-                      issuing();
-                      setIsSubmitting(true);
-                      setTimeout(() => {
-                        setRequestData({
-                          ...requestData,
-                          CollectedDate: new Date().toISOString(),
-                          ResponseMessage: responseMessage 
-                        });
-                        setAction(null);
-                        setIsSubmitting(false);
-                      }, 1000);
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      'Confirm & Issue'
-                    )}
-                  </button>
-
-                  <button
-                    className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
-                    onClick={() => setAction(null)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : requestData.status === 'pending' ? (
-          <div className="p-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Take Action
-            </h3>
-            {!action ? (
-              <>
-                <div className="p-6 pt-0">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Availability</h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
-                      <SingleDatePicker
-                        value={adminAvailableDate}
-                        minDate={getCurrentDateTime().currentDate} // Disable past dates
-                        onChange={(e) => {
-                          setAdminAvailableDate(e.target.value);
-                          // Reset time if date changes to ensure validation
-                          if (adminAvailableTime && !isValidDateTime(e.target.value, adminAvailableTime)) {
-                            setAdminAvailableTime('');
-                          }
-                        }}
-                        disabled={false} 
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        placeholder="Pick a date" 
-                        />
-
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
-                      <TimePicker
-                        value={adminAvailableTime}
-                        onChange={(e) => setAdminAvailableTime(e.target.value)}
-                        disabled={!adminAvailableDate}
-                        min={
-                          adminAvailableDate === getCurrentDateTime().currentDate 
-                            ? getCurrentDateTime().currentTime 
-                            : undefined
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Enhanced warning messages - moved above buttons */}
-{action !== 'accept' && triedAccept && (!adminAvailableDate || !adminAvailableTime) && (
-  <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-    <span>Please select both date and time to proceed with the action.</span>
-  </div>
-)}
-
-                  {/* New validation warning for past datetime */}
-                  {adminAvailableDate && adminAvailableTime && !isValidDateTime(adminAvailableDate, adminAvailableTime) && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
-                      <span>Please select a future date and time. Past appointments cannot be scheduled.</span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
-                      onClick={() => handleActionClick('accept')}
-                      aria-label="Accept Request"
-                      title="Accept this request"
-                    >
-                      <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Accept
-                    </button>
-
-                    <button
-                      className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
-                      onClick={() => handleActionClick('decline')}
-                      aria-label="Decline Request"
-                      title="Decline this request"
-                    >
-                      <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
-                <div className="mb-4">
-                  <div className="mb-2 flex items-center">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-                      action === 'accept' ? 'bg-green-100 text-green-600'
-                        : action === 'decline' ? 'bg-red-100 text-red-600'
-                        : 'bg-indigo-100 text-indigo-600'
-                    }`}>
-                      {action === 'accept' ? (
+              {/* Only show the button if not in confirmation mode */}
+              {action !== 'issued' ? (
+                <button
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+                  onClick={() => setAction('issued')}
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  Mark as Issued
+                </button>
+              ) : (
+                // Only show the confirmation modal if action === 'issued'
+                <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">
+                  <div className="mb-5">
+                    <div className="flex items-center mb-4">
+                      <div className="h-11 w-11 rounded-full flex items-center justify-center mr-4 text-white bg-indigo-500">
                         <CheckCircle className="w-6 h-6" />
-                      ) : action === 'decline' ? (
-                        <XCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          Issue Request
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          You are about to <span className="text-indigo-700 font-medium">mark this request as issued</span>.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                      onClick={async () => {
+                        issuing();
+                        setIsSubmitting(true);
+                        setTimeout(() => {
+                          setRequestData({
+                            ...requestData,
+                            CollectedDate: new Date().toISOString(),
+                            ResponseMessage: responseMessage
+                          });
+                          setAction(null);
+                          setIsSubmitting(false);
+                        }, 1000);
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
+                          Processing...
+                        </>
                       ) : (
-                        <CheckCircle className="w-6 h-6" />
+                        'Confirm & Issue'
                       )}
-                    </div>
-                    <h4 className="text-lg font-medium">
-                      You are about to {action === 'accept'
-                        ? 'accept'
-                        : action === 'decline'
-                        ? 'decline'
-                        : 'issue'} this request
-                    </h4>
+                    </button>
+
+                    <button
+                      className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition"
+                      onClick={() => setAction(null)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Response Message</label>
+                </div>
+              )}
+            </div>
+          ) : requestData.status === 'pending' ? (
+            <div className="p-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Take Action
+              </h3>
+              {!action ? (
+                <>
+                  <div className="p-6 pt-0">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Availability</h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                        <SingleDatePicker
+                          value={adminAvailableDate}
+                          minDate={getCurrentDateTime().currentDate} // Disable past dates
+                          onChange={(e) => {
+                            setAdminAvailableDate(e.target.value);
+                            // Reset time if date changes to ensure validation
+                            if (adminAvailableTime && !isValidDateTime(e.target.value, adminAvailableTime)) {
+                              setAdminAvailableTime('');
+                            }
+                          }}
+                          disabled={false}
+                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          placeholder="Pick a date"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium text-gray-700 mb-1">Available Time</label>
+                        <TimePicker
+                          value={adminAvailableTime}
+                          onChange={(e) => setAdminAvailableTime(e.target.value)}
+                          disabled={!adminAvailableDate}
+                          min={
+                            adminAvailableDate === getCurrentDateTime().currentDate
+                              ? getCurrentDateTime().currentTime
+                              : undefined
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Enhanced warning messages - moved above buttons */}
+                    {action !== 'accept' && triedAccept && (!adminAvailableDate || !adminAvailableTime) && (
+                      <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+                        <span>Please select both date and time to proceed with the action.</span>
+                      </div>
+                    )}
+
+                    {/* New validation warning for past datetime */}
+                    {adminAvailableDate && adminAvailableTime && !isValidDateTime(adminAvailableDate, adminAvailableTime) && (
+                      <div className="mb-4 flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                        <span>Please select a future date and time. Past appointments cannot be scheduled.</span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <button
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition-colors duration-150 group"
+                        onClick={() => {
+                          // Check for over-issue before allowing accept
+                          const overIssued = adminIssueComponents.find(component => {
+                            const product = products.find(p => p.name === component.name);
+                            const maxStock = product ? product.available : 0;
+                            return component.quantity > maxStock;
+                          });
+                          if (overIssued) {
+                            setIssueError(
+                              `The issued quantity for "${overIssued.name}" (${overIssued.quantity}) is greater than available (${products.find(p => p.name === overIssued.name)?.inStock || 0})!`
+                            );
+                            return;
+                          }
+                          handleActionClick('accept');
+                        }}
+                        aria-label="Accept Request"
+                        title="Accept this request"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        Accept
+                      </button>
+
+                      <button
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                        onClick={() => handleActionClick('decline')}
+                        aria-label="Decline Request"
+                        title="Decline this request"
+                      >
+                        <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // --- FIXED SECTION ---
+                <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
+                  <div className="mb-4">
+                    <div className="mb-2 flex items-center">
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${action === 'accept' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                        {action === 'accept' ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-800">
+                        {action === 'accept' ? 'Confirm Acceptance' : 'Confirm Rejection'}
+                      </h4>
+                    </div>
+                  </div>
+                  
                   <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
                     rows="3"
                     placeholder="Enter response message to the requester..."
                     value={responseMessage}
                     onChange={(e) => setResponseMessage(e.target.value)}
                   />
-                </div>
-                {validationMessage && (
-                  <div className="flex items-center gap-2 bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded-md mb-4 text-sm">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>{validationMessage}</span>
+
+                  {validationMessage && (
+                    <div className="flex items-center gap-2 bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded-md mb-4 text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>{validationMessage}</span>
+                    </div>
+                  )}
+
+                  <div className="flex space-x-4">
+                    <button
+                      className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${action === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          {action === 'accept'
+                            ? 'Confirm & Accept'
+                            : 'Confirm & Decline'}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      onClick={() => setAction(null)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                )}
-                <div className="flex space-x-4">
-                  <button
-                    className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-                      action === 'accept' ? 'bg-green-600 hover:bg-green-700'
-                        : action === 'decline' ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {action === 'accept'
-                          ? 'Confirm & Accept'
-                          : action === 'decline'
-                          ? 'Confirm & Decline'
-                          : 'Confirm & Issue'}
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                    onClick={() => setAction(null)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
+                </div>
+                // --- END OF FIXED SECTION ---
+              )}
+            </div>
+          ) : null}
+
+          {isRejected && (
+            <div className="px-6 pt-4 pb-6 border-t border-gray-200">
+              <div className="flex items-start gap-4 bg-red-50 border border-red-200 rounded-xl p-5 shadow-sm">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <XCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="flex flex-col">
+                  <h4 className="text-base sm:text-lg font-semibold text-red-700 leading-tight">
+                    Request Rejected
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    {requestData.adminMessage
+                      ? requestData.adminMessage
+                      : "This request was rejected by the admin."}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
-        ) : null}
-
-        {isRejected && (
-          <div className="px-6 pt-4 pb-6 border-t border-gray-200">
-            <div className="flex items-start gap-4 bg-red-50 border border-red-200 rounded-xl p-5 shadow-sm">
-              <div className="bg-red-100 p-2 rounded-full">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="flex flex-col">
-                <h4 className="text-base sm:text-lg font-semibold text-red-700 leading-tight">
-                  Request Rejected
-                </h4>
-                <p className="text-sm text-red-700 mt-1">
-                  {requestData.adminMessage
-                    ? requestData.adminMessage
-                    : "This request was rejected by the admin."}
-                </p>
-              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {isReIssue && requestData.reIssueRequest && (
-  <>
-    {/* --- Existing Re-Issue UI --- */}
+          {isReIssue && requestData.reIssueRequest && (
+            <>
+              {/* --- Existing Re-Issue UI --- */}
 
-    {/* Show both original and re-issue descriptions */}
-    <div className="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="flex items-center mb-2">
-          <FileText className="w-5 h-5 mr-2 text-blue-600" />
-          <h4 className="font-medium text-blue-700">Original Request Description</h4>
+              {/* Show both original and re-issue descriptions */}
+  <div className="p-6 border-t border-gray-200">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Original Request Description Card */}
+    <div className="bg-white rounded-2xl shadow border border-blue-100 p-6 flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-blue-100 p-2 rounded-full">
+          <FileText className="w-6 h-6 text-blue-600" />
         </div>
-        <p className="text-gray-600">{requestData.userMessage || "No description provided."}</p>
-        {/* Show admin return message if present */}
-        {requestData.adminMessage && (
-          <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
-            <div className="flex items-center mb-2">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-              <h4 className="font-medium text-green-700">Admin Issue Message</h4>
-            </div>
-            <p className="text-gray-700">{requestData.adminMessage}</p>
-          </div>
-        )}
+        <h4 className="font-semibold text-blue-800 text-lg">Original Request Description</h4>
       </div>
-      <div className="bg-yellow-50 p-4 rounded-lg">
-        <div className="flex items-center mb-2">
-          <Repeat className="w-5 h-5 mr-2 text-yellow-600" />
-          <h4 className="font-medium text-yellow-700">Re-Issue User Note</h4>
+      <p className="text-gray-700 mb-2">{requestData.userMessage || "No description provided."}</p>
+      {/* Show admin return message if present */}
+      {requestData.adminMessage && (
+        <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 mt-1 text-green-600" />
+          <div>
+            <h5 className="font-medium text-green-700 mb-1">Admin Issue Message</h5>
+            <p className="text-gray-800">{requestData.adminMessage}</p>
+          </div>
         </div>
-        <p className="text-gray-700">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
-<div className="mt-4 flex flex-col gap-2">
-  <div className="flex items-center gap-2">
-    <CalendarDays className="w-4 h-4 text-blue-600" />
-    <span className="text-gray-600">Requested Days:</span>
-    <span className="font-semibold text-gray-800">{requestData.reIssueRequest.requestedDays}</span>
-  </div>
-  <div className="flex items-center gap-2">
-    <Clock className="w-4 h-4 text-indigo-600" />
-    <span className="text-gray-600">Initial Return Date:</span>
-    <span className="font-semibold text-gray-800">
-      {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
-    </span>
+      )}
+    </div>
+    {/* Re-Issue User Note Card */}
+    <div className="bg-yellow-50 rounded-2xl shadow border border-yellow-200 p-6 flex flex-col h-full">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-yellow-100 p-2 rounded-full">
+          <Repeat className="w-6 h-6 text-yellow-600" />
+        </div>
+        <h4 className="font-semibold text-yellow-800 text-lg">Re-Issue User Note</h4>
+      </div>
+      <p className="text-gray-800 mb-4">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-blue-600" />
+          <span className="text-gray-600">Requested Days:</span>
+          <span className="font-semibold text-gray-900">{requestData.reIssueRequest.requestedDays}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-indigo-600" />
+          <span className="text-gray-600">Initial Return Date:</span>
+          <span className="font-semibold text-gray-900">
+            {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-      </div>
-    </div>
 
-    {/* Show Not Returned Components Table ONLY if re-issue is pending */}
-{['pending', 'accepted','rejected'].includes(requestData.reIssueRequest.status) && (
-      <div className="p-6 border-t border-gray-200">
-        <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
-          <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
-          Re-Issue Request Components (Not Returned)
-        </h3>
-        <Table
-          columns={[
-            { key: 'name', label: 'Component Name' },
-            { key: 'quantity', label: 'Not Returned' }
-          ]}
-       rows={getNotReturnedComponents(requestData.adminIssueComponents, requestData.returnedComponents)}   
-          currentPage={1}
-          itemsPerPage={10}
-        />
-{requestData.reIssueRequest.status === 'pending' && showReissueDuration && (
-  <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
-    <div className="flex items-center space-x-3">
-      <CalendarDays className="w-5 h-5 text-blue-600" />
-      <h4 className="font-medium text-blue-700">Issue Duration</h4>
-      <button
-        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
-        onClick={handleDecrementDays}
-        disabled={issuableDays <= 1}
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <input
-        type="text"
-        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        min="1"
-        max="30"
-        value={issuableDays}
-        onChange={(e) => handleIssuableDaysChange(e.target.value)}
-      />
-      <button
-        className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
-        onClick={handleIncrementDays}
-        disabled={issuableDays >= 30}
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-      <span className="text-sm font-medium">Days</span>
-    </div>
-  </div>
-)}
-    </div>
-    )}
+              {/* Show Not Returned Components Table ONLY if re-issue is pending */}
+              {['pending', 'accepted', 'rejected'].includes(requestData.reIssueRequest.status) && (
+                <div className="p-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold mb-4 text-indigo-800 flex items-center">
+                    <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
+                    Re-Issue Request Components (Not Returned)
+                  </h3>
+                  <Table
+                    columns={[
+                      { key: 'name', label: 'Component Name' },
+                      { key: 'quantity', label: 'Not Returned' }
+                    ]}
+                    rows={getNotReturnedComponents(requestData.adminIssueComponents, requestData.returnedComponents)}
+                    currentPage={1}
+                    itemsPerPage={10}
+                  />
+                  {requestData.reIssueRequest.status === 'pending' && showReissueDuration && (
+                    <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100 w-full">
+                      <div className="flex items-center space-x-3">
+                        <CalendarDays className="w-5 h-5 text-blue-600" />
+                        <h4 className="font-medium text-blue-700">Issue Duration</h4>
+                        <button
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+                          onClick={handleDecrementDays}
+                          disabled={issuableDays <= 1}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="text"
+                          className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="1"
+                          max="30"
+                          value={issuableDays}
+                          onChange={(e) => handleIssuableDaysChange(e.target.value)}
+                        />
+                        <button
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700"
+                          onClick={handleIncrementDays}
+                          disabled={issuableDays >= 30}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-medium">Days</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-    {/* Accept/Decline Buttons */}
-{requestData.reIssueRequest.status === 'pending' && showReissueActions && !reissueAction && (
-  <div className="p-6 border-t border-gray-200 flex gap-4">
-    <button
-      className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-onClick={() => {
-  setReissueAction('accept');
-  setReissueMessage('Your re-issue request has been approved.');
-  // Get the previous return date (initial return date)
-  const prevReturnDateObj = getPreviousReturnDate(requestData.issueDate, requestData.adminApprovedDays);
-  let finalReturnDate = "-";
-  if (prevReturnDateObj) {
-    const newDate = new Date(prevReturnDateObj);
-    newDate.setDate(newDate.getDate() + Number(issuableDays));
-    finalReturnDate = formatDateShort(newDate);
-  }
-  setReissueSummary({
-    status: 'accepted',
-    days: issuableDays,
-    message: 'Your re-issue request has been approved.',
-    returnDate: finalReturnDate
-  });
-}}
-    >
-      <CheckCircle className="w-5 h-5 mr-2" />
-      Accept Re-Issue
-    </button>
-    <button
-      className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
-      onClick={() => {
-        setReissueAction('decline');
-        setReissueMessage('Your re-issue request has been declined due to unavailability , Return components on original return date.');
-        setReissueSummary({
-          status: 'declined',
-          days: '-',
-          message: 'Your re-issue request has been declined due to unavailability , Return components on original return date.',
-          returnDate: getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
-        });
-      }}
-    >
-      <XCircle className="w-5 h-5 mr-2" />
-      Decline Re-Issue
-    </button>
-  </div>
-)}
+              {/* Accept/Decline Buttons */}
+              {requestData.reIssueRequest.status === 'pending' && showReissueActions && !reissueAction && (
+                <div className="p-6 border-t border-gray-200 flex gap-4">
+                  <button
+                    className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+                    onClick={() => {
+                      setReissueAction('accept');
+                      setReissueMessage('Your re-issue request has been approved.');
+                      // Get the previous return date (initial return date)
+                      const prevReturnDateObj = getPreviousReturnDate(requestData.issueDate, requestData.adminApprovedDays);
+                      let finalReturnDate = "-";
+                      if (prevReturnDateObj) {
+                        const newDate = new Date(prevReturnDateObj);
+                        newDate.setDate(newDate.getDate() + Number(issuableDays));
+                        finalReturnDate = formatDateShort(newDate);
+                      }
+                      setReissueSummary({
+                        status: 'accepted',
+                        days: issuableDays,
+                        message: 'Your re-issue request has been approved.',
+                        returnDate: finalReturnDate
+                      });
+                    }}
+                  >
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Accept Re-Issue
+                  </button>
+                  <button
+                    className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+                    onClick={() => {
+                      setReissueAction('decline');
+                      setReissueMessage('Your re-issue request has been declined due to unavailability , Return components on original return date.');
+                      setReissueSummary({
+                        status: 'declined',
+                        days: '-',
+                        message: 'Your re-issue request has been declined due to unavailability , Return components on original return date.',
+                        returnDate: getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
+                      });
+                    }}
+                  >
+                    <XCircle className="w-5 h-5 mr-2" />
+                    Decline Re-Issue
+                  </button>
+                </div>
+              )}
 
 
-{reissueSummary && reissueSummary.resStatus === 200 && (
-  <div
-    className={`mt-10 w-full rounded-3xl border-2 shadow-2xl overflow-hidden
+              {reissueSummary && reissueSummary.resStatus === 200 && (
+                <div
+                  className={`mt-10 w-full rounded-3xl border-2 shadow-2xl overflow-hidden
       ${reissueSummary.status === 'accepted'
-        ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-400'
-        : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-400'
-      }`}
-    style={{ maxWidth: "100%" }}
-  >
-    {/* Header */}
-    <div className={`flex items-center gap-4 px-8 py-4 border-b-2
+                      ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-400'
+                      : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-400'
+                    }`}
+                  style={{ maxWidth: "100%" }}
+                >
+                  {/* Header */}
+                  <div className={`flex items-center gap-4 px-8 py-4 border-b-2
       ${reissueSummary.status === 'accepted' ? 'border-green-200' : 'border-red-200'} bg-white`}>
-      <div className={`flex items-center justify-center rounded-full h-12 w-12 shadow-lg
+                    <div className={`flex items-center justify-center rounded-full h-12 w-12 shadow-lg
         ${reissueSummary.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'}`}>
-        {reissueSummary.status === 'accepted' ? (
-          <CheckCircle className="w-7 h-7 text-green-600" />
-        ) : (
-          <XCircle className="w-7 h-7 text-red-600" />
-        )}
-      </div>
-      <div>
-        <div className={`text-xl font-bold tracking-wide
+                      {reissueSummary.status === 'accepted' ? (
+                        <CheckCircle className="w-7 h-7 text-green-600" />
+                      ) : (
+                        <XCircle className="w-7 h-7 text-red-600" />
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-xl font-bold tracking-wide
           ${reissueSummary.status === 'accepted' ? 'text-green-700' : 'text-red-700'}`}>
-          Re-Issue {reissueSummary.status === 'accepted' ? 'Accepted' : 'Rejected'}
-        </div>
-        <div className="text-gray-500 text-sm mt-1">
-          {reissueSummary.status === 'accepted'
-            ? 'The re-issue request has been approved. See details below.'
-            : 'The re-issue request has been declined. See details below.'}
-        </div>
-      </div>
-    </div>
-    {/* Details */}
-    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
-      <div className="flex flex-col items-center md:items-start px-8 py-4">
-        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
-          <Repeat className="w-4 h-4 text-indigo-400" />
-          Re-Issue Days
-        </div>
-        <div className="font-bold text-lg text-gray-900">{reissueSummary.days}</div>
-      </div>
-      <div className="flex flex-col items-center md:items-start px-8 py-4">
-        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-blue-400" />
-          Return Date
-        </div>
-        <div className="font-bold text-lg text-gray-900">
-          {reissueSummary.status === 'accepted'
-            ? reissueSummary.returnDate
-            : getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
-          }
-        </div>
-      </div>
-      <div className="flex flex-col items-center md:items-start px-8 py-4 w-full">
-        <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-green-400" />
-          Admin Message
-        </div>
-        <div className={`rounded-xl px-4 py-3 text-gray-900 text-sm w-full shadow
+                        Re-Issue {reissueSummary.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                      </div>
+                      <div className="text-gray-500 text-sm mt-1">
+                        {reissueSummary.status === 'accepted'
+                          ? 'The re-issue request has been approved. See details below.'
+                          : 'The re-issue request has been declined. See details below.'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
+                    <div className="flex flex-col items-center md:items-start px-8 py-4">
+                      <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+                        <Repeat className="w-4 h-4 text-indigo-400" />
+                        Re-Issue Days
+                      </div>
+                      <div className="font-bold text-lg text-gray-900">{reissueSummary.days}</div>
+                    </div>
+                    <div className="flex flex-col items-center md:items-start px-8 py-4">
+                      <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-blue-400" />
+                        Return Date
+                      </div>
+                      <div className="font-bold text-lg text-gray-900">
+                        {reissueSummary.status === 'accepted'
+                          ? reissueSummary.returnDate
+                          : getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)
+                        }
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center md:items-start px-8 py-4 w-full">
+                      <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                        Admin Message
+                      </div>
+                      <div className={`rounded-xl px-4 py-3 text-gray-900 text-sm w-full shadow
           ${reissueSummary.status === 'accepted' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-          {reissueSummary.message}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                        {reissueSummary.message}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-    {/* Confirmation Card - Styled like Take Action */}
-    {requestData.reIssueRequest.status === 'pending' && reissueAction && (
-      <div className="bg-blue-50 rounded-lg p-6 border border-blue-100 mt-4">
-        <div className="mb-4 flex items-center">
-          <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-            reissueAction === 'accept' ? 'bg-green-100 text-green-600'
-            : 'bg-red-100 text-red-600'
-          }`}>
-            {reissueAction === 'accept'
-              ? <CheckCircle className="w-6 h-6" />
-              : <XCircle className="w-6 h-6" />}
-          </div>
-          <h4 className="text-lg font-medium">
-            You are about to {reissueAction === 'accept' ? 'accept' : 'decline'} this re-issue request
-          </h4>
-        </div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {reissueAction === 'accept' ? 'Approval Message' : 'Decline Reason'}
-        </label>
-        <textarea
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
-          rows={3}
-          placeholder={reissueAction === 'accept'
-            ? 'Enter approval message for the requester...'
-            : 'Enter reason for declining the re-issue...'}
-          value={reissueMessage}
-          onChange={e => setReissueMessage(e.target.value)}
-        />
-        <div className="flex space-x-4">
-          <button
-            className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-              reissueAction === 'accept'
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-red-600 hover:bg-red-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
-            disabled={isReissueSubmitting}
-            onClick={async () => {
-              setIsReissueSubmitting(true);
-              await handleReIssueAction(reissueAction, reissueMessage); 
-              setIsReissueSubmitting(false);
-              setReissueAction(null);
-              setReissueMessage('');
-            }}
-          >
-            {isReissueSubmitting ? 'Processing...' : (
-              reissueAction === 'accept'
-                ? 'Confirm & Accept'
-                : 'Confirm & Decline'
-            )}
-          </button>
-          <button
-            className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            onClick={() => {
-              setReissueAction(null);
-              setReissueMessage('');
-            }}
-            disabled={isReissueSubmitting}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    )}
-  </>
-)}
+              {/* Confirmation Card - Styled like Take Action */}
+              {requestData.reIssueRequest.status === 'pending' && reissueAction && (
+                <div className="bg-blue-50 rounded-lg p-6 border border-blue-100 mt-4">
+                  <div className="mb-4 flex items-center">
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${reissueAction === 'accept' ? 'bg-green-100 text-green-600'
+                        : 'bg-red-100 text-red-600'
+                      }`}>
+                      {reissueAction === 'accept'
+                        ? <CheckCircle className="w-6 h-6" />
+                        : <XCircle className="w-6 h-6" />}
+                    </div>
+                    <h4 className="text-lg font-medium">
+                      You are about to {reissueAction === 'accept' ? 'accept' : 'decline'} this re-issue request
+                    </h4>
+                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {reissueAction === 'accept' ? 'Approval Message' : 'Decline Reason'}
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
+                    rows={3}
+                    placeholder={reissueAction === 'accept'
+                      ? 'Enter approval message for the requester...'
+                      : 'Enter reason for declining the re-issue...'}
+                    value={reissueMessage}
+                    onChange={e => setReissueMessage(e.target.value)}
+                  />
+                  <div className="flex space-x-4">
+                    <button
+                      className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${reissueAction === 'accept'
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-red-600 hover:bg-red-700'
+                        } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                      disabled={isReissueSubmitting}
+                      onClick={async () => {
+                        setIsReissueSubmitting(true);
+                        await handleReIssueAction(reissueAction, reissueMessage);
+                        setIsReissueSubmitting(false);
+                        setReissueAction(null);
+                        setReissueMessage('');
+                      }}
+                    >
+                      {isReissueSubmitting ? 'Processing...' : (
+                        reissueAction === 'accept'
+                          ? 'Confirm & Accept'
+                          : 'Confirm & Decline'
+                      )}
+                    </button>
+                    <button
+                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      onClick={() => {
+                        setReissueAction(null);
+                        setReissueMessage('');
+                      }}
+                      disabled={isReissueSubmitting}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
 
-{showSuccess && (
-  <SuccessAlert
-    message={successMessage || "Issued components saved!"}
-    description="Changes have been successfully recorded."
-    onClose={() => setShowSuccess(false)}
-  />
-)}
+          {showSuccess && (
+            <SuccessAlert
+              message={successMessage || "Issued components saved!"}
+              description="Changes have been successfully recorded."
+              onClose={() => setShowSuccess(false)}
+            />
+          )}
         </div>
       </div>
     </div>
