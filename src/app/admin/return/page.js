@@ -966,7 +966,7 @@ const returnTrackingRows = returnTrackingComponents
       if (requestData.status !== 'returned') {
         const now = new Date();
         const diffDays = Math.ceil((expectedReturnDate - now) / (1000 * 60 * 60 * 24));
-        if (diffDays > 0) {
+        if (diffDays >= 0) {
           return (
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-green-600" />
