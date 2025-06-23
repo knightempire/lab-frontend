@@ -244,129 +244,216 @@ function ReIssueDetails({ reIssue, columns, getPageRows, userPage, setUserPage, 
     })
     .filter(Boolean);
 
-  return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
-
-                
-<div className="p-6 border-b border-yellow-200 bg-yellow-50 flex items-center gap-2">
-  <Repeat className="w-5 h-5 text-yellow-500" />
-  <h2 className="text-lg font-semibold text-yellow-700">Re-Issue Details</h2>
-  <span className={`ml-4 px-3 py-1 rounded-full text-sm font-medium ${
-    reIssue.status === 'pending'
-      ? 'bg-yellow-100 text-yellow-800'
-      : reIssue.status === 'accepted' || reIssue.status === 'approved'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
-  }`}>
-    {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
-  </span>
-<div className="flex items-center gap-2 ml-auto">
-  {reIssue.status === 'approved' && (
-    <>
-      <CheckCircle className="w-4 h-4 text-green-600" />
-      <span className="font-medium text-green-700">No. of Days Approved:</span>
-      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm font-semibold">
-        {reIssue.adminApprovedDays || "N/A"} Days
-      </span>
-    </>
-  )}
-</div>
-</div>
-      
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-  {/* Left Column */}
-<div className="flex flex-col gap-6">
-  {/* Admin Message */}
-  <div>
-    <div className="mb-2 flex items-center gap-2">
-      <CheckCircle className="w-5 h-5 text-indigo-600" />
-      <span className="font-semibold text-indigo-700">Admin Message</span>
+return (
+  <div className="bg-white rounded-xl shadow-md overflow-hidden m-4 mb-8 mt-4">
+    {/* Header */}
+{reIssue.status === 'pending' && (
+  <div className="p-6 border-b border-yellow-200 bg-yellow-50 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+    <div className="flex items-center gap-3">
+      <Repeat className="w-7 h-7 text-yellow-500" />
+      <h2 className="text-xl font-bold text-yellow-700 tracking-wide">Re-Issue Details</h2>
     </div>
-    <div
-      className={`border rounded-lg p-4 ${
-        reIssue.status === 'pending'
-          ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-          : reIssue.status === 'accepted' || reIssue.status === 'approved'
-          ? 'bg-green-50 border-green-200 text-green-800'
-          : 'bg-red-50 border-red-200 text-red-800'
-      }`}
-    >
+    <span className="mt-2 md:mt-0 ml-0 md:ml-4 px-4 py-1 rounded-full text-base font-semibold bg-yellow-100 text-yellow-800 shadow-sm border border-yellow-200">
+      {reIssue.status.charAt(0).toUpperCase() + reIssue.status.slice(1)}
+    </span>
+  </div>
+)}
+
+    {/* Accepted or Rejected: Show summary card like admin page */}
+{/* Accepted or Rejected: Show summary card like admin page */}
+{(reIssue.status === 'accepted' || reIssue.status === 'approved' || reIssue.status === 'rejected') ? (
+<div
+  className={`mt-0 w-full rounded-3xl border-2 shadow-2xl overflow-hidden
+    ${reIssue.status === 'accepted' || reIssue.status === 'approved'
+      ? 'bg-gradient-to-r from-green-50 via-green-100 to-green-50 border-green-400'
+      : 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-400'
+    }`}
+  style={{ maxWidth: "100%" }}
+>
+  {/* Header */}
+  <div className={`flex flex-col md:flex-row items-start md:items-center gap-4 px-8 py-4 border-b-2
+    ${reIssue.status === 'accepted' || reIssue.status === 'approved' ? 'border-green-200' : 'border-red-200'} bg-white`}>
+    {/* Status Icon and Title */}
+    <div className="flex items-center gap-4">
+      <div className={`flex items-center justify-center rounded-full h-12 w-12 shadow-lg
+        ${reIssue.status === 'accepted' || reIssue.status === 'approved' ? 'bg-green-100' : 'bg-red-100'}`}>
+        {reIssue.status === 'accepted' || reIssue.status === 'approved' ? (
+          <CheckCircle className="w-7 h-7 text-green-600" />
+        ) : (
+          <XCircle className="w-7 h-7 text-red-600" />
+        )}
+      </div>
+      <div>
+        <div className={`text-xl font-bold tracking-wide
+          ${reIssue.status === 'accepted' || reIssue.status === 'approved' ? 'text-green-700' : 'text-red-700'}`}>
+          Re-Issue {reIssue.status === 'accepted' || reIssue.status === 'approved' ? 'Accepted' : 'Rejected'}
+        </div>
+        <div className="text-gray-500 text-sm mt-1">
+          {reIssue.status === 'accepted' || reIssue.status === 'approved'
+            ? 'The re-issue request has been approved. See details below.'
+            : 'The re-issue request has been declined. See details below.'}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{/* Details */}
+<div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-gradient-to-r from-white via-transparent to-white">
+  {/* User Message */}
+  <div className="flex flex-col items-center md:items-start px-8 py-4">
+    <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+      <FileText className="w-4 h-4 text-blue-400" />
+      User Message
+    </div>
+    <div className="font-normal text-sm text-gray-900">
+      {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
+    </div>
+  </div>
+  {/* User Requested Days */}
+  <div className="flex flex-col items-center md:items-start px-8 py-4">
+    <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+      <Repeat className="w-4 h-4 text-indigo-400" />
+      User Requested Days
+    </div>
+    <div className="font-bold text-lg text-indigo-700">
+      {reIssue.extensionDays || reIssue.requestedDays || '-'}
+    </div>
+  </div>
+  {/* Re-Issue Days (Approved) */}
+  <div className="flex flex-col items-center md:items-start px-8 py-4">
+    <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+      <Repeat className="w-4 h-4 text-green-400" />
+      Re-Issue Days (Approved)
+    </div>
+    <div className="font-bold text-lg text-green-700">
+      {reIssue.adminApprovedDays || reIssue.extensionDays || reIssue.requestedDays || '-'}
+    </div>
+  </div>
+  {/* Return Date */}
+{/* Return Date */}
+<div className="flex flex-col items-center md:items-start px-8 py-4">
+  <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+    <CalendarDays className="w-4 h-4 text-blue-400" />
+    Return Date
+  </div>
+  <div className="font-bold text-lg text-gray-900">
+    {(() => {
+      // Use the same logic as your summary card
+      const baseDate = (requestData.collectedDate || requestData.issueDate);
+      if (!baseDate) return "-";
+      const mainDays = Number(requestData.adminApprovedDays || requestData.requestedDays) || 0;
+      const reIssueDays =
+        requestData.reIssueRequest &&
+        (requestData.reIssueRequest.status === "approved" || requestData.reIssueRequest.status === "accepted")
+          ? Number(requestData.reIssueRequest.adminApprovedDays) || 0
+          : 0;
+      const date = new Date(baseDate);
+      date.setDate(date.getDate() + mainDays + reIssueDays);
+      const pad = n => n.toString().padStart(2, '0');
+      return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+    })()}
+  </div>
+</div>
+  {/* Admin Message */}
+  <div className="flex flex-col items-center md:items-start px-8 py-4 w-full">
+    <div className="text-gray-500 text-sm mb-1 flex items-center gap-2">
+      <CheckCircle className="w-4 h-4 text-green-400" />
+      Admin Message
+    </div>
+    <div className={`rounded-xl px-4 py-3 text-gray-900 text-sm w-full shadow
+      ${reIssue.status === 'accepted' || reIssue.status === 'approved'
+        ? 'bg-green-50 border border-green-200'
+        : 'bg-red-50 border border-red-200'}`}>
       {reIssue.adminExtensionMessage || (
         <span className="text-gray-400">No message from admin.</span>
       )}
     </div>
   </div>
+</div>
+</div>
+) : (
 
-  {/* User Note / Reason */}
-  {reIssue.status === 'pending' && (
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <FileText className="w-4 h-4 text-blue-600" />
-        <span className="font-semibold text-blue-700">User Note / Reason</span>
+      // Pending UI (original)
+<div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+  {/* Left Column: Info Card */}
+  <div className="flex flex-col gap-6">
+    {/* Admin Message */}
+    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+      <div className="flex items-center gap-2 mb-2">
+        <CheckCircle className="w-5 h-5 text-indigo-600" />
+        <span className="font-semibold text-indigo-700">Admin Message</span>
       </div>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
-        {reIssue.userExtensionMessage || (
-          <span className="text-gray-400">No message provided.</span>
+      <div className="text-gray-800 text-sm">
+        {reIssue.adminExtensionMessage || (
+          <span className="text-gray-400">No message from admin.</span>
         )}
       </div>
     </div>
-  )}
 
-  {/* Requested Days */}
-  <div className="flex items-center gap-2">
-    <CalendarDays className="w-4 h-4 text-blue-600" />
-    <span className="font-medium text-gray-700">Requested Days:</span>
-    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm font-semibold">
-      {reIssue.extensionDays || reIssue.requestedDays || 'N/A'} Days
-    </span>
-  </div>
-</div>
-
-
-  {/* Right Column */}
-  <div className="flex flex-col gap-6">
-    {reIssue.status === 'pending' ? (
-      <>
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <Repeat className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-green-700">Re-Issued Components</span>
-          </div>
-          {notReturned.length > 0 ? (
-            <Table
-              columns={[
-                { key: 'name', label: 'Component Name' },
-                { key: 'notReturnedQty', label: 'Not Returned', className: 'text-center' }
-              ]}
-              rows={getPageRows(notReturned, userPage)}
-              currentPage={userPage}
-              itemsPerPage={itemsPerPage}
-            />
-          ) : (
-            <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
+    {/* User Note / Reason */}
+    {reIssue.status === 'pending' && (
+      <div className="bg-white rounded-lg shadow p-4 border border-blue-200">
+        <div className="flex items-center gap-2 mb-2">
+          <FileText className="w-4 h-4 text-blue-600" />
+          <span className="font-semibold text-blue-700">User Note / Reason</span>
+        </div>
+        <div className="text-blue-900 text-sm">
+          {reIssue.userExtensionMessage || (
+            <span className="text-gray-400">No message provided.</span>
           )}
         </div>
-      </>
-    ) : (
-      <>
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" />
-            <span className="font-semibold text-blue-700">User Note / Reason</span>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-900">
-            {reIssue.userExtensionMessage || <span className="text-gray-400">No message provided.</span>}
-          </div>
-        </div>
-      </>
+      </div>
     )}
+
+    {/* Days Info */}
+    <div className="grid grid-cols-2 gap-4">
+      <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-start border border-blue-100">
+        <span className="flex items-center gap-1 text-gray-500 text-xs mb-1">
+          <CalendarDays className="w-4 h-4 text-blue-400" />
+          Requested Days
+        </span>
+        <span className="font-bold text-indigo-700 text-base">
+          {reIssue.extensionDays || reIssue.requestedDays || 'N/A'}
+        </span>
+      </div>
+      <div className="bg-green-50 rounded-lg p-4 flex flex-col items-start border border-green-100">
+        <span className="flex items-center gap-1 text-gray-500 text-xs mb-1">
+          <Repeat className="w-4 h-4 text-green-400" />
+          Approved Days
+        </span>
+        <span className="font-bold text-green-700 text-base">
+          {reIssue.adminApprovedDays || '-'}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {/* Right Column: Table */}
+  <div className="flex flex-col gap-6">
+    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+      <div className="mb-2 flex items-center gap-2">
+        <Repeat className="w-5 h-5 text-green-600" />
+        <span className="font-semibold text-green-700">Re-Issued Components</span>
+      </div>
+      {notReturned.length > 0 ? (
+        <Table
+          columns={[
+            { key: 'name', label: 'Component Name' },
+            { key: 'notReturnedQty', label: 'Not Returned', className: 'text-center' }
+          ]}
+          rows={getPageRows(notReturned, userPage)}
+          currentPage={userPage}
+          itemsPerPage={itemsPerPage}
+        />
+      ) : (
+        <div className="text-gray-400 text-center py-6">No re-issued components found.</div>
+      )}
+    </div>
   </div>
 </div>
-
-                
-       
-    </div>
-  );
+    )}
+  </div>
+);
 }
 
   const toggleRowExpansion = (itemId) => {
@@ -521,50 +608,53 @@ async function handleExtensionRequestSubmit(e) {
         </div>
 
             {/* --- User and Reference Info --- */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* User Message */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                User Message
-                </h3>
-                <div className="text-gray-700 text-sm flex-1">
-                {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
-                </div>
-            </div>
+<div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+  {/* User Message */}
+  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-blue-200">
+    <div className="flex items-center gap-2 mb-4">
+      <FileText className="w-6 h-6 text-blue-500" />
+      <span className="text-base font-bold text-blue-800 tracking-wide">User Message</span>
+    </div>
+    <div className="flex-1">
+      <div className="rounded-lg px-4 py-3  text-blue-900 text-sm  flex items-center">
+        {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
+      </div>
+    </div>
+  </div>
 
-            {/* Admin Message */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 20.5a8.38 8.38 0 01-7.45-4.4 8.5 8.5 0 1114.9 0A8.38 8.38 0 0112 20.5z" />
-                </svg>
-                Admin Message
-                </h3>
-                <div className="text-gray-700 text-sm flex-1">
-                {requestData.adminMessage
-                    ? requestData.adminMessage
-                    : <span className="text-gray-400">No message from admin.</span>}
-                </div>
-            </div>
+  {/* Admin Message */}
+  <div className="bg-gradient-to-br from-green-50 via-white to-green-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-green-200">
+    <div className="flex items-center gap-2 mb-4">
+      <CheckCircle className="w-6 h-6 text-green-500" />
+      <span className="text-base font-bold text-green-800 tracking-wide">Admin Message</span>
+    </div>
+    <div className="flex-1">
+      <div className="rounded-lg px-4 py-3  text-green-900 text-sm  flex items-center">
+        {requestData.adminMessage
+          ? requestData.adminMessage
+          : <span className="text-gray-400">No message from admin.</span>}
+      </div>
+    </div>
+  </div>
 
-            {/* Reference Staff */}
-            <div className="bg-gray-50 p-5 rounded-lg flex flex-col h-full">
-                <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-                Reference Staff
-                </h3>
-                <div className="space-y-3 text-sm">
-                <div className="flex"><span className="text-gray-500 w-28">Name:</span><span className="font-medium">{requestData.referenceStaff?.name}</span></div>
-                <div className="flex"><span className="text-gray-500 w-28">Email:</span><span className="font-medium">{requestData.referenceStaff?.email}</span></div>
-                </div>
-            </div>
-            </div>
+  {/* Reference Staff */}
+  <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-indigo-200">
+    <div className="flex items-center gap-2 mb-4">
+      <RefreshCw className="w-6 h-6 text-indigo-500" />
+      <span className="text-base font-bold text-indigo-800 tracking-wide">Reference Staff</span>
+    </div>
+    <div className="space-y-3 text-sm">
+      <div className="flex items-center">
+        <span className="text-gray-500 w-24 font-medium">Name:</span>
+        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.name}</span>
+      </div>
+      <div className="flex items-center">
+        <span className="text-gray-500 w-24 font-medium">Email:</span>
+        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.email}</span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* --- Conditional Tables --- */}
           <div className="p-6 border-t border-gray-200">
@@ -1049,49 +1139,99 @@ async function handleExtensionRequestSubmit(e) {
             )}
 
             {/* Rejected */}
-            {requestData.status === 'rejected' && (
-            <div className="space-y-8">
-                <div className="bg-white shadow rounded-lg">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center mb-4">
-                    <Repeat className="w-5 h-5 mr-2 text-blue-600" />
-                    <h2 className="text-lg font-semibold text-gray-700">
-                        Requested Components
-                    </h2>
-                    </div>
-                    {requestData.components && requestData.components.length > 0 ? (
-                    <>
-                      <Table
-                        columns={columns}
-                        rows={getPageRows(requestData.components, userPage)}
-                        currentPage={userPage}
-                        itemsPerPage={itemsPerPage}
-                      />
-                      {requestData.components.length > itemsPerPage && (
-                        <Pagination
-                          currentPage={userPage}
-                          totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
-                          setCurrentPage={setUserPage}
-                        />
-                      )}
-                    </>
-                    ) : (
-                    <div className="text-gray-400 text-center py-6">No components found.</div>
-                  )}
-                </div>
-                </div>
-                <div className="text-center py-8">
-                <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
-                <p className="text-lg text-red-700 font-semibold">Your request was rejected.</p>
-                </div>
-            </div>
+{requestData.status === 'rejected' && (
+  <div className="space-y-8">
+    {/* Card: Requested Components */}
+    <div className="bg-white shadow rounded-xl border border-red-100">
+      <div className="p-6 border-b border-red-100 flex items-center gap-3">
+        <XCircle className="w-6 h-6 text-red-500" />
+        <h2 className="text-xl font-bold text-red-700 tracking-wide">
+          Request Rejected
+        </h2>
+        <span className="ml-4 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 border border-red-200">
+          Rejected
+        </span>
+      </div>
+      <div className="p-6">
+        <div className="flex items-center mb-4">
+          <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-700">
+            Requested Components
+          </h3>
+        </div>
+        {requestData.components && requestData.components.length > 0 ? (
+          <>
+            <Table
+              columns={columns}
+              rows={getPageRows(requestData.components, userPage)}
+              currentPage={userPage}
+              itemsPerPage={itemsPerPage}
+            />
+            {requestData.components.length > itemsPerPage && (
+              <Pagination
+                currentPage={userPage}
+                totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                setCurrentPage={setUserPage}
+              />
             )}
+          </>
+        ) : (
+          <div className="text-gray-400 text-center py-6">No components found.</div>
+        )}
+      </div>
+    </div>
+    {/* Rejected Message */}
+    <div className="text-center py-8">
+      <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+      <p className="text-xl text-red-700 font-semibold">
+        Your request was rejected by the admin.
+      </p>
+      <p className="text-gray-500 mt-2">
+        Please contact the lab staff for more information or to resolve any issues.
+      </p>
+    </div>
+  </div>
+)}
 
             {/* Closed - Failed to collect components */}
-            {requestData.status === 'closed' && (
-  <div className="space-y-8">
-    <div className="bg-white shadow rounded-lg">
-      <div className="p-6 border-b border-gray-200">
+{requestData.status === 'closed' && (
+  <div className="space-y-10">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-white shadow-xl rounded-2xl border border-blue-200 overflow-hidden">
+      <div className="px-8 py-6 border-b border-blue-100 flex flex-col md:flex-row md:items-center gap-4 bg-blue-50">
+        <div className="flex items-center gap-3">
+          <XCircle className="w-8 h-8 text-red-500" />
+          <div>
+            <h2 className="text-2xl font-bold text-blue-900 tracking-wide mb-1">
+              Request Closed
+            </h2>
+            <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+              Closed
+            </span>
+          </div>
+        </div>
+        <div className="flex-1" />
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-blue-600" />
+          <span className="font-medium text-blue-800">
+            Scheduled Collection Date:
+          </span>
+          <span className="font-semibold">
+            {requestData.scheduledCollectionDate || "-"}
+          </span>
+ <span className="relative group flex items-center">
+  <HelpCircle className="w-4 h-4 text-blue-500 inline" />
+  <span
+    className="absolute right-0 top-full mt-2 z-20 w-72 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg
+      md:left-auto md:right-0 md:top-full md:mt-2
+      left-1/2 -translate-x-1/2 md:translate-x-0"
+    style={{ minWidth: '220px', maxWidth: '320px', wordBreak: 'break-word' }}
+  >
+    Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
+  </span>
+</span>
+        </div>
+      </div>
+      <div className="px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Requested Components Table */}
           <div>
@@ -1146,27 +1286,14 @@ async function handleExtensionRequestSubmit(e) {
             )}
           </div>
         </div>
-        {/* Scheduled Collection Date and Failure Message */}
-        <div className="text-center py-8">
-<div className="mb-4">
-  <span className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-medium text-sm">
-    <CalendarDays className="w-5 h-5 mr-2" />
-    Scheduled Collection Date:&nbsp;
-    {requestData.scheduledCollectionDate
-      ? requestData.scheduledCollectionDate
-      : '-'}
-    <span
-      className="ml-2 cursor-pointer"
-      title="Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically."
-    >
-      {/* Import HelpCircle from lucide-react at the top */}
-      <HelpCircle className="w-4 h-4 text-blue-500 inline" />
-    </span>
-  </span>
-</div>
-          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
-          <p className="text-lg text-red-700 font-semibold">
+        {/* Failure Message */}
+        <div className="flex flex-col items-center justify-center py-8">
+          <XCircle className="w-14 h-14 text-red-400 mb-4" />
+          <p className="text-2xl text-red-700 font-bold mb-2">
             Failed to collect components from scheduled date. 48 hrs crossed!
+          </p>
+          <p className="text-gray-500 text-base max-w-xl text-center">
+            Your request was automatically closed because the components were not collected within the allowed time window. Please contact the lab staff if you need further assistance.
           </p>
         </div>
       </div>

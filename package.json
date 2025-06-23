@@ -17,6 +17,7 @@
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
     "framer-motion": "^12.12.1",
+    "fuzzysort": "^3.1.0",
     "i": "^0.3.7",
     "lucide-react": "^0.507.0",
     "moment-timezone": "^0.5.48",
