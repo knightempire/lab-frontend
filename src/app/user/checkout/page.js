@@ -535,22 +535,22 @@ useEffect(() => {
   );
 
   return (
-    <div className="bg-gray-50">
-      <div className="mx-auto px-4 py-3">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 w-full">
+      <div className="w-full px-2 md:px-8 py-8">
         {/* Header */}
-        <header className="mb-4">
+        <header className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={handleBack}
-                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                className="p-2 rounded-full hover:bg-blue-100 transition-colors shadow"
                 aria-label="Go back"
               >
-                <ArrowLeft size={20} className="text-gray-700" />
+                <ArrowLeft size={22} className="text-blue-700" />
               </button>
               <div className="flex items-center">
-                <Package className="text-blue-600 h-6 w-6 mr-2" />
-                <h1 className="text-2xl font-bold text-gray-800">
+                <Package className="text-indigo-600 h-7 w-7 mr-2" />
+                <h1 className="text-3xl font-bold text-blue-900 tracking-tight drop-shadow">
                   Checkout
                 </h1>
               </div>
@@ -560,46 +560,49 @@ useEffect(() => {
 
         {/* Success notification */}
         {submitSuccess && (
-          <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-t-4 border-green-400">
               <div className="flex items-center justify-center mb-4">
-                <div className="bg-green-100 p-3 rounded-full">
-                  <CheckCircle size={30} className="text-green-500" />
+                <div className="bg-green-100 p-4 rounded-full shadow">
+                  <CheckCircle size={36} className="text-green-500" />
                 </div>
               </div>
-              <h3 className="text-xl font-medium text-center text-gray-900 mb-2">Request Submitted Successfully!</h3>
+              <h3 className="text-2xl font-bold text-center text-green-700 mb-2">Request Submitted!</h3>
               <p className="text-gray-600 text-center mb-5">
-                Your component request has been sent for processing. Redirecting to home page...
+                Your component request has been sent for processing.<br />Redirecting to dashboard...
               </p>
             </div>
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Main Form -  Selected Products Section */}
-          <div className="md:w-2/3 space-y-4">
-            <section className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="px-6 py-2 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-800">Selected Components</h2>
+        <div className="flex flex-col lg:flex-row gap-8 w-full">
+          {/* Main Form - Selected Products Section */}
+          <div className="lg:w-2/3 w-full space-y-6">
+            <section className="bg-white/90 rounded-2xl shadow-lg border border-blue-100 overflow-hidden">
+              <div className="px-8 py-4 border-b border-blue-100 flex items-center justify-between bg-gradient-to-r from-blue-50 via-white to-blue-100">
+                <h2 className="text-xl font-semibold text-blue-900 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-blue-500" />
+                  Selected Components
+                </h2>
                 {selectedProducts.length > 0 && (
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 hover:text-blue-800 text-sm font-semibold underline"
                   >
                     + Add more
                   </button>
                 )}
               </div>
-              
               {selectedProducts.length > 0 ? (
-                <div className="overflow-x-auto min-h-[310px]">
-                  <Table 
-                    columns={columns} 
+                <div className="overflow-x-auto min-h-[310px] px-4 py-4">
+                  <Table
+                    columns={columns}
                     rows={currentPageItems}
-                    currentPage={currentPage} 
-                    itemsPerPage={itemsPerPage} 
-                    renderCell={renderCell} 
+                    currentPage={currentPage}
+                    itemsPerPage={itemsPerPage}
+                    renderCell={renderCell}
+                    customClasses={{ table: "min-w-full divide-y divide-blue-100" }}
                   />
                   <Pagination
                     currentPage={currentPage}
@@ -608,19 +611,19 @@ useEffect(() => {
                   />
                 </div>
               ) : (
-                <div className="px-6 py-12 text-center">
-                  <Package size={40} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 mb-4">No components selected yet</p>
+                <div className="px-8 py-16 text-center">
+                  <Package size={48} className="mx-auto text-blue-200 mb-4" />
+                  <p className="text-blue-500 mb-4 font-medium">No components selected yet</p>
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-semibold shadow"
                   >
                     Browse components
                   </button>
                 </div>
               )}
-              
+
               {submitted && errors.products && (
                 <div className="p-3 bg-red-50 text-red-700 text-sm flex items-center border-t border-red-100">
                   <AlertCircle size={16} className="mr-2 flex-shrink-0" />
@@ -639,24 +642,24 @@ useEffect(() => {
               )}
             </section>
 
-            <section className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="px-6 py-2 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-800">Request Details</h2>
+            <section className="bg-white/90 rounded-2xl shadow-lg border border-blue-100 overflow-hidden">
+              <div className="px-8 py-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-100">
+                <h2 className="text-xl font-semibold text-blue-900">Request Details</h2>
               </div>
-              <div className="px-6 py-4 space-y-5">
+              <div className="px-8 py-6 space-y-6">
                 <div>
-                  <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="purpose" className="block text-base font-semibold text-gray-700 mb-1">
                     Purpose <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="purpose"
                     value={purpose}
                     onChange={(e) => setPurpose(e.target.value)}
-                    className={`w-full px-4 py-2 border ${
-                      submitted && errors.purpose ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                    className={`w-full px-4 py-3 border ${
+                      submitted && errors.purpose ? 'border-red-300 bg-red-50' : 'border-blue-200'
+                    } rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors text-base`}
                     rows="3"
-                    placeholder="Please describe why you need these components..."
+                    placeholder="Describe why you need these components..."
                   ></textarea>
                   {submitted && errors.purpose && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -666,18 +669,17 @@ useEffect(() => {
                   )}
                 </div>
 
-
-                <div className="flex flex-col md:flex-row md:space-x-4">
+                <div className="flex flex-col md:flex-row md:space-x-6">
                   <div className="md:w-2/3 mb-5 md:mb-0">
-                    <label htmlFor="referenceStaff" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="referenceStaff" className="block text-base font-semibold text-gray-700 mb-1">
                       Reference Staff <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <div
                         ref={staffDropdownRef}
                         className={`w-full px-4 py-2 border ${
-                          submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between
+                          submitted && errors.referenceStaff ? 'border-red-300 bg-red-50' : 'border-blue-200'
+                        } rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer flex items-center justify-between
                         ${isFaculty ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`}
                         onClick={() => {
                           if (!isFaculty) setShowStaffDropdown(!showStaffDropdown);
@@ -841,16 +843,10 @@ useEffect(() => {
                         </div>
                       )}
                     </div>
-                    {submitted && errors.referenceStaff && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle size={14} className="mr-1" />
-                        {errors.referenceStaff}
-                      </p>
-                    )}
                   </div>
 
                   <div className="md:w-1/3">
-                    <label htmlFor="returnDays" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="returnDays" className="block text-base font-semibold text-gray-700 mb-1">
                       Return Days <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -862,16 +858,16 @@ useEffect(() => {
                         min="1"
                         max="30"
                         className={`w-full px-4 py-2 border ${
-                          submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors pr-16`}
+                          submitted && errors.returnDays ? 'border-red-300 bg-red-50' : 'border-blue-200'
+                        } rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors pr-16 text-base`}
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <span className="text-gray-500 text-sm">days</span>
                       </div>
                     </div>
                     <div className="flex items-center mt-1">
-                      <Info size={14} className="text-gray-400 mr-1" />
-                      <p className="text-xs text-gray-500">Maximum 30 days</p>
+                      <Info size={14} className="text-blue-400 mr-1" />
+                      <p className="text-xs text-blue-500">Maximum 30 days</p>
                     </div>
                     {submitted && errors.returnDays && (
                       <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -885,43 +881,40 @@ useEffect(() => {
             </section>
           </div>
  
-          <div className="md:w-1/3 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-800">Summary</h2>
+          <div className="md:w-1/3 w-full space-y-8">
+            <div className="bg-white/90 rounded-2xl shadow-lg border border-blue-100">
+              <div className="px-8 py-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-100">
+                <h2 className="text-xl font-semibold text-blue-900">Summary</h2>
               </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Items:</span>
-                    <span className="font-medium">{totalItems}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Component Types:</span>
-                    <span className="font-medium">{selectedProducts.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Return Period:</span>
-                    <span className="font-medium">{returnDays} days</span>
-                  </div>
+              <div className="p-8 space-y-5">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Items:</span>
+                  <span className="font-bold text-blue-900">{totalItems}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Component Types:</span>
+                  <span className="font-bold text-blue-900">{selectedProducts.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Return Period:</span>
+                  <span className="font-bold text-blue-900">{returnDays} days</span>
                 </div>
               </div>
-            </div>           
- 
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-800">Terms & Conditions</h2>
+            </div>
+
+            <div className="bg-white/90 rounded-2xl shadow-lg border border-blue-100">
+              <div className="px-8 py-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-100">
+                <h2 className="text-xl font-semibold text-blue-900">Terms & Conditions</h2>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
+              <div className="p-8 space-y-5">
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl">
                   <div className="flex items-start">
                     <Info size={20} className="text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
                     <p className="text-sm text-blue-700">
-                      The return days for your request start when the admin approves it. Once you receive the approval email, you can collect components from the lab 
+                      The return days for your request start when the admin approves it. Once you receive the approval email, you can collect components from the lab.
                     </p>
                   </div>
-                </div>                
-
+                </div>
                 <div className="flex items-start pt-2">
                   <div className="flex items-center h-5 mt-0.5">
                     <input
@@ -947,52 +940,52 @@ useEffect(() => {
                       </p>
                     )}
                   </div>
-                </div>                
-   
+                </div>
                 <button
                   type="button"
                   onClick={handleSubmitRequest}
-                  className="w-full px-6 py-3 mt-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors font-medium"
+                  className="w-full px-6 py-3 mt-4 border border-transparent rounded-lg shadow text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-bold text-lg transition-all"
                 >
                   Submit Request
-                </button> 
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-            <div className="flex items-center mb-4 border-b border-gray-200 py-4">
-              <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
-              <h3 className="text-lg font-medium text-gray-900">Confirm Submission</h3>
-            </div>
-            <p className="text-gray-500 mb-6">
-              Are you sure you want to submit this request? Once submitted, you will be responsible for all the components listed.
-            </p>
-            <div className="flex space-x-3 justify-end mb-2">
-              <button
-                type="button"
-                onClick={handleCancelSubmit}
-                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSubmit}
-                className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Confirm
-              </button>
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
+            <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl border-t-4 border-amber-400">
+              <div className="flex items-center mb-4 border-b border-gray-200 py-4">
+                <AlertCircle className="h-6 w-6 text-amber-500 mr-2" />
+                <h3 className="text-xl font-bold text-gray-900">Confirm Submission</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to submit this request? Once submitted, you will be responsible for all the components listed.
+              </p>
+              <div className="flex space-x-3 justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleCancelSubmit}
+                  className="flex items-center px-5 py-2 border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <X className="h-5 w-5 mr-1" />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSubmit}
+                  className="flex items-center px-5 py-2 border border-transparent rounded-lg shadow text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Check className="h-5 w-5 mr-1" />
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
