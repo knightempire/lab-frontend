@@ -1054,7 +1054,8 @@ async function handleExtensionRequestSubmit(e) {
                     )
                   ) &&
                   canShowExtension(requestData.issueDate, requestData.adminApprovedDays) && (
-                    <div className="md:col-span-2 mt-8">
+                   
+                   <div className="md:col-span-2 mt-8">
                       <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
                     <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
@@ -1104,35 +1105,36 @@ async function handleExtensionRequestSubmit(e) {
                       <span className="text-sm font-medium">Days</span>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reason for extension
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={extensionMessage}
-                      onChange={e => setExtensionMessage(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Explain why you need more time..."
-                      required
-                      disabled={extensionSent}
-                    />
-                  </div>
-                  <div className="flex space-x-4">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                      disabled={extensionSent}
-                    >
-                      <Repeat className="w-5 h-5 mr-2" />
-                      Submit Extension Request
-                    </button>
-                  </div>
-                </form>
- 
-          
-              </div>
-            </div>
+                  
+          <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Reason for extension
+        </label>
+        <textarea
+          rows={3}
+          value={extensionMessage}
+          onChange={e => setExtensionMessage(e.target.value)}
+          className="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 resize-none"
+          placeholder="Explain why you need more time..."
+          required
+          disabled={extensionSent}
+        />
+      </div>
+      {/* Submit button */}
+      <div className="md:col-span-2 flex flex-col sm:flex-row sm:justify-end gap-3 mt-2">
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-base shadow hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-60"
+          disabled={extensionSent}
+        >
+          <Repeat className="w-5 h-5 mr-2" />
+          Submit Extension Request
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
           )}
             </div>
             </>
