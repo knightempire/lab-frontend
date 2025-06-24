@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Package, Activity, Clock } from "lucide-react"
 import StatsCard from "../../../components/StatsCard"
 import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadarChart"
@@ -11,6 +12,50 @@ import LowStockItemsTable from '../../../components/admin_graphs/LowStockTable'
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart"
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const verifyadmin = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          console.error('Token verification failed:', data.message);
+          router.push('/auth/login');
+        } else {
+          const user = data.user;
+          console.log('User data:', user);
+          console.log('Is admin:', user.isAdmin);
+          if (!user.isAdmin) {
+            router.push('/auth/login');
+            return;
+          }
+          if (!user.isActive) {
+            router.push('/auth/login');
+            return;
+          }
+          console.log('User is admin, proceeding with request data fetch');
+        }
+      } catch (err) {
+        console.error('Error verifying admin:', err);
+        router.push('/auth/login');
+      }
+    };
+
+    verifyadmin();
+  }, [router]);
+
   const [stats] = useState({
     total_requests: 120,
     active_requests: 34,

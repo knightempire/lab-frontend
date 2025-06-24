@@ -1233,7 +1233,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
               </div>
               <div className="flex-1 px-6 py-6">
                 {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
-                  <div className="text-gray-400 italic text-base">No reference staff</div>
+               <div className="text-gray-400 italic">No reference staff (user is a faculty member)</div> 
                 ) : (
                   <div className="space-y-4 text-base">
                     <div className="flex">
