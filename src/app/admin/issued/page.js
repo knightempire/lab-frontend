@@ -8,6 +8,7 @@ import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -86,7 +87,8 @@ useEffect(() => {
       // Fetch requests
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
         method: 'GET',
-        headers: {
+        headers:
+         {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
@@ -348,6 +350,13 @@ requestedDate: (
       )
     };
   });
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50 ">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
