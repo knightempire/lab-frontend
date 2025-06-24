@@ -1455,18 +1455,18 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                               const requested = requestData.components.find(c => c.id === component.id)?.quantity || 0;
                               if (component.quantity > maxStock) {
                                 setIssueError(
-                                  `The issued quantity for "${component.name}" (${component.quantity}) is greater than available (${maxStock})!`
+                                  `The issued quantity for "${component.name}" is greater than available !`
                                 );
                                 hasError = true;
                                 break;
                               }
-                              if (component.quantity > requested) {
-                                setIssueError(
-                                  `The issued quantity for "${component.name}" (${component.quantity}) is greater than requested (${requested})!`
-                                );
-                                hasError = true;
-                                break;
-                              }
+                              // if (component.quantity > requested) {
+                              //   setIssueError(
+                              //     `The issued quantity for "${component.name}"  is greater than requested !`
+                              //   );
+                              //   hasError = true;
+                              //   break;
+                              // }
                             }
                             if (!hasError) {
                               setIssueError("");
@@ -1709,7 +1709,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                           });
                           if (overIssued) {
                             setIssueError(
-                              `The issued quantity for "${overIssued.name}" (${overIssued.quantity}) is greater than available (${products.find(p => p.name === overIssued.name)?.inStock || 0})!`
+                              `The issued quantity for "${overIssued.name}" is greater than available !`
                             );
                             return;
                           }
