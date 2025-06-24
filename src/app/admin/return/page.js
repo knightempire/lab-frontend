@@ -186,6 +186,7 @@ components: (req.issued && req.issued.length > 0
       }))
   ),
         issued: req.issued, // <-- ADD THIS LINE
+        requestedProducts: req.requestedProducts, // <-- Add this line
         isreissued: req.reIssued && req.reIssued.length > 0
       };
 
@@ -440,11 +441,11 @@ const handleReturnSubmit = async (componentIndex) => {
     { key: 'quantity', label: 'Quantity' }
   ];
 
-  const requestedComponentsRows = requestData.components.map(component => ({
-    ...component,
-    name: component.name,
-    quantity: component.quantity ,
-    description: component.description || '-'
+  // Use requestedProducts for original requested quantity
+  const requestedComponentsRows = (requestData.requestedProducts || []).map(item => ({
+    name: item.productId?.product_name || item.product_name || item.name,
+    quantity: item.quantity,
+    description: item.description || '-'
   }));
 
   const adminComponentsColumns = [
@@ -943,7 +944,7 @@ const returnTrackingRows = returnTrackingComponents
           const date = new Date(baseDate);
           date.setDate(date.getDate() + mainDays + reIssueDays);
           const pad = n => n.toString().padStart(2, '0');
-          return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+          return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear())}`;
         })()}
       </span>
     </div>
