@@ -1,9 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Table from '../../../components/table';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import DropdownPortal from '../../../components/dropDown';
@@ -18,35 +16,29 @@ const AdminRequestViewContent = () => {
   const searchParams = useSearchParams();
   const [requestData, setRequestData] = useState(null);
   const [products, setProducts] = useState([]);
-  // State for admin issue table (editable)
   const [adminIssueComponents, setAdminIssueComponents] = useState([]);
   const [issuableDays, setIssuableDays] = useState();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [searchTerm, setSearchTerm] = useState({});
-const [successMessage, setSuccessMessage] = useState('');
-    // Action states
-  const [action, setAction] = useState(null); // 'accept' or 'decline'
+  const [successMessage, setSuccessMessage] = useState('');
+  const [action, setAction] = useState(null); // 'accept' or 'decline' or 'issued'
   const [responseMessage, setResponseMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false); // For Accept/Reject/Issue
+  const [isSavingIssued, setIsSavingIssued] = useState(false); // For Save Issued Components
   const [validationMessage, setValidationMessage] = useState('');
-const [triedAccept, setTriedAccept] = useState(false);
-
+  const [triedAccept, setTriedAccept] = useState(false);
   const [adminAvailableDate, setAdminAvailableDate] = useState('');
   const [adminAvailableTime, setAdminAvailableTime] = useState('');
-const [issueError, setIssueError] = useState(""); // Add this state
-
+  const [issueError, setIssueError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDateTimeWarning, setShowDateTimeWarning] = useState(false);
-const [collectedError, setCollectedError] = useState('');
-
-
-const [reissueAction, setReissueAction] = useState(null); // 'accept' or 'decline'
-const [reissueMessage, setReissueMessage] = useState('');
-const [isReissueSubmitting, setIsReissueSubmitting] = useState(false);
-const [showReissueDuration, setShowReissueDuration] = useState(true);
-const [showReissueActions, setShowReissueActions] = useState(true);
-const [reissueSummary, setReissueSummary] = useState(null);
+  const [collectedError, setCollectedError] = useState('');
+  const [reissueAction, setReissueAction] = useState(null); // 'accept' or 'decline'
+  const [reissueMessage, setReissueMessage] = useState('');
+  const [isReissueSubmitting, setIsReissueSubmitting] = useState(false);
+  const [showReissueDuration, setShowReissueDuration] = useState(true);
+  const [showReissueActions, setShowReissueActions] = useState(true);
+  const [reissueSummary, setReissueSummary] = useState(null);
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
@@ -715,61 +707,62 @@ const handleActionClick = (actionType) => {
 
 
   const handleSubmit = async () => {
-  if (action === 'accept') {
-    const requestId = searchParams.get('requestId');
-    const token = localStorage.getItem('token');
+    setIsSubmitting(true);
+    if (action === 'accept') {
+      const requestId = searchParams.get('requestId');
+      const token = localStorage.getItem('token');
 
-    if (!token) {
-      console.error('No token found in localStorage');
-      router.push('/auth/login');
-      return;
-    }
-
-    const scheduledCollectionDate = formatScheduledCollectionDate(adminAvailableDate, adminAvailableTime);
-
-    const payload = {
-      adminApprovedDays: issuableDays, // Set the number of approved days
-      issued: adminIssueComponents.map(component => ({
-        issuedProductId: component.id,
-        issuedQuantity: component.quantity
-      })),
-      adminReturnMessage: responseMessage,
-      scheduledCollectionDate // Set the current date/time
-    };
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to approve request:', errorData.message);
+      if (!token) {
+        console.error('No token found in localStorage');
+        router.push('/auth/login');
         return;
       }
 
-      const data = await response.json();
-      console.log('Request approved successfully:', data);
-      // Update the request data state or perform any other actions needed
-      setRequestData(prev => ({ ...prev, status: 'accepted' }));
+      const scheduledCollectionDate = formatScheduledCollectionDate(adminAvailableDate, adminAvailableTime);
+
+      const payload = {
+        adminApprovedDays: issuableDays, // Set the number of approved days
+        issued: adminIssueComponents.map(component => ({
+          issuedProductId: component.id,
+          issuedQuantity: component.quantity
+        })),
+        adminReturnMessage: responseMessage,
+        scheduledCollectionDate // Set the current date/time
+      };
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Failed to approve request:', errorData.message);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('Request approved successfully:', data);
+        // Update the request data state or perform any other actions needed
+        setRequestData(prev => ({ ...prev, status: 'accepted' }));
          setSuccessMessage('Request approved successfully!');
       setShowSuccess(true);
       setSuccessMessage('');
       setAction(null); 
       fetchRequestData(); // Refresh request data
-    } catch (error) {
-      console.error('Error during API call:', error);
+      } catch (error) {
+        console.error('Error during API call:', error);
+      }
     }
-  }
 
-  if (action === 'decline') {
-    const requestId = searchParams.get('requestId');
-    const token = localStorage.getItem('token');
+    if (action === 'decline') {
+      const requestId = searchParams.get('requestId');
+      const token = localStorage.getItem('token');
       const payload = {
       adminReturnMessage: responseMessage || "Insufficient amount of products" 
     };
@@ -801,6 +794,7 @@ const handleActionClick = (actionType) => {
 };
 
 const issuing = async () => {
+  setIsSubmitting(true);
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
@@ -1480,8 +1474,20 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                             }
                           }}
                         >
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Save Issued Components
+                          {isSavingIssued ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-5 h-5 mr-2" />
+                              Save Issued Components
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -1712,8 +1718,20 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                         aria-label="Accept Request"
                         title="Accept this request"
                       >
-                        <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                        Accept
+                        {isSubmitting && action === 'accept' ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                            Accept
+                          </>
+                        )}
                       </button>
 
                       <button
@@ -1722,8 +1740,20 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                         aria-label="Decline Request"
                         title="Decline this request"
                       >
-                        <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                        Reject
+                        {isSubmitting && action === 'decline' ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                            Reject
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1767,7 +1797,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                         <>
                           <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
                           Processing...
                         </>
@@ -2073,7 +2103,15 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                         setReissueMessage('');
                       }}
                     >
-                      {isReissueSubmitting ? 'Processing...' : (
+                      {isReissueSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
                         reissueAction === 'accept'
                           ? 'Confirm & Accept'
                           : 'Confirm & Decline'
