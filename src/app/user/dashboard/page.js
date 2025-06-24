@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Package, Activity, Clock } from "lucide-react"
 import StatsCard from "../../../components/StatsCard"
-import Calendar from "../../../components/dashboard-calendar"
+import Calendar from "../../../components/user-calander"
 export default function DashboardPage() {
   const [stats] = useState({
     total_requests: 120,
@@ -112,7 +112,7 @@ export default function DashboardPage() {
           color="green"
         />
         <StatsCard
-          title="Pending Requests"
+          title="Returned Requests"
           value={stats.pending_requests}
           tooltip="Requests not yet accepted or processed"
           icon={Clock}
@@ -121,12 +121,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Calendar Section */}
-      <div className="bg-white rounded-xl shadow mb-10">
+      <div className="flex gap-4">
+      <div className="w-2/3 bg-white rounded-xl shadow">
         <Calendar 
           events={events}
           overdueItems={overdueItems}
         />
       </div>
+      <div className="w-1/3 bg-white rounded-xl shadow">
+        {/* Empty div - you can add content here later */}
+      </div>
+    </div>
    </div>
   )
 }
