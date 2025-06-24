@@ -125,12 +125,7 @@ export default function DashboardPage() {
               in_stock: item.inStock,
             }))
           );
-          setBarData(
-            (stockData.topComponents || []).map((item) => ({
-              component: item.productName,
-              count: item.totalRequested,
-            }))
-          );
+  setBarData(stockData.topComponents || []);
         }
 
         // Fetch inventory and monthly request count
