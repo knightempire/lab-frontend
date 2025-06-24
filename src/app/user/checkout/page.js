@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus, Check } from 'lucide-react';
+import { Package, ArrowLeft, Trash2, Search, AlertCircle, CheckCircle, Info, X, UserPlus, Check, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -13,7 +13,7 @@ export default function CheckoutPage() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [isFaculty, setIsFaculty] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
 useEffect(() => {
   const verifyuser = async () => {
@@ -382,66 +382,57 @@ useEffect(() => {
     
 
   const handleConfirmSubmit = async () => {
-    setShowConfirmDialog(false);
-    
+    setConfirmLoading(true);
+
     // Get the token from localStorage
     const token = localStorage.getItem('token');
-    
     if (!token) {
-
       router.push('/auth/login');
+      setConfirmLoading(false);
       return;
     }
 
     const requestData = {
-      referenceId: referenceStaffId, 
-      description: purpose, 
-      requestedDays: returnDays,  
+      referenceId: referenceStaffId,
+      description: purpose,
+      requestedDays: returnDays,
       requestedProducts: selectedProducts.map(product => ({
-        productId: product.id, 
-        quantity: product.selectedQuantity,  
+        productId: product.id,
+        quantity: product.selectedQuantity,
       }))
     };
-
-    console.log("Sending the following data to API:", requestData);
 
     const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/add`;
 
     try {
-      // Make the API request
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,  
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(requestData), 
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {
-        console.log('Form submitted successfully', {
-          selectedProducts,
-          purpose,
-          referenceStaffId,
-          returnDays,
-          acknowledged
-        });
-
         setSubmitSuccess(true);
-
+        setShowConfirmDialog(false);
         setTimeout(() => {
-          console.log('Redirecting to home page...');
           setSubmitSuccess(false);
+          setConfirmLoading(false);
           localStorage.removeItem('selectedProducts');
-          router.push('/user/dashboard'); 
+          router.push('/user/dashboard');
         }, 1500);
       } else {
         const errorData = await response.json();
         console.error('Error submitting form:', errorData);
-
+        setConfirmLoading(false);
+        setShowConfirmDialog(false);
       }
     } catch (error) {
       console.error('Error during API request:', error);
+      setConfirmLoading(false);
+      setShowConfirmDialog(false);
     }
   };
     
@@ -980,6 +971,7 @@ useEffect(() => {
                   type="button"
                   onClick={handleCancelSubmit}
                   className="flex items-center px-5 py-2 border border-gray-300 rounded-lg text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={confirmLoading}
                 >
                   <X className="h-5 w-5 mr-1" />
                   Cancel
@@ -988,14 +980,25 @@ useEffect(() => {
                   type="button"
                   onClick={handleConfirmSubmit}
                   className="flex items-center px-5 py-2 border border-transparent rounded-lg shadow text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={confirmLoading}
                 >
-                  <Check className="h-5 w-5 mr-1" />
-                  Confirm
+                  {confirmLoading ? (
+                    <span className="flex items-center">
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Submitting...
+                    </span>
+                  ) : (
+                    <>
+                      <Check className="h-5 w-5 mr-1" />
+                      Confirm
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
         )}
+        
       </div>
     </div>
   );
