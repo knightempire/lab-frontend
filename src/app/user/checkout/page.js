@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import DropdownPortal from '../../../components/dropDown';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 export default function CheckoutPage() {
   const router = useRouter(); 
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [isFaculty, setIsFaculty] = useState(false);
+  const [loading, setLoading] = useState(true);
 
 
 useEffect(() => {
@@ -103,6 +105,7 @@ useEffect(() => {
   useEffect(() => {
  
     fetchReferenceStaff();
+    setLoading(false);
   }, []);
 
   const fetchReferenceStaff = async () => {
@@ -533,6 +536,14 @@ useEffect(() => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 w-full">
