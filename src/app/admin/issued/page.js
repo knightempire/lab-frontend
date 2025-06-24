@@ -99,15 +99,52 @@ useEffect(() => {
       const data = await res.json();
 
       if (data?.requests) {
-        const filtered = data.requests.filter(req => {
+        // Step 1: Filter out pending and not-yet-collected as before
+        let filtered = data.requests.filter(req => {
           const status = req.requestStatus?.toLowerCase();
           if (status === 'pending') return false;
           if (status === 'approved' && !req.collectedDate) return false;
           return true;
         });
 
+        // Step 2: For requests with reIssued, check the latest re-issue status
+        const token = localStorage.getItem('token');
+        const filteredWithReissue = await Promise.all(filtered.map(async req => {
+          if (
+            req.requestStatus?.toLowerCase() === 'approved' &&
+            req.collectedDate &&
+            Array.isArray(req.reIssued) &&
+            req.reIssued.length > 0
+          ) {
+            // Get the latest reIssuedId
+            const latestReIssuedId = req.reIssued[req.reIssued.length - 1];
+            try {
+              const reissueRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${latestReIssuedId}`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+              if (!reissueRes.ok) return req; // If error, keep it
+              const reissueData = await reissueRes.json();
+              // If re-issue status is pending, filter out (return null)
+              if (reissueData?.reIssued?.status === 'pending') return null;
+              return req;
+            } catch {
+              return req; // On error, keep it
+            }
+          }
+          return req;
+        }));
+
+        // Remove nulls (those with pending re-issue)
+        const finalFiltered = filteredWithReissue.filter(Boolean);
+
         // Only declare once!
-        let formattedRequests = filtered.map(req => ({
+        let formattedRequests = finalFiltered.map(req => ({
           // ...mapping...
           id: req._id,
           requestId: req.requestId,
