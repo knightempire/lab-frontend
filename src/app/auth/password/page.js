@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add Loader2 import
 import { motion } from 'framer-motion';
 
 function PasswordPageWrapper() {
@@ -35,6 +35,7 @@ function PasswordPage() {
   const [token, setToken] = useState(null);
   const [type, setType] = useState(null);
   const [userName, setUserName] = useState('User'); 
+  const [loading, setLoading] = useState(false); // Add loading state
   const router = useRouter();
   const searchParams = useSearchParams();
     const [showModal, setShowModal] = useState(false); 
@@ -120,16 +121,19 @@ const verifyToken = async () => {
 const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
+  setLoading(true); // Start loading
 
   if (!isPasswordValid(password)) {
     setError(
       'Password must be at least 8 characters long and include letters, numbers, and a special character.'
     );
+    setLoading(false);
     return;
   }
 
   if (password !== confirmPassword) {
     setError('Passwords do not match.');
+    setLoading(false);
     return;
   }
 
@@ -158,21 +162,25 @@ const handleSubmit = async (e) => {
 
     if (res.ok) {
       console.log('Password set successfully:', data);
-          setShowModal(true);
+      setShowModal(true);
+      setLoading(false); // Stop loading on success (modal will show)
+      return;
     }
 
-          console.error(`Error verifying token at ${endpoint}`);
-            console.error('Failed to set password:', data);
-          setError(data.message || 'Something went wrong.');
-          setShowModal(true); 
-          setTimeout(() => router.push('/auth/login'), 3000);
-      return;
+    console.error(`Error verifying token at ${endpoint}`);
+    console.error('Failed to set password:', data);
+    setError(data.message || 'Something went wrong.');
+    setShowModal(true);
+    setLoading(false); // Stop loading on error
+    setTimeout(() => router.push('/auth/login'), 3000);
+    return;
   } catch (err) {
-        console.error('Error during token verification:', err);
-         console.error('Error while setting password:', err);
-        setError('Failed to connect to server.');
-        setExpiredSession(true);
-        setTimeout(() => router.push('/auth/login'), 3000); 
+    console.error('Error during token verification:', err);
+    console.error('Error while setting password:', err);
+    setError('Failed to connect to server.');
+    setExpiredSession(true);
+    setLoading(false); // Stop loading on error
+    setTimeout(() => router.push('/auth/login'), 3000); 
   }
 };
 
@@ -192,11 +200,13 @@ const handleSubmit = async (e) => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full pr-10"
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-9 text-gray-500 hover:text-gray-800"
+              disabled={loading}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -210,12 +220,24 @@ const handleSubmit = async (e) => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full pr-10"
+              disabled={loading}
             />
           </div>
 
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-          <PrimaryButton text="Set Password" className="w-full py-3 mt-4" />
+          <PrimaryButton
+            text={
+              loading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="animate-spin mr-2" size={18} />
+                  Setting password...
+                </span>
+              ) : "Set Password"
+            }
+            className="w-full py-3 mt-4"
+            disabled={loading}
+          />
         </form>
 
         <p className="text-center text-sm text-gray-600">

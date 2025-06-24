@@ -158,7 +158,7 @@ return {
         rollNo: req.userId?.rollNo || '',
         phoneNo: req.userId?.phoneNo || '',
         email: req.userId?.email || '',
-        isFaculty: req.userId?.role === 'faculty',
+        isFaculty: req.userId?.isFaculty ,
         requestedDate: req.requestDate,
         acceptedDate: req.issuedDate,
         issueDate: req.collectedDate,
@@ -768,12 +768,26 @@ const returnTrackingRows = returnTrackingComponents
               {/* Right Section */}
               <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
                 {/* Request Type Box */}
-                <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border border-gray-200 min-w-fit">
-                  <div className="w-3 h-3 rounded-full bg-green-500 shrink-0"></div>
-                  <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
-                    {requestData.isFaculty ? 'Faculty' : 'Student'} Request
-                  </span>
-                </div>
+          <div
+  className={`flex items-center gap-3 bg-white px-5 py-3 rounded-xl shadow-sm border min-w-fit ${
+    requestData.isFaculty
+      ? 'border-green-200'
+      : 'border-blue-200'
+  }`}
+>
+  <div
+    className={`w-3 h-3 rounded-full shrink-0 ${
+      requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'
+    }`}
+  ></div>
+  <span
+    className={`text-sm font-medium whitespace-nowrap ${
+      requestData.isFaculty ? 'text-green-800' : 'text-blue-800'
+    }`}
+  >
+    {requestData.isFaculty ? 'Faculty' : 'Student'} Request
+  </span>
+</div>
                 {/* Request Status Box */}
                 <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
                   ${requestStatus === 'Done' 
@@ -869,14 +883,20 @@ const returnTrackingRows = returnTrackingComponents
       </div>
     </div>
     <div className="flex-1 px-6 py-6 space-y-4 text-sm">
-      <div className="flex">
-        <span className="text-gray-500 w-20">Name:</span>
-        <span className="font-semibold text-yellow-900">{requestData.referenceStaff.name}</span>
-      </div>
-      <div className="flex">
-        <span className="text-gray-500 w-20">Email:</span>
-        <span className="font-semibold text-yellow-900">{requestData.referenceStaff.email}</span>
-      </div>
+      {requestData.isFaculty ? (
+        <div className="text-gray-400 italic">No reference staff (user is a faculty member)</div>
+      ) : (
+        <>
+          <div className="flex">
+            <span className="text-gray-500 w-20">Name:</span>
+            <span className="font-semibold text-yellow-900">{requestData.referenceStaff.name}</span>
+          </div>
+          <div className="flex">
+            <span className="text-gray-500 w-20">Email:</span>
+            <span className="font-semibold text-yellow-900">{requestData.referenceStaff.email}</span>
+          </div>
+        </>
+      )}
     </div>
   </div>
 </div>

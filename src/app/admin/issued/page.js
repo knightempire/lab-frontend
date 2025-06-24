@@ -2,12 +2,14 @@
 
 // app/admin/requests/page.jsx
 import { useState, useEffect } from 'react';
-import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, RefreshCcw, AlertTriangle,Repeat, Undo  } from 'lucide-react';
+import { Users, Search, Eye, CheckCircle, Clock, XCircle, CalendarDays, Download, AlertTriangle,Repeat, Undo  } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from "../../../components/loading/loadingscreen";
+import * as XLSX from 'xlsx';
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -86,7 +88,8 @@ useEffect(() => {
       // Fetch requests
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
         method: 'GET',
-        headers: {
+        headers:
+         {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
@@ -189,30 +192,60 @@ useEffect(() => {
       const matchesRole = filters.role === '' || 
         (filters.role === 'Faculty' ? req.isFaculty : !req.isFaculty);
       
-      // Filter by status
-const filterStatus = filters.status.toLowerCase();
-const requestStatus = req.status.toLowerCase();
-const matchesStatus =
-  filterStatus === '' ||
-  (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved' )) ||
-  requestStatus === filterStatus;
+  // Filter by status
+  const filterStatus = filters.status.toLowerCase();
+  const requestStatus = req.status.toLowerCase();
+  const matchesStatus =
+    filterStatus === '' ||
+    (filterStatus === 'accepted' && (requestStatus === 'accepted' || requestStatus === 'approved' )) ||
+    requestStatus === filterStatus;
 
       
-      // Filter by selected products
-const matchesProducts =
-  selectedProducts.length === 0 ||
-  selectedProducts.every(productId =>
-    req.components.some(component => component.id === productId)
-  );
+  // Filter by selected products
+  const matchesProducts =
+    selectedProducts.length === 0 ||
+    selectedProducts.every(productId =>
+      req.components.some(component => component.id === productId)
+    );
 
+    return matchesRole && matchesStatus && matchesProducts;
+    }).filter(req =>
+      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.requestId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
 
-      return matchesRole && matchesStatus && matchesProducts;
-}).filter(req =>
-  req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  req.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  req.requestId.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  const handleDownloadIssued = () => {
+    const exportData = filteredRequests.map(req => ({
+      'request_id': req.requestId,
+      'roll_no': req.rollNo,
+      'name': req.name,
+      'request_date': (() => {
+        if (!req.requestedDate) return "-";
+        const d = new Date(req.requestedDate);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      })(),
+      'component_name': req.components.map(c => {
+        const found = productOptions.find(p => p.id === c.id);
+        return found ? found.name : c.id;
+      }).join(', '),
+      'status': req.statusText || req.status
+    }));
 
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Issued');
+
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `issued_requests_${timestamp}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
   };
 
   const handleViewRequest = (request) => {
@@ -316,19 +349,19 @@ const matchesProducts =
         </div>
       ),
       role: <FacultyorStudentStatus value={item.isFaculty} />,
-requestedDate: (
-  <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
-    <CalendarDays size={14} />
-    {(() => {
-      if (!item.requestedDate) return "-";
-      const d = new Date(item.requestedDate);
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}-${month}-${year}`;
-    })()}
-  </div>
-),
+      requestedDate: (
+        <div className="flex items-center justify-center gap-2 text-gray-700 text-sm">
+          <CalendarDays size={14} />
+          {(() => {
+            if (!item.requestedDate) return "-";
+            const d = new Date(item.requestedDate);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+          })()}
+        </div>
+      ),
       status: (
         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${bgColor} ${textColor}`}>
           {statusIcon}
@@ -348,17 +381,33 @@ requestedDate: (
       )
     };
   });
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50 ">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Users size={28} className="text-blue-600" />
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
-            Request Management
+            Issued Requests
             <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
-              Request Received: {requests.length}
+              Total: {requests.length}
             </span>
           </h1>
+        </div>
+        <div>
+          <button
+            onClick={handleDownloadIssued}
+            className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-md transition-colors duration-200 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 mt-1"
+          >
+            <Download size={18} />
+            <span className="hidden sm:inline">Download Issued</span>
+          </button>
         </div>
       </div>
 

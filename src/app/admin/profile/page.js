@@ -408,17 +408,11 @@ verifyToken();
   // 9. Update the loading state to consider both user data and requests loading
   if (loading || requestsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="text-gray-600 text-lg">
-            {loading ? 'Loading user data...' : 'Loading user requests...'}
-          </span>
-        </div>
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
       </div>
     );
   }
-
   // Error state
   if (error) {
     return (
@@ -536,6 +530,14 @@ verifyToken();
         </Link>
       ),
     }));
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">

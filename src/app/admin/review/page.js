@@ -234,16 +234,20 @@ if (
         },
       userMessage: data.description ,
       adminMessage: data.adminReturnMessage || "",
-      components: data.requestedProducts.map(product => ({
-        id: product.productId._id,
-        name: product.productId?.product_name || "Unknown Product",
-        quantity: product.quantity,
-      })),
-      adminIssueComponents: data.issued.map(issued => ({
-        id: issued.issuedProductId._id,
-        name: issued.issuedProductId.product_name,
-        quantity: issued.issuedQuantity,
-      })),
+      components: data.requestedProducts
+        .filter(product => product.productId) // Only include if productId is not null
+        .map(product => ({
+          id: product.productId._id,
+          name: product.productId.product_name || "Unknown Product",
+          quantity: product.quantity,
+        })),
+      adminIssueComponents: data.issued
+        .filter(issued => issued.issuedProductId) // Only include if issuedProductId is not null
+        .map(issued => ({
+          id: issued.issuedProductId._id,
+          name: issued.issuedProductId.product_name,
+          quantity: issued.issuedQuantity,
+        })),
      returnedComponents: data.issued
     .flatMap(issued => (issued.return || []).map(ret => ({
       issuedProductId: issued.issuedProductId._id,
@@ -1229,7 +1233,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
               </div>
               <div className="flex-1 px-6 py-6">
                 {requestData.isFaculty || (!requestData.referenceStaff?.name && !requestData.referenceStaff?.email) ? (
-                  <div className="text-gray-400 italic text-base">No reference staff</div>
+               <div className="text-gray-400 italic">No reference staff (user is a faculty member)</div> 
                 ) : (
                   <div className="space-y-4 text-base">
                     <div className="flex">

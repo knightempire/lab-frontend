@@ -44,15 +44,15 @@ export default function Pagination({ currentPage, totalPages, setCurrentPage }) 
   };
 
   return (
-    <div className="flex justify-between items-center pt-3 text-sm text-gray-600">
-      <div className="pl-4">
+    <div className="flex flex-wrap justify-between items-center gap-2 pt-2 sm:pt-3 text-xs sm:text-sm md:text-base text-gray-600 w-full">
+      <div className="pl-2 sm:pl-4">
         Page {currentPage} of {totalPages}
       </div>
-      <div className="flex items-center gap-2 pr-4">
+      <div className="flex flex-wrap items-center gap-1 sm:gap-2 pr-2 sm:pr-4">
         <button
           onClick={goToPrev}
           disabled={currentPage === 1}
-          className="flex items-center gap-1 px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-100"
+          className="flex items-center gap-1 px-2 sm:px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-100 text-xs sm:text-sm"
         >
           <ChevronLeftIcon className="w-4 h-4" />
           Prev
@@ -64,14 +64,14 @@ export default function Pagination({ currentPage, totalPages, setCurrentPage }) 
             type="text"
             value={inputPage}
             onChange={handleInputChange}
-            className="w-12 text-center px-2 py-1 border rounded-lg"
+            className="w-10 sm:w-12 text-center px-1 sm:px-2 py-1 border rounded-lg text-xs sm:text-sm"
           />
         </div>
 
         <button
           onClick={goToNext}
           disabled={currentPage === totalPages}
-          className="flex items-center gap-1 px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-100"
+          className="flex items-center gap-1 px-2 sm:px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-100 text-xs sm:text-sm"
         >
           Next
           <ChevronRightIcon className="w-4 h-4" />
