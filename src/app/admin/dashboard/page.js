@@ -32,6 +32,12 @@ export default function DashboardPage() {
 
   const [lowStockData, setLowStockData] = useState([]);
   const [barData, setBarData] = useState([]);
+  const [inventoryData, setInventoryData] = useState({
+    in_stock: 0,
+    on_hold: 0,
+    yet_to_return: 0,
+  });
+  const [MonthlyData, setMonthlyData] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -122,6 +128,38 @@ export default function DashboardPage() {
             }))
           );
         }
+
+        // Fetch inventory and monthly request count
+        const invRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/inventory-and-request-count`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const invData = await invRes.json();
+
+        if (invRes.ok) {
+          // Map inventory distribution
+          setInventoryData({
+            in_stock: invData.inventoryDistribution.inStock || 0,
+            on_hold: invData.inventoryDistribution.damaged || 0,
+            yet_to_return: invData.inventoryDistribution.yetToGive || 0,
+          });
+
+          // Map monthly request count
+          setMonthlyData(
+            (invData.requestCountByMonth || []).map((item) => ({
+              month: `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+                item.month - 1
+              ]} ${item.year}`,
+              count: item.count,
+            }))
+          );
+        }
       } catch (err) {
         console.error("Error loading dashboard:", err);
         router.push("/auth/login");
@@ -199,21 +237,6 @@ export default function DashboardPage() {
     { reqid: "req-s-20005", duedate: "10/06/2025" },
     { reqid: "req-s-20008", duedate: "12/06/2025" },
     { reqid: "req-s-20011", duedate: "13/06/2025" },
-  ];
-
-  const inventoryData = {
-    in_stock: 230,
-    on_hold: 57,
-    yet_to_return: 42,
-  };
-
-  const MonthlyData = [
-    { month: "Jan 2025", count: 34 },
-    { month: "Feb 2025", count: 41 },
-    { month: "Mar 2025", count: 55 },
-    { month: "Apr 2025", count: 60 },
-    { month: "May 2025", count: 68 },
-    { month: "Jun 2025", count: 75 },
   ];
 
   // Intersection observers for each chart
