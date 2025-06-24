@@ -234,16 +234,20 @@ if (
         },
       userMessage: data.description ,
       adminMessage: data.adminReturnMessage || "",
-      components: data.requestedProducts.map(product => ({
-        id: product.productId._id,
-        name: product.productId?.product_name || "Unknown Product",
-        quantity: product.quantity,
-      })),
-      adminIssueComponents: data.issued.map(issued => ({
-        id: issued.issuedProductId._id,
-        name: issued.issuedProductId.product_name,
-        quantity: issued.issuedQuantity,
-      })),
+      components: data.requestedProducts
+        .filter(product => product.productId) // Only include if productId is not null
+        .map(product => ({
+          id: product.productId._id,
+          name: product.productId.product_name || "Unknown Product",
+          quantity: product.quantity,
+        })),
+      adminIssueComponents: data.issued
+        .filter(issued => issued.issuedProductId) // Only include if issuedProductId is not null
+        .map(issued => ({
+          id: issued.issuedProductId._id,
+          name: issued.issuedProductId.product_name,
+          quantity: issued.issuedQuantity,
+        })),
      returnedComponents: data.issued
     .flatMap(issued => (issued.return || []).map(ret => ({
       issuedProductId: issued.issuedProductId._id,
