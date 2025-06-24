@@ -10,7 +10,8 @@ import {
   XCircle,
   CalendarDays,
   Repeat,
-  Undo
+  Undo,
+  Download
 } from 'lucide-react';
 
 import Table from '../../../components/table';
@@ -19,6 +20,7 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+import * as XLSX from 'xlsx';
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -57,6 +59,45 @@ export default function RequestsPage() {
     verifyadmin();
     fetchRequests();
   }, []);
+
+  const handleDownloadRequests = () => {
+    // Prepare export data from currently filtered requests
+    const exportData = filteredRequests.map(req => ({
+      'request_id': req.requestId,
+      'roll_no': req.rollNo,
+      'name': req.name,
+      'request_date': (() => {
+        const rawDate = req.status === 'extension-pending' && req.pendingReissue?.reIssuedDate
+          ? req.pendingReissue.reIssuedDate
+          : req.requestedDate;
+        if (!rawDate) return "-";
+        const d = new Date(rawDate);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      })(),
+      'component_name': req.components.map(c => {
+        const found = productOptions.find(p => p.id === c.id);
+        return found ? found.name : c.id;
+      }).join(', '),
+      'status': req.statusText || req.status
+    }));
+
+    // Create worksheet and workbook
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Requests');
+
+    // Generate filename with timestamp
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const filename = `requests_${timestamp}.xlsx`;
+
+    // Trigger download
+    XLSX.writeFile(wb, filename);
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -380,6 +421,15 @@ requestedDate: (
               Requests Received: {requests.length}
             </span>
           </h1>
+        </div>
+        <div>
+          <button
+            onClick={handleDownloadRequests}
+            className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-md transition-colors duration-200 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 mt-1"
+          >
+            <Download size={18} />
+            <span className="hidden sm:inline">Download Requests</span>
+          </button>
         </div>
       </div>
 

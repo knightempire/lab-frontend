@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
-const Calendar = ({ events, overdueItems }) => {
+const Calendar = ({ events, overdueItems, onViewMore }) => {
   // Get today's date key consistently
   const getTodayKey = () => {
     const today = new Date();
@@ -116,20 +116,23 @@ const Calendar = ({ events, overdueItems }) => {
     return colors[status] || 'bg-gray-500';
   };
 
-  const getEventDotColor = (status) => {
+  const getEventDotColor = (status, color) => {
+    if (color) return `bg-[${color}]`;
     const colors = {
       'Issue Date': 'bg-green-500',
-      'Returning Date': 'bg-red-500',
+      'Returned': 'bg-violet-500',
+      'Overdue Return': 'bg-red-500',
+      'Upcoming Return': 'bg-yellow-400',
     };
     return colors[status] || 'bg-gray-400';
   };
 
   const handleViewEvent = (event) => {
-    alert(`Viewing event:\nID: ${event.id}\nStatus: ${event.status}\nDate: ${event.date}`);
+    if (onViewMore) onViewMore(event, "collection");
   };
 
   const handleViewOverdue = (item) => {
-    alert(`Viewing overdue item:\nRequest ID: ${item.reqid}\nDue Date: ${item.duedate}`);
+    if (onViewMore) onViewMore(item, "return");
   };
 
   const formatOverdueDate = (dateStr) => {
@@ -318,13 +321,17 @@ const Calendar = ({ events, overdueItems }) => {
                         {/* Event Dots - Maximum one per event type */}
                         {uniqueEventTypes.length > 0 && isCurrentMonth && (
                           <div className="absolute bottom-0.5 sm:bottom-1 flex gap-0.5 sm:gap-1 justify-center items-center">
-                            {uniqueEventTypes.map((eventType, eventIndex) => (
-                              <div
-                                key={eventIndex}
-                                className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status)}`}
-                                title={`${eventType.status}: ${eventType.count} event${eventType.count > 1 ? 's' : ''}`}
-                              />
-                            ))}
+                            {uniqueEventTypes.map((eventType, eventIndex) => {
+                              const eventObj = (getEventsForDate(date) || []).find(e => e.status === eventType.status);
+                              
+                              return (
+                                <div
+                                  key={eventIndex}
+                                  className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${eventObj?.color ? eventObj.color : getEventDotColor(eventType.status)}`}
+                                  title={`${eventType.status}: ${eventType.count} event${eventType.count > 1 ? 's' : ''}`}
+                                />
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -388,20 +395,30 @@ const Calendar = ({ events, overdueItems }) => {
                       {selectedEvents.map((event, index) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
+                          className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
                         >
-                          <div className={`w-3 h-3 rounded-full mt-1 sm:mt-2 ${getEventColor(event.status)}`} />
+                          <div
+                            className={`flex-shrink-0 w-3 h-3 rounded-full ${event.color ? event.color : getEventDotColor(event.status)}`}
+                            aria-label={event.status}
+                          />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm leading-tight">
-                              {event.status}
-                            </h3>
-                            <p className="text-xs text-gray-600 mt-1">
-                              ID: {event.id}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-gray-900 text-sm sm:text-base leading-tight">
+                                {event.status}
+                              </h3>
+                              {event.status === "Issue Date" && event.isCollected && (
+                                <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap">
+                                  Issued
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1 break-all">
+                              <span className="font-medium text-gray-500">ID:</span> {event.id}
                             </p>
                           </div>
                           <button
                             onClick={() => handleViewEvent(event)}
-                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-xs font-medium"
+                            className="ml-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-xs font-medium whitespace-nowrap"
                             title="View details"
                           >
                             View More

@@ -9,6 +9,7 @@ import Pagination from '../../../components/pagination';
 import SuccessAlert from '../../../components/SuccessAlert';
 import { useRouter } from 'next/navigation';
 import fuzzysort from 'fuzzysort'; // Install with: npm install fuzzysort
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 export default function ProductPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function ProductPage() {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(true); // Add loading state
   const itemsPerPage = 10;
 
   const [sortKey, setSortKey] = useState('product_name');
@@ -56,7 +58,8 @@ export default function ProductPage() {
     const verifyadmin = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-          router.push('/auth/login'); 
+        router.push('/auth/login');
+        return;
       }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
@@ -68,16 +71,16 @@ export default function ProductPage() {
       const data = await res.json();
       if (!res.ok) {
         console.error('Token verification failed:', data.message);
-        router.push('/auth/login'); 
+        router.push('/auth/login');
       } else {
         const user = data.user;
         console.log('User data:', user);
         console.log('Is admin:', user.isAdmin);
-        if (!user.isAdmin ) {
-          router.push('/auth/login'); 
+        if (!user.isAdmin) {
+          router.push('/auth/login');
         }
         if (!user.isActive) {
-                 router.push('/auth/login'); 
+          router.push('/auth/login');
         }
       }
     }
@@ -107,6 +110,8 @@ export default function ProductPage() {
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false); // Set loading to false after fetch
     }
   };
 
@@ -585,6 +590,14 @@ export default function ProductPage() {
     }
     // eslint-disable-next-line
   }, [excelData]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full">

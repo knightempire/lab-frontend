@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,71 +14,68 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // Add loading state
 
-useEffect(() => {
-  const token = localStorage.getItem('token');
-  if (!token) return;
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  console.log('Token found in localStorage:', token);
+    const verifyToken = async () => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const endpoint = `${baseUrl}/api/verify-token`;
 
-  const verifyToken = async () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const endpoint = `${baseUrl}/api/verify-token`;
+      try {
+        const res = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-    try {
-      const res = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        if (!res.ok) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('selectedProducts');
+          return;
+        }
 
-      if (!res.ok) {
-        console.warn('Invalid token. Removing...');
+        const data = await res.json();
+        const { user } = data;
+
+        if (!user?.isActive) {
+          setError('Your account is deactivated. Please contact the administrator.');
+          return;
+        }
+
+        if (user?.isAdmin) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/user/dashboard');
+        }
+      } catch (err) {
         localStorage.removeItem('token');
-        localStorage.removeItem('selectedProducts');
-        return;
       }
+    };
 
-      const data = await res.json();
-      console.log('Token verification response:', data);
-
-      const { user } = data;
-
-      if (!user?.isActive) {
-        setError('Your account is deactivated. Please contact the administrator.');
-        return;
-      }
-
-      if (user?.isAdmin) {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/user/dashboard');
-      }
-    } catch (err) {
-      console.error('Token verification failed:', err);
-      localStorage.removeItem('token');
-    }
-  };
-
-  verifyToken();
-}, [router]);
-
+    verifyToken();
+  }, [router]);
 
   const validateEmail = (email) =>
-     /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
+    /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true); // Start loading
 
     if (!validateEmail(email)) {
       setError('Only University email addresses are allowed.');
+      setLoading(false);
       return;
     }
 
     if (!password.trim()) {
       setError('Password cannot be empty.');
+      setLoading(false);
       return;
     }
 
@@ -95,10 +92,10 @@ useEffect(() => {
       });
 
       const data = await res.json();
-      console.log('Login response:', data);
 
       if (!res.ok) {
         setError(data.message || 'Login failed. Please try again.');
+        setLoading(false);
         return;
       }
 
@@ -106,19 +103,22 @@ useEffect(() => {
 
       if (!user.isActive) {
         setError('Your account is deactivated. Please contact the administrator.');
+        setLoading(false);
         return;
       }
 
       localStorage.setItem('token', token);
 
+      // Keep loading until router.push finishes
       if (user.isAdmin) {
         router.push('/admin/dashboard');
       } else {
         router.push('/user/dashboard');
       }
+      // No setLoading(false) here, as redirect will happen
     } catch (err) {
-      console.error('Login error:', err);
       setError('Something went wrong. Please try again later.');
+      setLoading(false);
     }
   };
 
@@ -135,6 +135,7 @@ useEffect(() => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your University email"
             className="w-full"
+            disabled={loading}
           />
           <div className="relative">
             <TextField
@@ -144,11 +145,14 @@ useEffect(() => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="w-full pr-10"
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-9 text-gray-500 hover:text-gray-800"
+              tabIndex={-1}
+              disabled={loading}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -158,7 +162,7 @@ useEffect(() => {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="h-4 w-4 text-indigo-500 rounded" />
+              <input type="checkbox" className="h-4 w-4 text-indigo-500 rounded" disabled={loading} />
               <span className="text-gray-700">Remember me</span>
             </label>
             <Link href="/auth/forgetpassword" className="text-indigo-500 hover:underline">
@@ -166,7 +170,15 @@ useEffect(() => {
             </Link>
           </div>
 
-          <PrimaryButton text="Sign in" className="w-full py-3 mt-4" />
+          <div className="relative">
+            <PrimaryButton text={loading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="animate-spin mr-2" size={18} />
+                Signing in...
+              </span>
+            ) : "Sign in"} className="w-full py-3 mt-4" disabled={loading} />
+            {/* Optionally, you can overlay a spinner here */}
+          </div>
         </form>
 
         <p className="text-center text-sm text-gray-600">

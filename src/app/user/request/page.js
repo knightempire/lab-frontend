@@ -6,6 +6,7 @@ import { Users, Search, ClipboardList, CheckCircle, Clock, XCircle, Eye, AlertTr
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 const columns = [
   { key: 'requestId', label: 'Request ID' },
@@ -22,6 +23,7 @@ export default function UserRequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const itemsPerPage = 10;
+  const [loading, setLoading] = useState(true);
 
   const handleReset = () => setStatusFilter('');
 
@@ -66,6 +68,7 @@ export default function UserRequestsPage() {
       } catch (error) {
         console.error('Error fetching requests:', error);
       }
+      setLoading(false); // Set loading to false after fetch
     };
 
     fetchRequests();
@@ -165,6 +168,14 @@ const getFilteredRequests = () => {
       ),
     };
   });
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">

@@ -5,6 +5,7 @@ import { Package, Search, ArrowRight } from 'lucide-react';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 const columns = [
   { key: 'name', label: 'Product Name' },
@@ -18,96 +19,98 @@ export default function ProductPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
   const [sortKey, setSortKey] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [loading, setLoading] = useState(true);
 
-// Initialize products and restore selections from localStorage
-useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const token = localStorage.getItem('token');
+  // Initialize products and restore selections from localStorage
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
 
-      if (!token) {
-        console.error('No token found in localStorage');
-        router.push('/auth/login');
-        return;
-      }
+        if (!token) {
+          console.error('No token found in localStorage');
+          router.push('/auth/login');
+          return;
+        }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!res.ok){
-        console.error('Failed to fetch products:', res.statusText);
-        localStorage.removeItem('token');
-        router.push('/auth/login');
-        return;
-      } 
+        if (!res.ok){
+          console.error('Failed to fetch products:', res.statusText);
+          localStorage.removeItem('token');
+          router.push('/auth/login');
+          return;
+        } 
 
-      const data = await res.json();
-      console.log('Fetched products:', data.products);
+        const data = await res.json();
+        console.log('Fetched products:', data.products);
 
-      const fetchedProducts = data.products.map(p => {
-        const prod = p.product;
-        const inStock = Math.max(0, prod.inStock - prod.yetToGive);
-        return {
-          id: prod._id,
-          name: prod.product_name,
-          inStock: inStock,
-          selected: false,
-          selectedQuantity: 0
-        };
-      });
-
-      // Load previous selections from localStorage
-      const storedProducts = localStorage.getItem('selectedProducts');
-      if (storedProducts) {
-        const selectedItems = JSON.parse(storedProducts);
-
-        const mergedProducts = fetchedProducts.map(product => {
-          const selected = selectedItems.find(item => item.name === product.name);
-          // Only restore selection if inStock > 0
-          if (selected && product.inStock > 0) {
-            return {
-              ...product,
-              selected: true,
-              selectedQuantity: selected.selectedQuantity
-            };
-          }
-          // Otherwise, ensure not selected
+        const fetchedProducts = data.products.map(p => {
+          const prod = p.product;
+          const inStock = Math.max(0, prod.inStock - prod.yetToGive);
           return {
-            ...product,
+            id: prod._id,
+            name: prod.product_name,
+            inStock: inStock,
             selected: false,
             selectedQuantity: 0
           };
         });
 
-        setProducts(mergedProducts);
+        // Load previous selections from localStorage
+        const storedProducts = localStorage.getItem('selectedProducts');
+        if (storedProducts) {
+          const selectedItems = JSON.parse(storedProducts);
 
-        const cleanedSelected = mergedProducts
-        .filter(p => p.selected && p.inStock > 0)
-        .map(p => ({
-          id: p.id,
-          name: p.name,
-          inStock: p.inStock,
-          selectedQuantity: p.selectedQuantity
-        }));
-      localStorage.setItem('selectedProducts', JSON.stringify(cleanedSelected));
-      } else {
-        setProducts(fetchedProducts);
+          const mergedProducts = fetchedProducts.map(product => {
+            const selected = selectedItems.find(item => item.name === product.name);
+            // Only restore selection if inStock > 0
+            if (selected && product.inStock > 0) {
+              return {
+                ...product,
+                selected: true,
+                selectedQuantity: selected.selectedQuantity
+              };
+            }
+            // Otherwise, ensure not selected
+            return {
+              ...product,
+              selected: false,
+              selectedQuantity: 0
+            };
+          });
+
+          setProducts(mergedProducts);
+
+          const cleanedSelected = mergedProducts
+          .filter(p => p.selected && p.inStock > 0)
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            inStock: p.inStock,
+            selectedQuantity: p.selectedQuantity
+          }));
+        localStorage.setItem('selectedProducts', JSON.stringify(cleanedSelected));
+        } else {
+          setProducts(fetchedProducts);
+        }
+
+      } catch (err) {
+        console.error('Failed to fetch or restore products:', err);
+        setLoading(false);
       }
+      setLoading(false); // Set loading to false after fetch
+    };
 
-    } catch (err) {
-      console.error('Failed to fetch or restore products:', err);
-    }
-  };
-
-  fetchProducts();
-}, []);
+    fetchProducts();
+  }, []);
 
 
   useEffect(() => {
@@ -197,6 +200,14 @@ useEffect(() => {
     ...(hasSelectedProducts ? [{ key: 'quantity', label: 'Quantity' }] : []),
     ...columns.filter(col => col.key === 'selected'),
   ];
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full">

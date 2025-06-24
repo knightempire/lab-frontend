@@ -531,135 +531,140 @@ async function handleExtensionRequestSubmit(e) {
 
 
   return (
-     <div className="bg-gray-50">
-       <div className="mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-            <button
-                onClick={() => router.back()}
-                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-                aria-label="Go back"
-            >
-                <ArrowLeft size={20} className="text-gray-700" />
-            </button>
-            <FileText className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Request Details</h1>
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full">
-              <StatusBadge status={requestData.status} />
-            </span>
-            </div>
+    <div className="bg-gray-50 min-h-screen w-full">
+    <div className="w-full px-2 sm:px-4 py-4 sm:py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 w-full">
+        <div className="flex flex-wrap items-center space-x-3 w-full">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={20} className="text-gray-700" />
+          </button>
+          <FileText className="w-8 h-8 text-blue-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Request Details</h1>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full">
+            <StatusBadge status={requestData.status} />
+          </span>
         </div>
+      </div>
 
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="bg-white rounded-xl shadow-md w-full overflow-x-auto">
         {/* --- Common Header --- */}
-        <div className="bg-blue-50 p-6 border-b border-blue-100">
-            <div className="flex flex-col md:flex-row justify-between">
-            <div>
-                <h2 className="text-xl font-semibold text-blue-800 mb-2">
-                Request #{requestData.requestId}
-                </h2>
-                {requestData.isExtended && (
-                <div className="flex items-center pb-2">
-                    <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                        <Repeat className="w-4 h-4 mr-1" />
-                        Extension / Re-Issue Request
-                      </span>
-                </div>
-                )}
-                <RequestTimeline 
-              requestData={requestData} 
-       reissue={
-    requestData.reIssueRequest
-      ? [{
-          requestdate: requestData.reIssueRequest.reIssuedDate || requestData.reIssueRequest.reissuedDate, // fallback if typo
-          acceptedDate: requestData.reIssueRequest.reviewedDate,
-          status: requestData.reIssueRequest.status
-        }]
-      : []
-  }
-  formatDate={formatDate} 
-            />
-            </div>
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full sm:w-auto lg:w-auto shrink-0">
-            <div className="mt-4 md:mt-0">
-                <div className="inline-flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                <div className={`w-3 h-3 rounded-full ${requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'} mr-2`}></div>
-                <span className="font-medium">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
-                </div>
-            </div>
-            {/* Request Status Box */}
-            <div className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-sm border min-w-fit
-              ${requestStatus === 'returned' 
-                ? 'bg-green-100 border-green-200' 
-                : 'bg-yellow-100 border-yellow-200'
-              }`}>
-              {requestStatus === 'returned' 
-                ? <CheckCircle size={16} className="text-green-700 shrink-0" />
-                : <Clock size={16} className="text-yellow-700 shrink-0" />
-              }
-              <span className={`text-sm font-medium whitespace-nowrap ${
-                requestStatus === 'returned' ? 'text-green-700' : 'text-yellow-700'
-              }`}>
-                Request {requestStatus}
-              </span>
-            </div>
-            </div>
+
+  <div className="bg-blue-50 p-2 sm:p-4 md:p-6 border-b border-blue-100 w-full">
+    <div className="flex flex-col md:flex-row justify-between gap-2 md:gap-4 w-full">
+      <div className="flex-1 min-w-0">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold text-blue-800 mb-2 truncate">
+          Request #{requestData.requestId}
+        </h2>
+        {requestData.isExtended && (
+          <div className="flex items-center pb-2">
+            <span className="inline-flex items-center px-2 sm:px-3 py-1 mb-2 rounded-full text-xs sm:text-sm font-medium bg-indigo-100 text-indigo-800">
+              <Repeat className="w-4 h-4 mr-1" />
+              Extension / Re-Issue Request
+            </span>
+          </div>
+        )}
+        <RequestTimeline
+          requestData={requestData}
+          reissue={
+            requestData.reIssueRequest
+              ? [{
+                  requestdate: requestData.reIssueRequest.reIssuedDate || requestData.reIssueRequest.reissuedDate,
+                  acceptedDate: requestData.reIssueRequest.reviewedDate,
+                  status: requestData.reIssueRequest.status
+                }]
+              : []
+          }
+          formatDate={formatDate}
+        />
+      </div>
+      <div className="flex flex-col sm:flex-row lg:flex-col gap-2 md:gap-4 min-w-0 sm:w-auto lg:w-auto shrink-0">
+        <div className="mt-2 md:mt-0 min-w-0">
+          <div className="inline-flex items-center bg-white px-3 sm:px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+            <div className={`w-3 h-3 rounded-full ${requestData.isFaculty ? 'bg-green-500' : 'bg-blue-500'} mr-2`} />
+            <span className="font-medium truncate">{requestData.isFaculty ? 'Faculty' : 'Student'} Request</span>
           </div>
         </div>
-
-            {/* --- User and Reference Info --- */}
-<div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-  {/* User Message */}
-  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-blue-200">
-    <div className="flex items-center gap-2 mb-4">
-      <FileText className="w-6 h-6 text-blue-500" />
-      <span className="text-base font-bold text-blue-800 tracking-wide">User Message</span>
-    </div>
-    <div className="flex-1">
-      <div className="rounded-lg px-4 py-3  text-blue-900 text-sm  flex items-center">
-        {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
+        {/* Request Status Box */}
+        <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 sm:px-5 sm:py-3 rounded-xl shadow-sm border min-w-0
+          ${requestStatus === 'returned'
+            ? 'bg-green-100 border-green-200'
+            : 'bg-yellow-100 border-yellow-200'
+          }`}>
+          {requestStatus === 'returned'
+            ? <CheckCircle size={16} className="text-green-700 shrink-0" />
+            : <Clock size={16} className="text-yellow-700 shrink-0" />
+          }
+          <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
+            requestStatus === 'returned' ? 'text-green-700' : 'text-yellow-700'
+          }`}>
+            Request {requestStatus}
+          </span>
+        </div>
       </div>
     </div>
   </div>
 
-  {/* Admin Message */}
-  <div className="bg-gradient-to-br from-green-50 via-white to-green-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-green-200">
-    <div className="flex items-center gap-2 mb-4">
-      <CheckCircle className="w-6 h-6 text-green-500" />
-      <span className="text-base font-bold text-green-800 tracking-wide">Admin Message</span>
+  {/* --- User and Reference Info --- */}
+  <div className="p-2 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full">
+    {/* User Message */}
+    <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 p-3 sm:p-6 rounded-xl shadow-lg flex flex-col h-full border border-blue-200 min-w-0">
+      <div className="flex items-center gap-2 mb-2 sm:mb-4">
+        <FileText className="w-5 sm:w-6 h-5 sm:h-6 text-blue-500" />
+        <span className="text-sm sm:text-base font-bold text-blue-800 tracking-wide">User Message</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="rounded-lg px-2 sm:px-4 py-2 sm:py-3 text-blue-900 text-xs sm:text-sm flex items-center break-words">
+          {requestData.userMessage || <span className="text-gray-400">No message provided.</span>}
+        </div>
+      </div>
     </div>
-    <div className="flex-1">
-      <div className="rounded-lg px-4 py-3  text-green-900 text-sm  flex items-center">
-        {requestData.adminMessage
-          ? requestData.adminMessage
-          : <span className="text-gray-400">No message from admin.</span>}
+    {/* Admin Message */}
+    <div className="bg-gradient-to-br from-green-50 via-white to-green-100 p-3 sm:p-6 rounded-xl shadow-lg flex flex-col h-full border border-green-200 min-w-0">
+      <div className="flex items-center gap-2 mb-2 sm:mb-4">
+        <CheckCircle className="w-5 sm:w-6 h-5 sm:h-6 text-green-500" />
+        <span className="text-sm sm:text-base font-bold text-green-800 tracking-wide">Admin Message</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="rounded-lg px-2 sm:px-4 py-2 sm:py-3 text-green-900 text-xs sm:text-sm flex items-center break-words">
+          {requestData.adminMessage
+            ? requestData.adminMessage
+            : <span className="text-gray-400">No message from admin.</span>}
+        </div>
+      </div>
+    </div>
+    {/* Reference Staff */}
+    <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-3 sm:p-6 rounded-xl shadow-lg flex flex-col h-full border border-indigo-200 min-w-0">
+      <div className="flex items-center gap-2 mb-2 sm:mb-4">
+        <RefreshCw className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
+        <span className="text-sm sm:text-base font-bold text-indigo-800 tracking-wide">Reference Staff</span>
+      </div>
+      <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm min-w-0">
+        <div className="flex items-center min-w-0">
+          <span className="text-gray-500 w-20 sm:w-24 font-medium">Name:</span>
+          <span className="font-semibold text-gray-800 break-words">{requestData.referenceStaff?.name}</span>
+        </div>
+        <div className="flex items-center min-w-0">
+          <span className="text-gray-500 w-20 sm:w-24 font-medium">Email:</span>
+          <span
+            className="font-semibold text-gray-800 break-all min-w-0"
+            title={requestData.referenceStaff?.email}
+          >
+            {requestData.referenceStaff?.email}
+          </span>
+        </div>
       </div>
     </div>
   </div>
 
-  {/* Reference Staff */}
-  <div className="bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6 rounded-xl shadow-lg flex flex-col h-full border border-indigo-200">
-    <div className="flex items-center gap-2 mb-4">
-      <RefreshCw className="w-6 h-6 text-indigo-500" />
-      <span className="text-base font-bold text-indigo-800 tracking-wide">Reference Staff</span>
-    </div>
-    <div className="space-y-3 text-sm">
-      <div className="flex items-center">
-        <span className="text-gray-500 w-24 font-medium">Name:</span>
-        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.name}</span>
-      </div>
-      <div className="flex items-center">
-        <span className="text-gray-500 w-24 font-medium">Email:</span>
-        <span className="font-semibold text-gray-800">{requestData.referenceStaff?.email}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-          {/* --- Conditional Tables --- */}
-          <div className="p-6 border-t border-gray-200">
-            {/* Pending */}
-            {requestData.status === 'pending' && (
+  {/* --- Conditional Tables --- */}
+  <div className="p-2 sm:p-6 border-t border-gray-200 w-full overflow-x-auto">
+    {/* Pending */}
+    {requestData.status === 'pending' && (
                 <>
                 <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
                     <Repeat className="w-5 h-5 mr-2 text-blue-600" />

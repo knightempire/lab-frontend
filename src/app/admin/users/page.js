@@ -9,6 +9,7 @@ import Pagination from '../../../components/pagination';
 import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatus';
 import ActiveStatus from '../../../components/ui/ActiveStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 const columns = [
   { key: 'nameAndRoll', label: 'Name / Roll No' },
@@ -31,6 +32,7 @@ export default function UsersPage() {
     isFaculty: '',
     isActive: '',
   });
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -53,12 +55,7 @@ export default function UsersPage() {
         router.push('/auth/login');
       } else {
         const user = data.user;
-        console.log('User data:', user);
-        console.log('Is admin:', user.isAdmin);
-        if (!user.isAdmin) {
-          router.push('/auth/login');
-        }
-        if (!user.isActive) {
+        if (!user.isAdmin || !user.isActive) {
           router.push('/auth/login');
         }
       }
@@ -76,16 +73,15 @@ export default function UsersPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        console.log('Fetched users:', data.users);  
         const usersWithBorrowed = data.users.map((user) => ({
           ...user,
-          borrowedComponents: 0,  
- 
+          borrowedComponents: 0,
         }));
         setUsers(usersWithBorrowed);
       } else {
         console.error('Failed to fetch users:', data.message);
       }
+      setLoading(false); // Set loading to false after fetch
     };
     fetchUsers();
 
@@ -195,6 +191,14 @@ export default function UsersPage() {
     )
   }));
   
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full">
     {showForm && <div className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 pointer-events-none" />}
