@@ -395,25 +395,30 @@ const Calendar = ({ events, overdueItems, onViewMore }) => {
                       {selectedEvents.map((event, index) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
+                          className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
                         >
                           <div
-                            className={`w-3 h-3 rounded-full mt-1 sm:mt-2 ${event.color ? event.color : getEventDotColor(event.status)}`}
+                            className={`flex-shrink-0 w-3 h-3 rounded-full ${event.color ? event.color : getEventDotColor(event.status)}`}
+                            aria-label={event.status}
                           />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm leading-tight">
-                              {event.status}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-gray-900 text-sm sm:text-base leading-tight">
+                                {event.status}
+                              </h3>
                               {event.status === "Issue Date" && event.isCollected && (
-                                <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">Issued</span>
+                                <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap">
+                                  Issued
+                                </span>
                               )}
-                            </h3>
-                            <p className="text-xs text-gray-600 mt-1">
-                              ID: {event.id}
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1 break-all">
+                              <span className="font-medium text-gray-500">ID:</span> {event.id}
                             </p>
                           </div>
                           <button
                             onClick={() => handleViewEvent(event)}
-                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-xs font-medium"
+                            className="ml-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-xs font-medium whitespace-nowrap"
                             title="View details"
                           >
                             View More
