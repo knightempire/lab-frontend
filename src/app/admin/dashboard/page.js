@@ -12,6 +12,7 @@ import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCou
 import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown";
 import LowStockItemsTable from "../../../components/admin_graphs/LowStockTable";
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart";
+import LoadingScreen from "../../../components/loading/loadingscreen";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -38,6 +39,9 @@ export default function DashboardPage() {
     yet_to_return: 0,
   });
   const [MonthlyData, setMonthlyData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState([]);
+  const [overdueItems, setOverdueItems] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -160,84 +164,91 @@ export default function DashboardPage() {
             }))
           );
         }
+
+        // Fetch calendar data
+        const calendarRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/admin-reminder`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const calendarData = await calendarRes.json();
+
+        if (calendarRes.ok) {
+          // Helper to compare only the date part in Asia/Kolkata timezone
+          const todayIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+          todayIST.setHours(0, 0, 0, 0);
+
+          const isSameOrBeforeTodayIST = (dateStr) => {
+            const d = new Date(new Date(dateStr).toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+            d.setHours(0, 0, 0, 0);
+            return d <= todayIST;
+          };
+
+          // 1. Map collection events
+          const mappedEvents = (calendarData.collectionDate || []).map((item) => ({
+            date: new Date(item.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }),
+            status:
+              item.requestStatus === "returned"
+                ? "Returned"
+                : "Issue Date",
+            id: item.requestId,
+            collectedDate: item.collectedDate,
+            requestStatus: item.requestStatus,
+            isCollected: item.isCollected,
+            // Always green for Issue Date, no color override needed
+            color: undefined,
+          }));
+
+          // 2. Map ALL returns (returned, overdue, upcoming)
+          const allReturns = (calendarData.returns || []).map(item => {
+            let color;
+            if (item.isReturned) {
+              color = "bg-violet-500"; // Tailwind violet for returned
+            } else if (isPastDayIST(item.date)) {
+              color = "bg-red-500"; // Tailwind red for overdue return
+            }
+            return {
+              date: new Date(item.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }),
+              status: item.isReturned
+                ? "Returned"
+                : (isPastDayIST(item.date) ? "Overdue Return" : "Upcoming Return"),
+              id: item.requestId,
+              returnedDate: item.returnedDate,
+              requestStatus: item.requestStatus,
+              isReturned: item.isReturned,
+              color, // Tailwind class or undefined
+            };
+          });
+
+          // 3. Combine both for the calendar
+          setEvents([...mappedEvents, ...allReturns]);
+
+          // 4. Overdue items (past, not returned) for overdueItems section
+          setOverdueItems(
+            (calendarData.returns || [])
+              .filter(item => !item.isReturned && isPastDayIST(item.date))
+              .map(item => ({
+                reqid: item.requestId,
+                duedate: new Date(item.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }),
+                requestStatus: item.requestStatus,
+                returnedDate: item.returnedDate,
+              }))
+          );
+        }
       } catch (err) {
         console.error("Error loading dashboard:", err);
-        router.push("/auth/login");
+        // router.push("/auth/login");
       }
+      setLoading(false); // Set loading to false after all fetches
     };
 
     fetchDashboardData();
   }, [router]);
-
-  const events = [
-    {
-      date: "24/06/2025",
-      status: "Issue Date",
-      id: "req-s-20012",
-    },
-    {
-      date: "24/06/2025",
-      status: "Returning Date",
-      id: "req-s-20014",
-    },
-    {
-      date: "24/06/2025",
-      status: "Issue Date",
-      id: "req-s-20015",
-    },
-    {
-      date: "25/06/2025",
-      status: "Issue Date",
-      id: "req-s-20012",
-    },
-    {
-      date: "28/06/2025",
-      status: "Returning Date",
-      id: "req-s-20014",
-    },
-    {
-      date: "1/06/2025",
-      status: "Issue Date",
-      id: "req-s-20015",
-    },
-    {
-      date: "4/06/2025",
-      status: "Issue Date",
-      id: "req-s-20012",
-    },
-    {
-      date: "14/06/2025",
-      status: "Returning Date",
-      id: "req-s-20014",
-    },
-    {
-      date: "15/06/2025",
-      status: "Issue Date",
-      id: "req-s-20015",
-    },
-    {
-      date: "20/06/2025",
-      status: "Issue Date",
-      id: "req-s-20012",
-    },
-    {
-      date: "6/06/2025",
-      status: "Returning Date",
-      id: "req-s-20014",
-    },
-    {
-      date: "9/06/2025",
-      status: "Issue Date",
-      id: "req-s-20015",
-    },
-  ];
-
-  const overdueItems = [
-    { reqid: "req-s-20001", duedate: "15/06/2025" },
-    { reqid: "req-s-20005", duedate: "10/06/2025" },
-    { reqid: "req-s-20008", duedate: "12/06/2025" },
-    { reqid: "req-s-20011", duedate: "13/06/2025" },
-  ];
 
   // Intersection observers for each chart
   const { ref: statusChartRef, inView: statusChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
@@ -245,6 +256,51 @@ export default function DashboardPage() {
   const { ref: lineChartRef, inView: lineChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: barChartRef, inView: barChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: lowStockRef, inView: lowStockInView } = useInView({ triggerOnce: true, threshold: 0.2 });
+
+  // Handler for "View More" click
+  const handleCalendarViewMore = (item, type) => {
+    // For collection events
+    if (type === "collection") {
+      // If status is approved/accepted and not collected, go to review
+      if (
+        (item.status?.toLowerCase() === "approved" || item.status?.toLowerCase() === "accepted") &&
+        (!item.collectedDate || item.collectedDate === null)
+      ) {
+        router.push(`/admin/review?requestId=${item.id || item.requestId}`);
+      } else {
+        router.push(`/admin/return?requestId=${item.id || item.requestId}`);
+      }
+    }
+    // For return events
+    else if (type === "return") {
+      // If status is approved/accepted and not returned, go to review
+      if (
+        (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
+        (!item.returnedDate || item.returnedDate === null)
+      ) {
+        router.push(`/admin/review?requestId=${item.reqid || item.requestId}`);
+      } else {
+        router.push(`/admin/return?requestId=${item.reqid || item.requestId}`);
+      }
+    }
+  };
+
+  // Helper to check if a date is before today in Asia/Kolkata timezone
+  const isPastDayIST = (dateStr) => {
+    const todayIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    todayIST.setHours(0, 0, 0, 0);
+    const d = new Date(new Date(dateStr).toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    d.setHours(0, 0, 0, 0);
+    return d < todayIST;
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-inner">
+        <LoadingScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -273,7 +329,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow mb-10">
-        <Calendar events={events} overdueItems={overdueItems} />
+        <Calendar
+          events={events}
+          overdueItems={overdueItems}
+          onViewMore={handleCalendarViewMore} // Pass handler
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6">

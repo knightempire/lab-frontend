@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
-const Calendar = ({ events, overdueItems }) => {
+const Calendar = ({ events, overdueItems, onViewMore }) => {
   // Get today's date key consistently
   const getTodayKey = () => {
     const today = new Date();
@@ -116,20 +116,23 @@ const Calendar = ({ events, overdueItems }) => {
     return colors[status] || 'bg-gray-500';
   };
 
-  const getEventDotColor = (status) => {
+  const getEventDotColor = (status, color) => {
+    if (color) return `bg-[${color}]`;
     const colors = {
       'Issue Date': 'bg-green-500',
-      'Returning Date': 'bg-red-500',
+      'Returned': 'bg-violet-500',
+      'Overdue Return': 'bg-red-500',
+      'Upcoming Return': 'bg-yellow-400',
     };
     return colors[status] || 'bg-gray-400';
   };
 
   const handleViewEvent = (event) => {
-    alert(`Viewing event:\nID: ${event.id}\nStatus: ${event.status}\nDate: ${event.date}`);
+    if (onViewMore) onViewMore(event, "collection");
   };
 
   const handleViewOverdue = (item) => {
-    alert(`Viewing overdue item:\nRequest ID: ${item.reqid}\nDue Date: ${item.duedate}`);
+    if (onViewMore) onViewMore(item, "return");
   };
 
   const formatOverdueDate = (dateStr) => {
@@ -318,13 +321,17 @@ const Calendar = ({ events, overdueItems }) => {
                         {/* Event Dots - Maximum one per event type */}
                         {uniqueEventTypes.length > 0 && isCurrentMonth && (
                           <div className="absolute bottom-0.5 sm:bottom-1 flex gap-0.5 sm:gap-1 justify-center items-center">
-                            {uniqueEventTypes.map((eventType, eventIndex) => (
-                              <div
-                                key={eventIndex}
-                                className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status)}`}
-                                title={`${eventType.status}: ${eventType.count} event${eventType.count > 1 ? 's' : ''}`}
-                              />
-                            ))}
+                            {uniqueEventTypes.map((eventType, eventIndex) => {
+                              const eventObj = (getEventsForDate(date) || []).find(e => e.status === eventType.status);
+                              
+                              return (
+                                <div
+                                  key={eventIndex}
+                                  className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${eventObj?.color ? eventObj.color : getEventDotColor(eventType.status)}`}
+                                  title={`${eventType.status}: ${eventType.count} event${eventType.count > 1 ? 's' : ''}`}
+                                />
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -390,10 +397,15 @@ const Calendar = ({ events, overdueItems }) => {
                           key={index}
                           className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
                         >
-                          <div className={`w-3 h-3 rounded-full mt-1 sm:mt-2 ${getEventColor(event.status)}`} />
+                          <div
+                            className={`w-3 h-3 rounded-full mt-1 sm:mt-2 ${event.color ? event.color : getEventDotColor(event.status)}`}
+                          />
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-gray-900 text-sm leading-tight">
                               {event.status}
+                              {event.status === "Issue Date" && event.isCollected && (
+                                <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">Issued</span>
+                              )}
                             </h3>
                             <p className="text-xs text-gray-600 mt-1">
                               ID: {event.id}
