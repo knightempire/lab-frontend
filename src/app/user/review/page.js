@@ -28,13 +28,40 @@ function UserReviewContent() {
 
 useEffect(() => {
   const requestId = searchParams.get('requestId');
-  const fetchRequestData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/auth/login');
-        return;
+
+  const verifyAdminAndFetch = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Step 1: Verify token & admin
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.user || !data.user.isActive) {
+      console.error('Token verification failed or user is inactive.');
+      localStorage.removeItem('token');
+      router.push('/auth/login');
+      return;
+    }
+
+    const user_rollno = data.user.rollNo;
+    console.log('User data:', user_rollno);
+
+    // Step 2: Fetch request data if admin check passes
+    await fetchRequestData(token, requestId,user_rollno );
+  };
+
+  const fetchRequestData = async (token, requestId,user_rollno) => {
+    try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
         method: 'GET',
         headers: {
@@ -44,6 +71,7 @@ useEffect(() => {
       });
 
       if (!response.ok) {
+        console.error('Failed to fetch request data:', response.status);
         localStorage.removeItem('token');
         router.push('/auth/login');
         return;
@@ -52,7 +80,11 @@ useEffect(() => {
       const apiResponse = await response.json();
       const data = apiResponse.request;
 
-      // Prepare mappedData as before
+      if (!data || data.userId.rollNo !== user_rollno) {
+        console.error('Request data not found or user does not match.');
+         router.push('/user/request');
+        return;
+      }
       const mappedData = {
         requestId: data.requestId,
         name: data.userId.name,
@@ -74,71 +106,70 @@ useEffect(() => {
         },
         userMessage: data.description,
         adminMessage: data.adminReturnMessage || "",
-        components: data.requestedProducts.map(product => ({
-          name: product.productId.product_name,
+        components: (data.requestedProducts || []).map(product => ({
+          name: product.productId?.product_name ?? 'Unknown',
           quantity: product.quantity,
         })),
-        adminIssueComponents: data.issued.map(issued => ({
-          name: issued.issuedProductId.product_name,
+        adminIssueComponents: (data.issued || []).map(issued => ({
+          name: issued.issuedProductId?.product_name ?? 'Unknown',
           quantity: issued.issuedQuantity,
           replacedQuantity: issued.return
             ? issued.return.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
             : 0,
         })),
-        returnedComponents: data.issued
-          ? data.issued.flatMap(issued =>
-              (issued.return || []).map(ret => ({
-                name: issued.issuedProductId.product_name,
-                quantity: ret.returnedQuantity,
-                returnDate: ret.returnDate,
-                damagedQuantity: ret.damagedQuantity,
-                userDamagedQuantity: ret.userDamagedQuantity,
-                replacedQuantity: ret.replacedQuantity,
-                action: ret.replacedQuantity > 0 ? 'Replaced' : 'Returned'
-              }))
-            )
-          : [],
+        returnedComponents: (data.issued || []).flatMap(issued =>
+          (issued.return || []).map(ret => ({
+            name: issued.issuedProductId?.product_name ?? 'Unknown',
+            quantity: ret.returnedQuantity,
+            returnDate: ret.returnDate,
+            damagedQuantity: ret.damagedQuantity,
+            userDamagedQuantity: ret.userDamagedQuantity,
+            replacedQuantity: ret.replacedQuantity,
+            action: ret.replacedQuantity > 0 ? 'Replaced' : 'Returned'
+          }))
+        ),
         reIssueRequest: null,
       };
 
-      // If reIssued exists and has at least one value, fetch its details
+      // Fetch reIssued data if exists
       if (Array.isArray(data.reIssued) && data.reIssued.length > 0 && data.reIssued[0]) {
         const reIssuedId = data.reIssued[0];
-        const reissueRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+        const reissueRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
+
         if (reissueRes.ok) {
           const reissueData = await reissueRes.json();
           const reIssued = reissueData.reIssued;
-        mappedData.reIssueRequest = {
-          status: reIssued.status,
-          userExtensionMessage: reIssued.requestDescription,
-          adminExtensionMessage: reIssued.adminReturnMessage || "",
-          adminApprovedDays: reIssued.adminApprovedDays || 0,
-          extensionDays: reIssued.requestedDays,
-          adminIssueComponents: [],
-          reIssuedDate: reIssued.reIssuedDate,      // <-- add this
-          reviewedDate: reIssued.reviewedDate,      // <-- add this
-        };
+
+          mappedData.reIssueRequest = {
+            status: reIssued.status,
+            userExtensionMessage: reIssued.requestDescription,
+            adminExtensionMessage: reIssued.adminReturnMessage || "",
+            adminApprovedDays: reIssued.adminApprovedDays || 0,
+            extensionDays: reIssued.requestedDays,
+            adminIssueComponents: [],
+            reIssuedDate: reIssued.reIssuedDate,
+            reviewedDate: reIssued.reviewedDate,
+          };
         }
       }
 
       setRequestData(mappedData);
       setRequestStatus(mappedData.status);
+
     } catch (error) {
+      console.error('Unexpected error in fetchRequestData:', error);
       router.push('/user/request');
     }
   };
 
   if (requestId) {
-    fetchRequestData();
+    verifyAdminAndFetch();
   } else {
     router.push('/user/request');
   }
