@@ -49,23 +49,21 @@ const AdminRequestViewContent = () => {
 
 
   useEffect(() => {
-  if (issueError) {
-    const timer = setTimeout(() => setIssueError(""), 3000);
-    return () => clearTimeout(timer);
-  }
-}, [issueError]);
+    if (issueError) {
+      const timer = setTimeout(() => setIssueError(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [issueError]);
 
-
-useEffect(() => {
-  if (action === 'accept') {
-    setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
-  } else if (action === 'decline') {
-    setResponseMessage('Your request has been declined due to unavailability.');
-  } else {
-    setResponseMessage('');
-  }
-}, [action]);
-
+  useEffect(() => {
+    if (action === 'accept') {
+      setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
+    } else if (action === 'decline') {
+      setResponseMessage('Your request has been declined due to unavailability.');
+    } else {
+      setResponseMessage('');
+    }
+  }, [action]);
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -114,19 +112,14 @@ useEffect(() => {
     }
   }
 
-
-verifyadmin();
-
-  }, [searchParams, router]);
-
-
-  useEffect(() => {
-    if (requestData?.reIssueRequest?.requestedDays) {
-      setIssuableDays(requestData.reIssueRequest.requestedDays);
-    }
-  // ...existing logic for other cases...
-}, [requestData]);
-
+  verifyadmin();
+    }, [searchParams, router]);
+    useEffect(() => {
+      if (requestData?.reIssueRequest?.requestedDays) {
+        setIssuableDays(requestData.reIssueRequest.requestedDays);
+      }
+    // ...existing logic for other cases...
+  }, [requestData]);
 
     const fetchRequestData = async () => {
       try {
@@ -159,21 +152,21 @@ verifyadmin();
     const data = apiResponse.request; 
 
     // If returned/closed/collected, redirect
-if (
-  data.requestStatus === 'returned' ||
-  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
-  (
-    data.requestStatus === 'approved' &&
-    data.collectedDate &&
-    (
-      !Array.isArray(data.reIssued) ||
-      data.reIssued.length === 0
-    )
-  )
-) {
-  router.push('/admin/request');
-  return;
-}
+    if (
+      data.requestStatus === 'returned' ||
+      data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
+      (
+        data.requestStatus === 'approved' &&
+        data.collectedDate &&
+        (
+          !Array.isArray(data.reIssued) ||
+          data.reIssued.length === 0
+        )
+      )
+    ) {
+      router.push('/admin/request');
+      return;
+    }
 
     // --- Check for re-issue ---
     let isExtended = false;
@@ -191,24 +184,22 @@ if (
           }
         }
       );
-  if (reissueRes.ok) {
-    const reissueData = await reissueRes.json();
-    if (reissueData.reIssued) {
-      if (reissueData.reIssued.status === 'pending') {
-        isExtended = true;
-        reIssueRequest = { ...reissueData.reIssued };
-      } 
-      else {
-        // If re-issue status is not pending, redirect
-        router.push('/admin/request');
-        return;
+      if (reissueRes.ok) {
+        const reissueData = await reissueRes.json();
+        if (reissueData.reIssued) {
+          if (reissueData.reIssued.status === 'pending') {
+            isExtended = true;
+            reIssueRequest = { ...reissueData.reIssued };
+          } else {
+            // If re-issue status is not pending, redirect
+            router.push('/admin/request');
+            return;
+          }
+        }
       }
     }
-  }
-}
 
-
-    
+    console.log('Fetched request data:', data);
 
     const mappedData = {
       requestId: data.requestId,
@@ -242,21 +233,22 @@ if (
           quantity: issued.issuedQuantity,
         })),
      returnedComponents: data.issued
-    .flatMap(issued => (issued.return || []).map(ret => ({
-      issuedProductId: issued.issuedProductId._id,
-      name: issued.issuedProductId.product_name,
-      returnedQuantity: ret.returnedQuantity,
-      replacedQuantity: ret.replacedQuantity,
-      damagedQuantity: ret.damagedQuantity,
-      returnDate: ret.returnDate,
-      _id: ret._id,
-    }))),
+      .flatMap(issued => (issued.return || []).map(ret => ({
+        issuedProductId: issued.issuedProductId._id,
+        name: issued.issuedProductId.product_name,
+        returnedQuantity: ret.returnedQuantity,
+        replacedQuantity: ret.replacedQuantity,
+        damagedQuantity: ret.damagedQuantity,
+        returnDate: ret.returnDate,
+        _id: ret._id,
+      }))),
       reIssueRequest, 
       isExtended,
       acceptedDate: data.issuedDate || null,
       issueDate: data.collectedDate || null,
-      
-      // Optionally add originalRequestedDays, originalRequestDate, etc.
+      scheduledCollectionDate: data.scheduledCollectionDate || null,
+      CollectedDate: data.collectedDate || null,
+      originalAdminMessage: data.adminReturnMessage || "",
     };
 
     setRequestData(mappedData);
@@ -281,35 +273,35 @@ if (
     router.push('/admin/request');
   }
 };
-      // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
+    // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
 
-const fetchProducts = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.products) {
+          // Transform API data to simplified format used in component
+          const simplified = data.products.map(item => ({
+            _id: item.product._id,
+            name: item.product.product_name,
+            inStock: item.product.inStock,
+            yetToGive: item.product.yetToGive || 0,
+            available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
+          }));
+          setProducts(simplified);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
       }
-    });
-    const data = await res.json();
-    if (res.ok && data.products) {
-      // Transform API data to simplified format used in component
-      const simplified = data.products.map(item => ({
-        _id: item.product._id,
-        name: item.product.product_name,
-        inStock: item.product.inStock,
-        yetToGive: item.product.yetToGive || 0,
-        available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
-      }));
-      setProducts(simplified);
-    } else {
-      console.error('Failed to fetch products:', data.message);
-    }
-  } catch (error) {
-    console.error('Error fetching products:', error);
-  }
-};
+    };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -323,9 +315,7 @@ const fetchProducts = async () => {
     });
   };
 
-
 const handleSave = async () => {
-  
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
@@ -348,7 +338,6 @@ const handleSave = async () => {
     return;
   }
   setIssueError("");
-
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
@@ -559,8 +548,6 @@ function formatDateShort(dateObj) {
   });
 }
 
-// 
-
   // --- Admin Issue Table Handlers ---
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
@@ -629,9 +616,6 @@ function formatDateShort(dateObj) {
     });
   }, []);
 
-  const handleSearchChange = (id, value) => {
-    setSearchTerm(prev => ({ ...prev, [id]: value }));
-  };
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
@@ -689,23 +673,22 @@ const handleDecrementDays = () => {
 };
 
   // --- Action Handlers ---
-const handleActionClick = (actionType) => {
-  if (actionType === 'accept') {
-    setTriedAccept(true); // Mark that user tried to accept
-    if (!adminAvailableDate || !adminAvailableTime) {
-      setShowDateTimeWarning(true);
-      return;
+  const handleActionClick = (actionType) => {
+    if (actionType === 'accept') {
+      setTriedAccept(true); // Mark that user tried to accept
+      if (!adminAvailableDate || !adminAvailableTime) {
+        setShowDateTimeWarning(true);
+        return;
+      }
+      if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
+        return;
+      }
+      setShowDateTimeWarning(false);
+      setAction(actionType);
+    } else if (actionType === 'decline') {
+      setAction(actionType);
     }
-    if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
-      return;
-    }
-    setShowDateTimeWarning(false);
-    setAction(actionType);
-  } else if (actionType === 'decline') {
-    setAction(actionType);
-  }
-};
-
+  };
 
   const handleSubmit = async () => {
     if (isSubmittingRef.current) return; // Block rapid submits
@@ -1086,7 +1069,6 @@ const ComponentDropdown = ({ id, selectedValue }) => {
     };
   });
 
-
   const getCurrentDateTime = () => {
   const now = new Date();
   const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -1105,7 +1087,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
   
   return selectedDateTime >= minAllowedTime;
 };
-
 
   // --- Re-Issue Table Config ---
   const reissueColumns = [
@@ -1126,7 +1107,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
   const isReIssue = requestData.isExtended;
   const isRejected = requestData.status === 'rejected';
   const isAccepted = requestData.status === 'approved' || requestData.status === 'accepted';
-
 
   return (
     <div className="bg-gray-50">
@@ -1154,6 +1134,19 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 <h2 className="text-xl font-semibold text-blue-800 mb-2">
                   Request #{requestData.requestId || requestData.id}
                 </h2>
+                {(requestData.status === 'accepted' || requestData.status === 'approved') &&
+                  !requestData.CollectedDate &&
+                  requestData.scheduledCollectionDate && (
+                    <div className="mt-1 inline-flex items-center gap-2 bg-blue-100/70 border border-blue-200 rounded-lg px-3 py-1.5 shadow-sm">
+                      <CalendarDays className="w-4 h-4 text-blue-600" />
+                      <span className="text-blue-900 font-medium">
+                        Scheduled Collection:
+                      </span>
+                      <span className="font-semibold text-blue-800">
+                        {requestData.scheduledCollectionDate}
+                      </span>
+                    </div>
+                )}
                 {requestData.isExtended && (
                   <span className="inline-flex items-center px-3 py-1 mb-2 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                     <Repeat className="w-4 h-4 mr-1" />
@@ -1352,8 +1345,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </div>
                 </div>
               </div>
-
-
             </>
           ) : (
             <>
@@ -1374,23 +1365,23 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   />
                 </div>
           <div className="mt-4 flex flex-col md:flex-row gap-6 w-full">
-      <div className="flex-1 bg-gray-50 p-5 rounded-xl border border-blue-100 shadow-sm">
-        <div className="flex items-center mb-2">
-          <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <h4 className="font-medium text-blue-700">Request Description</h4>
-        </div>
-        <p className="text-gray-700">{requestData.userMessage || "No description provided."}</p>
-      </div>
-      <div className="flex-1 flex items-center justify-end">
-        <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
-          <Clock className="w-5 h-5 text-indigo-600" />
-          <span className="text-gray-700 font-medium">Duration:</span>
-          <span className="font-semibold text-blue-900">{requestData.requestedDays || "N/A"} Days</span>
-        </div>
-      </div>
-    </div>
+            <div className="flex-1 bg-gray-50 p-5 rounded-xl border border-blue-100 shadow-sm">
+              <div className="flex items-center mb-2">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h4 className="font-medium text-blue-700">Request Description</h4>
+              </div>
+              <p className="text-gray-700">{requestData.userMessage || "No description provided."}</p>
+            </div>
+            <div className="flex-1 flex items-center justify-end">
+              <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                <Clock className="w-5 h-5 text-indigo-600" />
+                <span className="text-gray-700 font-medium">Duration:</span>
+                <span className="font-semibold text-blue-900">{requestData.requestedDays || "N/A"} Days</span>
+              </div>
+            </div>
+          </div>
                 {requestData.status === "accepted" && requestData.originalAdminMessage && (
                   <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-100">
                     <div className="flex items-center mb-2">
@@ -1472,13 +1463,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                                 hasError = true;
                                 break;
                               }
-                              // if (component.quantity > requested) {
-                              //   setIssueError(
-                              //     `The issued quantity for "${component.name}"  is greater than requested !`
-                              //   );
-                              //   hasError = true;
-                              //   break;
-                              // }
                             }
                             if (!hasError) {
                               setIssueError("");
@@ -1545,8 +1529,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </div>
                 </div>
               )}
-
-
             </>
           )}
 
@@ -1861,56 +1843,55 @@ const isValidDateTime = (selectedDate, selectedTime) => {
           {isReIssue && requestData.reIssueRequest && (
             <>
               {/* --- Existing Re-Issue UI --- */}
-
               {/* Show both original and re-issue descriptions */}
-  <div className="p-6 border-t border-gray-200">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Original Request Description Card */}
-    <div className="bg-white rounded-2xl shadow border border-blue-100 p-6 flex flex-col h-full">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="bg-blue-100 p-2 rounded-full">
-          <FileText className="w-6 h-6 text-blue-600" />
-        </div>
-        <h4 className="font-semibold text-blue-800 text-lg">Original Request Description</h4>
-      </div>
-      <p className="text-gray-700 mb-2">{requestData.userMessage || "No description provided."}</p>
-      {/* Show admin return message if present */}
-      {requestData.adminMessage && (
-        <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200 flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 mt-1 text-green-600" />
-          <div>
-            <h5 className="font-medium text-green-700 mb-1">Admin Issue Message</h5>
-            <p className="text-gray-800">{requestData.adminMessage}</p>
-          </div>
-        </div>
-      )}
-    </div>
-    {/* Re-Issue User Note Card */}
-    <div className="bg-yellow-50 rounded-2xl shadow border border-yellow-200 p-6 flex flex-col h-full">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="bg-yellow-100 p-2 rounded-full">
-          <Repeat className="w-6 h-6 text-yellow-600" />
-        </div>
-        <h4 className="font-semibold text-yellow-800 text-lg">Re-Issue User Note</h4>
-      </div>
-      <p className="text-gray-800 mb-4">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-blue-600" />
-          <span className="text-gray-600">Requested Days:</span>
-          <span className="font-semibold text-gray-900">{requestData.reIssueRequest.requestedDays}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-indigo-600" />
-          <span className="text-gray-600">Initial Return Date:</span>
-          <span className="font-semibold text-gray-900">
-            {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+              <div className="p-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Original Request Description Card */}
+                <div className="bg-white rounded-2xl shadow border border-blue-100 p-6 flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-blue-800 text-lg">Original Request Description</h4>
+                  </div>
+                  <p className="text-gray-700 mb-2">{requestData.userMessage || "No description provided."}</p>
+                  {/* Show admin return message if present */}
+                  {requestData.adminMessage && (
+                    <div className="mt-4 bg-green-50 p-4 rounded-lg border border-green-200 flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 mt-1 text-green-600" />
+                      <div>
+                        <h5 className="font-medium text-green-700 mb-1">Admin Issue Message</h5>
+                        <p className="text-gray-800">{requestData.adminMessage}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Re-Issue User Note Card */}
+                <div className="bg-yellow-50 rounded-2xl shadow border border-yellow-200 p-6 flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-yellow-100 p-2 rounded-full">
+                      <Repeat className="w-6 h-6 text-yellow-600" />
+                    </div>
+                    <h4 className="font-semibold text-yellow-800 text-lg">Re-Issue User Note</h4>
+                  </div>
+                  <p className="text-gray-800 mb-4">{requestData.reIssueRequest.requestDescription || "No re-issue note provided."}</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-blue-600" />
+                      <span className="text-gray-600">Requested Days:</span>
+                      <span className="font-semibold text-gray-900">{requestData.reIssueRequest.requestedDays}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-indigo-600" />
+                      <span className="text-gray-600">Initial Return Date:</span>
+                      <span className="font-semibold text-gray-900">
+                        {getInitialReturnDate(requestData.issueDate, requestData.adminApprovedDays)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
               {/* Show Not Returned Components Table ONLY if re-issue is pending */}
               {['pending', 'accepted', 'rejected'].includes(requestData.reIssueRequest.status) && (
@@ -2007,7 +1988,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   </button>
                 </div>
               )}
-
 
               {reissueSummary && reissueSummary.resStatus === 200 && (
                 <div
@@ -2147,7 +2127,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
               )}
             </>
           )}
-
 
           {showSuccess && (
             <SuccessAlert
