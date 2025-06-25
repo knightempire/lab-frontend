@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -59,6 +59,8 @@ const AdminRetrunViewContent = () => {
   const [reissue, setReissue] = useState([]);
 
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const isSubmittingRef = useRef(false); // Prevent rapid submissions
 
   // Fetch request data from API
 useEffect(() => {
@@ -410,6 +412,9 @@ const decrementReturnQty = (index) => {
 
 
 const handleReturnSubmit = async (componentIndex) => {
+  if (isSubmittingRef.current) return; // Prevent rapid clicks
+  isSubmittingRef.current = true;
+
   const component = returnTrackingComponents[componentIndex];
   if (component.returned > 0) {
     // Prepare API payload
@@ -437,6 +442,7 @@ const handleReturnSubmit = async (componentIndex) => {
       const data = await response.json();
       if (!response.ok) {
         console.error('Error returning component:', data.message);
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -456,6 +462,7 @@ const handleReturnSubmit = async (componentIndex) => {
       console.error('Error returning component:', err);
     }
   }
+  isSubmittingRef.current = false;
 };
 
   if (!requestData) {

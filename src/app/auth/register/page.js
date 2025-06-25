@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react'; // Add this at the top with other import
 
 export default function RegisterPage() {
   const router = useRouter();
+  const isSubmitting = useRef(false); // Add this line at the top of your component
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,24 +27,30 @@ export default function RegisterPage() {
 
 const handleRegister = async (e) => {
   e.preventDefault();
+  if (loading || isSubmitting.current) return; // Block all rapid submits
+  isSubmitting.current = true; // Set immediately
+
   setError('');
-  setLoading(true); // Start loading
+  setLoading(true);
 
   if (!name.trim()) {
     setError('Name is required.');
     setLoading(false);
+    isSubmitting.current = false; // Allow retry
     return;
   }
 
   if (!validateEmail(email)) {
     setError('Only University email addresses are allowed.');
     setLoading(false);
+    isSubmitting.current = false; // Allow retry
     return;
   }
 
   if (!validatePhone(phone)) {
     setError('Please enter a valid 10-digit phone number.');
     setLoading(false);
+    isSubmitting.current = false; // Allow retry
     return;
   }
 
@@ -70,17 +77,20 @@ const handleRegister = async (e) => {
 
     if (res.ok) {
       setShowModal(true);
-      setLoading(false); // Stop loading on success (modal will show)
+      setLoading(false);
+      // isSubmitting.current stays true (block further submits)
       return;
     }
 
     setError(data?.message || 'Registration failed.');
     setLoading(false);
+    isSubmitting.current = false; // Allow retry
     return;
 
   } catch (error) {
     setError('Something went wrong. Please try again later.');
     setLoading(false);
+    isSubmitting.current = false; // Allow retry
   }
 };
 
