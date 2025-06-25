@@ -63,8 +63,42 @@ const AdminRetrunViewContent = () => {
   // Fetch request data from API
 useEffect(() => {
 
+    const verifyadmin = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+          router.push('/auth/login'); 
+      }
 
-  fetchAllData();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Token verification failed:', data.message);
+      router.push('/auth/login'); 
+    } else {
+      const user = data.user;
+      console.log('User data:', user);
+      console.log('Is admin:', user.isAdmin);
+      if (!user.isAdmin ) {
+        router.push('/auth/login'); 
+      }
+      if (!user.isActive) {
+          router.push('/auth/login'); 
+      }
+
+      console.log('User is admin, proceeding with request data fetch');
+       fetchAllData();
+  
+    }
+  }
+
+
+  verifyadmin()
+
 }, [requestId, router]);
 
 

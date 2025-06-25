@@ -35,10 +35,12 @@ useEffect(() => {
       router.push('/auth/login');
     } else {
       setIsFaculty(data.user.isFaculty === true);
+       fetchReferenceStaff();
     }
   };
 
   verifyuser();
+      setLoading(false);
 }, []);
 
   useEffect(() => {
@@ -101,12 +103,6 @@ useEffect(() => {
   // Staff options state
   const [referenceStaffOptions, setReferenceStaffOptions] = useState([]);
 
-  // Fetch reference staff from the API
-  useEffect(() => {
- 
-    fetchReferenceStaff();
-    setLoading(false);
-  }, []);
 
   const fetchReferenceStaff = async () => {
   const token = localStorage.getItem('token'); 
@@ -124,8 +120,10 @@ useEffect(() => {
         },
       });
 
+
   if (response.ok) {
     const data = await response.json();
+    console.log('Reference staff data:', data);
       if (data.references && Array.isArray(data.references)) {
         setReferenceStaffOptions(data.references); 
       } else {
