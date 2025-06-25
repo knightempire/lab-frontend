@@ -210,7 +210,7 @@ const getFilteredRequests = () => {
   }
 
   return (
-    <div className="h-full w-full p-4 md:p-3 mx-auto bg-gray-50">
+    <div className="h-full w-full md:p-3 mx-auto bg-gray-50">
       <div className="flex items-center gap-2 mb-6">
         <ClipboardList size={28} className="text-blue-600" />
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
