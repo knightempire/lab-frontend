@@ -216,7 +216,7 @@ export default function DashboardPage() {
               returnedDate: item.returnedDate,
               requestStatus: item.requestStatus,
               isReturned: item.isReturned,
-              color, // Tailwind class or undefined
+              color: color, // Tailwind class or undefined
             };
           });
 
@@ -254,23 +254,27 @@ export default function DashboardPage() {
 
   // Handler for "View More" click
   const handleCalendarViewMore = (item, type) => {
-    // For collection events
-      console.log("ViewMore clicked", { item, type });
-
-  if (type === "collection") {
-    // Use requestStatus for logic, not status
-    if (
-      (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
-      (!item.collectedDate || item.collectedDate === null)
-    ) {
-      router.push(`/admin/review?requestId=${item.id || item.requestId}`);
-    } else {
-      router.push(`/admin/return?requestId=${item.id || item.requestId}`);
+    if (type === "collection") {
+      // Always redirect overdue (date in past and not collected) to return page
+      if (
+        (!item.collectedDate || item.collectedDate === null) &&
+        isPastDayIST(item.date)
+      ) {
+        router.push(`/admin/return?requestId=${item.id || item.requestId}`);
+        return; // Stop further checks
+      }
+      // If approved/accepted and not collected, go to review page
+      if (
+        (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
+        (!item.collectedDate || item.collectedDate === null)
+      ) {
+        router.push(`/admin/review?requestId=${item.id || item.requestId}`);
+      } else {
+        router.push(`/admin/return?requestId=${item.id || item.requestId}`);
+      }
     }
-  }
     // For return events
     else if (type === "return") {
-      // If status is approved/accepted and not returned, go to review
       if (
         (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
         (!item.returnedDate || item.returnedDate === null)
