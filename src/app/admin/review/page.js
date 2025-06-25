@@ -39,6 +39,7 @@ const AdminRequestViewContent = () => {
   const [showReissueDuration, setShowReissueDuration] = useState(true);
   const [showReissueActions, setShowReissueActions] = useState(true);
   const [reissueSummary, setReissueSummary] = useState(null);
+  const isSubmittingRef = useRef(false); // Ref to track submitting state
 
   function formatScheduledCollectionDate(date, time) {
     if (!date || !time) return '';
@@ -707,7 +708,10 @@ const handleActionClick = (actionType) => {
 
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) return; // Block rapid submits
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+
     if (action === 'accept') {
       const requestId = searchParams.get('requestId');
       const token = localStorage.getItem('token');
@@ -791,9 +795,14 @@ const handleActionClick = (actionType) => {
       console.error('Error during API call:', error);
     }
   }
+
+  setIsSubmitting(false);
+  isSubmittingRef.current = false;
 };
 
 const issuing = async () => {
+    if (isSubmittingRef.current) return;
+  isSubmittingRef.current = true;
   setIsSubmitting(true);
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
@@ -829,6 +838,9 @@ const issuing = async () => {
   } catch (error) {
     console.error('Network error:', error);
   }
+
+   setIsSubmitting(false);
+  isSubmittingRef.current = false;
 };
 
   // --- Status Badge ---
@@ -1550,14 +1562,17 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 </h3>
               </div>
               {/* Only show the button if not in confirmation mode */}
-              {action !== 'issued' ? (
-                <button
-                  className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
-                  onClick={() => setAction('issued')}
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Mark as Issued
-                </button>
+                {action !== 'issued' ? (
+                  <button
+                    className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition-colors duration-150"
+                    onClick={() => {
+                      setIsSubmitting(false); // <-- Reset submitting state
+                      setAction('issued');
+                    }}
+                  >
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Mark as Issued
+                  </button>
               ) : (
                 // Only show the confirmation modal if action === 'issued'
                 <div className="w-full bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-md">

@@ -14,7 +14,8 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showModal, setShowModal] = useState(false); 
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false); // NEW
   const router = useRouter();
 
   const validateEmail = (email) =>
@@ -22,18 +23,23 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || submitted) return; // Prevent multiple clicks
+
     setError('');
-    setLoading(true); // Start loading
+    setLoading(true);
+    setSubmitted(true); // Set immediately to block all further submits
 
     if (!email.trim()) {
       setError('Email is required.');
       setLoading(false);
+      setSubmitted(false); // Allow retry on error
       return;
     }
 
     if (!validateEmail(email)) {
       setError('Only University email addresses are allowed.');
       setLoading(false);
+      setSubmitted(false); // Allow retry on error
       return;
     }
 
@@ -50,31 +56,23 @@ export default function ForgotPasswordPage() {
       });
 
       const data = await res.json();
-      console.log('Forgot password response:', data);
-
       if (!res.ok) {
-        console.error('API error:', data);
         setError(data.message || 'Something went wrong.');
         setLoading(false);
+        setSubmitted(false); // Allow retry on error
         return;
       }
 
       setShowModal(true);
-      setLoading(false); // Stop loading on success (modal will show)
-      console.log('Password reset link sent!');
+      setLoading(false); // Keep submitted true, so no more submits allowed
     } catch (err) {
-      console.error('Network error:', err);
       setError('Unable to connect to the server. Please try again later.');
       setLoading(false);
+      setSubmitted(false); // Allow retry on error
     }
-
-    setTimeout(() => {
-      // router.push('/auth/login');
-    }, 2500);
   };
 
   const handleModalClose = () => {
-    console.log('Modal closed');
     setShowModal(false); 
     router.push('/auth/login'); 
   };
@@ -95,7 +93,7 @@ export default function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your University email"
             className="w-full"
-            disabled={loading}
+            disabled={loading || submitted} // Disable after submit
           />
           {error && <p className="text-red-600 text-sm text-center">{error}</p>}
           {successMsg && <p className="text-green-600 text-sm text-center">{successMsg}</p>}
@@ -109,7 +107,7 @@ export default function ForgotPasswordPage() {
               ) : "Send Reset Link"
             }
             className="w-full py-3 mt-4"
-            disabled={loading}
+            disabled={loading || submitted} // Disable after submit
           />
         </form>
 
