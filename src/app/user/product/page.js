@@ -248,13 +248,13 @@ export default function ProductPage() {
 
   return (
     <div className="h-full w-full">
-      <div className="p-4 md:p-3 mx-auto bg-gray-50">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+      <div className="p-0 md:p-3 mx-auto bg-gray-50 w-full">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 px-0 md:px-0 pt-4 md:pt-0">
           <div className="flex items-center gap-2">
             <Package size={28} className="text-blue-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-4">
-              Products Available
-              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <span>Products Available</span>
+              <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg w-fit">
                 Total Products: {products.length}
               </span>
             </h1>
@@ -263,7 +263,7 @@ export default function ProductPage() {
           </div>
         </div>
 
-        <div className="mb-6 w-full relative bg-white">
+        <div className="mb-6 w-full relative bg-white rounded-lg shadow-sm">
           <Search className="absolute left-3 top-3 text-gray-400" size={18} />
           <input
             type="text"
@@ -271,11 +271,12 @@ export default function ProductPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search products..."
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ paddingLeft: '2.5rem', paddingRight: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
           />
         </div>
 
         {filteredProducts.length > 0 ? (
-          <>
+          <div className="px-0 md:px-0">
             <Table
               columns={reorderedColumns}
               rows={paginatedProducts}
@@ -286,12 +287,8 @@ export default function ProductPage() {
                   return (
                     <button
                       type="button"
-                      className={`
-                        group
-                        flex items-center justify-center gap-2 font-semibold uppercase
-                        w-full
-                      `}
-                      style={{ minWidth: 160 }}
+                      className="group flex items-center justify-center gap-2 font-semibold uppercase w-full text-xs sm:text-sm"
+                      style={{ minWidth: '10rem' }}
                       onClick={() => {
                         if (sortKey === col.key) {
                           setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -333,7 +330,8 @@ export default function ProductPage() {
                     <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
                       {/* Minus Button */}
                       <button
-                        className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
+                        className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
+                        style={{ width: '2rem', height: '2rem' }}
                         onClick={() => updateQuantity(row.id, -1)}
                       >
                         -
@@ -357,14 +355,16 @@ export default function ProductPage() {
                           setProducts(updated);
                           saveSelectionsToLocalStorage(updated);
                         }}
-                        className="w-10 text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
+                        className="text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
+                        style={{ width: '2.5rem' }}
                         min="0"
                         max={row.inStock}
                       />
 
                       {/* Plus Button */}
                       <button
-                        className="text-gray-500 hover:text-gray-700 w-8 h-8 flex items-center justify-center"
+                        className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
+                        style={{ width: '2rem', height: '2rem' }}
                         onClick={() => updateQuantity(row.id, 1)}
                         disabled={row.selectedQuantity >= row.inStock}
                       >
@@ -399,17 +399,18 @@ export default function ProductPage() {
               <div className="fixed bottom-6 right-6 justify-end flex">
                 <button
                   onClick={handleProceed}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg"
+                  style={{ padding: '1rem' }}
                 >
                   <ArrowRight size={20} />
                 </button>
               </div>
             )}
-          </>
+          </div>
         ) : (
-          <div className="mt-4 bg-white rounded-lg shadow p-6 text-center">
-            <Package size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 mb-4">No products found.</p>
+          <div className="mt-4 bg-white rounded-lg shadow text-center" style={{ padding: '1.5rem' }}>
+            <Package size={48} className="mx-auto text-gray-300" style={{ marginBottom: '0.75rem' }} />
+            <p className="text-gray-500" style={{ marginBottom: '1rem' }}>No products found.</p>
           </div>
         )}
       </div>
