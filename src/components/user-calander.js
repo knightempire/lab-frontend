@@ -149,11 +149,11 @@ const Calendar = ({ events, overdueItems }) => {
 
   return (
     <div className="bg-gray-50">
-      <div className="max-w-4xl mx-auto">
+      <div>
         {/* Calendar Section */}
-        <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-white">
+          <div className="flex items-center justify-between p-4 sm:p-6 bg-white">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {

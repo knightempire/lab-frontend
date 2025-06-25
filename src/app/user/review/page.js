@@ -563,7 +563,7 @@ async function handleExtensionRequestSubmit(e) {
 
 
   return (
-    <div className="bg-gray-50 min-h-screen w-full">
+    <div className="bg-gray-50">
     <div className="w-full px-2 sm:px-4 py-4 sm:py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 w-full">
@@ -852,89 +852,89 @@ async function handleExtensionRequestSubmit(e) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* User Requested Components Table */}
                 <div className="bg-white shadow rounded-lg">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                  <div className="p-4 sm:p-6 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4">
+                      <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                         <Repeat className="w-5 h-5 mr-2 text-blue-600" />
                         Requested Components
-                    </h2>
-                    <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                      </h2>
+                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm w-fit">
                         <Clock className="w-4 h-4 mr-1" />
-                        <span>{requestData.requestedDays || "N/A"} Days</span>
-                    </div>
+                        <span className="whitespace-nowrap">{requestData.requestedDays || "N/A"} Days</span>
+                      </div>
                     </div>
                     {requestData.components && requestData.components.length > 0 ? (
-                    <>
-                      <Table
-                        columns={columns}
-                        rows={getPageRows(requestData.components, userPage)}
-                        currentPage={userPage}
-                        itemsPerPage={itemsPerPage}
-                      />
-                      {requestData.components.length > itemsPerPage && (
-                        <Pagination
+                      <>
+                        <Table
+                          columns={columns}
+                          rows={getPageRows(requestData.components, userPage)}
                           currentPage={userPage}
-                          totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
-                          setCurrentPage={setUserPage}
+                          itemsPerPage={itemsPerPage}
                         />
-                      )}
-                    </>
+                        {requestData.components.length > itemsPerPage && (
+                          <Pagination
+                            currentPage={userPage}
+                            totalPages={Math.ceil(requestData.components.length / itemsPerPage)}
+                            setCurrentPage={setUserPage}
+                          />
+                        )}
+                      </>
                     ) : (
-                    <div className="text-gray-400 text-center py-6">No components found.</div>
+                      <div className="text-gray-400 text-center py-6">No components found.</div>
                     )}
-                </div>
+                  </div>
                 </div>
 
                 {/* Admin Issued Components Table */}
                 <div className="bg-white shadow rounded-lg">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+                  <div className="p-4 sm:p-6 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4">
+                      <h2 className="text-lg font-semibold text-gray-700 flex items-center">
                         <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
                         Admin Issued Components
-                    </h2>
-                    <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                      <Clock className="w-4 h-4 mr-1" />
-                      <span>{requestData.adminApprovedDays || "N/A"} Days</span>
-                    </div>
+                      </h2>
+                      <div className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm w-fit">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span className="whitespace-nowrap">{requestData.adminApprovedDays || "N/A"} Days</span>
+                      </div>
                     </div>
                     {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
-                    <>
-                      <Table
-                        columns={columns}
-                        rows={getPageRows(
-                          requestData.adminIssueComponents.map(component => {
-                            // Calculate replaced quantity if available
-                            const replaced = component.replacedQuantity || 0;
-                            return {
-                              ...component,
-                              quantity: (
-                                <span>
-                                  {component.quantity}
-                                  {replaced > 0 && (
-                                    <span className="font-semibold text-orange-600">{" + " + replaced}</span>
-                                  )}
-                                </span>
-                              ),
-                            };
-                          }),
-                          adminPage
-                        )}
-                        currentPage={adminPage}
-                        itemsPerPage={itemsPerPage}
-                      />
-                      {requestData.adminIssueComponents.length > itemsPerPage && (
-                        <Pagination
+                      <>
+                        <Table
+                          columns={columns}
+                          rows={getPageRows(
+                            requestData.adminIssueComponents.map(component => {
+                              // Calculate replaced quantity if available
+                              const replaced = component.replacedQuantity || 0;
+                              return {
+                                ...component,
+                                quantity: (
+                                  <span>
+                                    {component.quantity}
+                                    {replaced > 0 && (
+                                      <span className="font-semibold text-orange-600">{" + " + replaced}</span>
+                                    )}
+                                  </span>
+                                ),
+                              };
+                            }),
+                            adminPage
+                          )}
                           currentPage={adminPage}
-                          totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
-                          setCurrentPage={setAdminPage}
+                          itemsPerPage={itemsPerPage}
                         />
-                      )}
-                    </>
+                        {requestData.adminIssueComponents.length > itemsPerPage && (
+                          <Pagination
+                            currentPage={adminPage}
+                            totalPages={Math.ceil(requestData.adminIssueComponents.length / itemsPerPage)}
+                            setCurrentPage={setAdminPage}
+                          />
+                        )}
+                      </>
                     ) : (
-                    <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
+                      <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
                     )}
-                </div>
+                  </div>
                 </div>
 
                 {/* Returned Components Table - spans both columns */}
@@ -1097,7 +1097,7 @@ async function handleExtensionRequestSubmit(e) {
                   <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
                     <Repeat className="w-5 h-5 mr-2 text-indigo-600" />
                     Request Extension
-                    <span className="ml-2 relative group flex items-center">
+                    <span className="ml-2 relative groupflex items-center">
                       <HelpCircle className="w-5 h-5 text-blue-500 cursor-pointer" />
                       <span className="absolute left-7 top-1/2 -translate-y-1/2 z-20 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
                         You can request an extension for your components. The admin may accept or decline your request. You will be notified of the decision.
@@ -1124,7 +1124,7 @@ async function handleExtensionRequestSubmit(e) {
                       </button>
                       <input
                         type="text"
-                        className="w-16 px-2 py-1 text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-16 px-0.5rem py-0.25rem text-center rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         min="1"
                         max="30"
                         value={extensionDays}
@@ -1144,27 +1144,27 @@ async function handleExtensionRequestSubmit(e) {
                   </div>
                   
           <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 mb-0.5rem">
           Reason for extension
         </label>
         <textarea
           rows={3}
           value={extensionMessage}
           onChange={e => setExtensionMessage(e.target.value)}
-          className="w-full px-4 py-2 border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 resize-none"
+          className="w-full px-1rem py-0.5rem border border-blue-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 resize-none"
           placeholder="Explain why you need more time..."
           required
           disabled={extensionSent}
         />
       </div>
       {/* Submit button */}
-      <div className="md:col-span-2 flex flex-col sm:flex-row sm:justify-end gap-3 mt-2">
+      <div className="md:col-span-2 flex flex-col sm:flex-row sm:justify-end gap-3 mt-0.5rem">
         <button
           type="submit"
-          className="inline-flex items-center justify-center px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-base shadow hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-60"
+          className="inline-flex items-center justify-center px-2rem py-0.75rem rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-base shadow hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-60"
           disabled={extensionSent}
         >
-          <Repeat className="w-5 h-5 mr-2" />
+          <Repeat className="w-5 h-5 mr-0.5rem" />
           Submit Extension Request
         </button>
       </div>
@@ -1181,19 +1181,19 @@ async function handleExtensionRequestSubmit(e) {
 {requestData.status === 'rejected' && (
   <div className="space-y-8">
     {/* Card: Requested Components */}
-    <div className="bg-white shadow rounded-xl border border-red-100">
-      <div className="p-6 border-b border-red-100 flex items-center gap-3">
+    <div className="bg-white shadow rounded-xl border border-red-100 mx-0 sm:mx-auto w-full">
+      <div className="p-1.5rem border-b border-red-100 flex items-center gap-3">
         <XCircle className="w-6 h-6 text-red-500" />
         <h2 className="text-xl font-bold text-red-700 tracking-wide">
           Request Rejected
         </h2>
-        <span className="ml-4 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 border border-red-200">
+        <span className="ml-1rem px-0.75rem py-0.25rem rounded-full text-sm font-semibold bg-red-100 text-red-700 border border-red-200">
           Rejected
         </span>
       </div>
-      <div className="p-6">
-        <div className="flex items-center mb-4">
-          <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+      <div className="p-1.5rem">
+        <div className="flex items-center mb-1rem">
+          <Repeat className="w-5 h-5 mr-0.5rem text-blue-600" />
           <h3 className="text-lg font-semibold text-gray-700">
             Requested Components
           </h3>
@@ -1215,17 +1215,17 @@ async function handleExtensionRequestSubmit(e) {
             )}
           </>
         ) : (
-          <div className="text-gray-400 text-center py-6">No components found.</div>
+          <div className="text-gray-400 text-center py-1.5rem">No components found.</div>
         )}
       </div>
     </div>
     {/* Rejected Message */}
-    <div className="text-center py-8">
-      <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
-      <p className="text-xl text-red-700 font-semibold">
+    <div className="text-center py-2rem">
+      <XCircle className="w-12 h-12 mx-auto text-red-400 mb-1rem" />
+      <p className="text-xl text-red-700 font-semibold px-1rem">
         Your request was rejected by the admin.
       </p>
-      <p className="text-gray-500 mt-2">
+      <p className="text-gray-500 mt-0.5rem px-1rem">
         Please contact the lab staff for more information or to resolve any issues.
       </p>
     </div>
@@ -1234,52 +1234,56 @@ async function handleExtensionRequestSubmit(e) {
 
             {/* Closed - Failed to collect components */}
 {requestData.status === 'closed' && (
-  <div className="space-y-10">
-    <div className="bg-gradient-to-br from-blue-50 via-white to-white shadow-xl rounded-2xl border border-blue-200 overflow-hidden">
-      <div className="px-8 py-6 border-b border-blue-100 flex flex-col md:flex-row md:items-center gap-4 bg-blue-50">
+  <div className="space-y-10 w-full">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-white shadow-xl rounded-2xl border border-blue-200 overflow-hidden mx-0 w-full">
+      <div className="px-2rem py-1.5rem sm:px-2rem sm:py-1.5rem border-b border-blue-100 flex flex-col md:flex-row md:items-center gap-4 bg-blue-50">
         <div className="flex items-center gap-3">
           <XCircle className="w-8 h-8 text-red-500" />
           <div>
-            <h2 className="text-2xl font-bold text-blue-900 tracking-wide mb-1">
+            <h2 className="text-2xl font-bold text-blue-900 tracking-wide mb-0.25rem">
               Request Closed
             </h2>
-            <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+            <span className="inline-block px-0.75rem py-0.25rem rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-200">
               Closed
             </span>
           </div>
         </div>
         <div className="flex-1" />
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-blue-600" />
-          <span className="font-medium text-blue-800">
-            Scheduled Collection Date:
-          </span>
-          <span className="font-semibold">
-            {requestData.scheduledCollectionDate || "-"}
-          </span>
- <span className="relative group flex items-center">
-  <HelpCircle className="w-4 h-4 text-blue-500 inline" />
-  <span
-    className="absolute right-0 top-full mt-2 z-20 w-72 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg
-      md:left-auto md:right-0 md:top-full md:mt-2
-      left-1/2 -translate-x-1/2 md:translate-x-0"
-    style={{ minWidth: '220px', maxWidth: '320px', wordBreak: 'break-word' }}
-  >
-    Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
-  </span>
-</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5 text-blue-600" />
+            <span className="font-medium text-blue-800 text-sm sm:text-base">
+              Scheduled Collection Date:
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm sm:text-base">
+              {requestData.scheduledCollectionDate || "-"}
+            </span>
+            <span className="relative group flex items-center">
+              <HelpCircle className="w-4 h-4 text-blue-500 inline" />
+              <span
+                className="absolute right-0 top-full mt-0.5rem z-20 w-72 rounded bg-gray-900 text-white text-xs px-0.75rem py-0.5rem opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg
+                  md:left-auto md:right-0 md:top-full md:mt-0.5rem
+                  left-1/2 -translate-x-1/2 md:translate-x-0"
+                style={{ minWidth: '13.75rem', maxWidth: '20rem', wordBreak: 'break-word' }}
+              >
+                Scheduled by admin. You can collect on this date and time. This will be valid for 48 hrs. If not collected, your request will close automatically.
+              </span>
+            </span>
+          </div>
         </div>
       </div>
-      <div className="px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <div className="px-1rem py-2rem sm:px-2rem sm:py-2rem">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-2rem">
           {/* Requested Components Table */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <Repeat className="w-5 h-5 mr-2 text-blue-600" />
+          <div className="w-full">
+            <h3 className="text-lg font-semibold mb-1rem text-gray-700 flex items-center">
+              <Repeat className="w-5 h-5 mr-0.5rem text-blue-600" />
               Requested Components
             </h3>
             {requestData.components && requestData.components.length > 0 ? (
-              <>
+              <div className="w-full overflow-x-auto">
                 <Table
                   columns={columns}
                   rows={getPageRows(requestData.components, userPage)}
@@ -1293,19 +1297,19 @@ async function handleExtensionRequestSubmit(e) {
                     setCurrentPage={setUserPage}
                   />
                 )}
-              </>
+              </div>
             ) : (
-              <div className="text-gray-400 text-center py-6">No components found.</div>
+              <div className="text-gray-400 text-center py-1.5rem">No components found.</div>
             )}
           </div>
           {/* Admin Issued Components Table */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+          <div className="w-full">
+            <h3 className="text-lg font-semibold mb-1rem text-gray-700 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-0.5rem text-green-600" />
               Admin Issued Components
             </h3>
             {requestData.adminIssueComponents && requestData.adminIssueComponents.length > 0 ? (
-              <>
+              <div className="w-full overflow-x-auto">
                 <Table
                   columns={columns}
                   rows={getPageRows(requestData.adminIssueComponents, adminPage)}
@@ -1319,19 +1323,19 @@ async function handleExtensionRequestSubmit(e) {
                     setCurrentPage={setAdminPage}
                   />
                 )}
-              </>
+              </div>
             ) : (
-              <div className="text-gray-400 text-center py-6">No admin issued components found.</div>
+              <div className="text-gray-400 text-center py-1.5rem">No admin issued components found.</div>
             )}
           </div>
         </div>
         {/* Failure Message */}
-        <div className="flex flex-col items-center justify-center py-8">
-          <XCircle className="w-14 h-14 text-red-400 mb-4" />
-          <p className="text-2xl text-red-700 font-bold mb-2">
+        <div className="flex flex-col items-center justify-center py-2rem px-1rem">
+          <XCircle className="w-14 h-14 text-red-400 mb-1rem" />
+          <p className="text-xl sm:text-2xl text-red-700 font-bold mb-0.5rem text-center">
             Failed to collect components from scheduled date. 48 hrs crossed!
           </p>
-          <p className="text-gray-500 text-base max-w-xl text-center">
+          <p className="text-gray-500 text-sm sm:text-base max-w-xl text-center leading-relaxed">
             Your request was automatically closed because the components were not collected within the allowed time window. Please contact the lab staff if you need further assistance.
           </p>
         </div>
