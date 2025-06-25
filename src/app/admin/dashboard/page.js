@@ -255,17 +255,19 @@ export default function DashboardPage() {
   // Handler for "View More" click
   const handleCalendarViewMore = (item, type) => {
     // For collection events
-    if (type === "collection") {
-      // If status is approved/accepted and not collected, go to review
-      if (
-        (item.status?.toLowerCase() === "approved" || item.status?.toLowerCase() === "accepted") &&
-        (!item.collectedDate || item.collectedDate === null)
-      ) {
-        router.push(`/admin/review?requestId=${item.id || item.requestId}`);
-      } else {
-        router.push(`/admin/return?requestId=${item.id || item.requestId}`);
-      }
+      console.log("ViewMore clicked", { item, type });
+
+  if (type === "collection") {
+    // Use requestStatus for logic, not status
+    if (
+      (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
+      (!item.collectedDate || item.collectedDate === null)
+    ) {
+      router.push(`/admin/review?requestId=${item.id || item.requestId}`);
+    } else {
+      router.push(`/admin/return?requestId=${item.id || item.requestId}`);
     }
+  }
     // For return events
     else if (type === "return") {
       // If status is approved/accepted and not returned, go to review
