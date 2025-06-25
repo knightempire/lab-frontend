@@ -35,10 +35,12 @@ useEffect(() => {
       router.push('/auth/login');
     } else {
       setIsFaculty(data.user.isFaculty === true);
+       fetchReferenceStaff();
     }
   };
 
   verifyuser();
+      setLoading(false);
 }, []);
 
   useEffect(() => {
@@ -101,12 +103,6 @@ useEffect(() => {
   // Staff options state
   const [referenceStaffOptions, setReferenceStaffOptions] = useState([]);
 
-  // Fetch reference staff from the API
-  useEffect(() => {
- 
-    fetchReferenceStaff();
-    setLoading(false);
-  }, []);
 
   const fetchReferenceStaff = async () => {
   const token = localStorage.getItem('token'); 
@@ -124,8 +120,10 @@ useEffect(() => {
         },
       });
 
+
   if (response.ok) {
     const data = await response.json();
+    console.log('Reference staff data:', data);
       if (data.references && Array.isArray(data.references)) {
         setReferenceStaffOptions(data.references); 
       } else {
@@ -688,11 +686,17 @@ useEffect(() => {
                         }}
                         aria-disabled={isFaculty}
                       >
-                        <span className={referenceStaff ? 'text-gray-900' : 'text-gray-400'}>
-                          {isFaculty
-                            ? 'You are a staff member. No reference staff needed.'
-                            : referenceStaff || 'Select reference staff...'}
-                        </span>
+      <span
+  className={
+    (referenceStaff ? 'text-gray-900' : 'text-gray-400') +
+    ' truncate w-0 flex-1'
+  }
+  style={{ minWidth: 0 }}
+>
+  {isFaculty
+    ? 'You are a staff member. No reference staff needed.'
+    : referenceStaff || 'Select reference staff...'}
+</span>
                         <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>

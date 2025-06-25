@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
@@ -10,6 +9,8 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for load
 
 export default function LoginPage() {
   const router = useRouter();
+  const isSubmitting = useRef(false); // Add this line
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -64,18 +65,23 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading || isSubmitting.current) return; // Block all rapid submits
+    isSubmitting.current = true; // Set immediately
+
     setError('');
     setLoading(true); // Start loading
 
     if (!validateEmail(email)) {
       setError('Only University email addresses are allowed.');
       setLoading(false);
+      isSubmitting.current = false; // Allow retry
       return;
     }
 
     if (!password.trim()) {
       setError('Password cannot be empty.');
       setLoading(false);
+      isSubmitting.current = false; // Allow retry
       return;
     }
 
@@ -96,6 +102,7 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.message || 'Login failed. Please try again.');
         setLoading(false);
+        isSubmitting.current = false; // Allow retry
         return;
       }
 
@@ -104,6 +111,7 @@ export default function LoginPage() {
       if (!user.isActive) {
         setError('Your account is deactivated. Please contact the administrator.');
         setLoading(false);
+        isSubmitting.current = false; // Allow retry
         return;
       }
 
@@ -115,10 +123,11 @@ export default function LoginPage() {
       } else {
         router.push('/user/dashboard');
       }
-      // No setLoading(false) here, as redirect will happen
+      // isSubmitting.current stays true (block further submits)
     } catch (err) {
       setError('Something went wrong. Please try again later.');
       setLoading(false);
+      isSubmitting.current = false; // Allow retry
     }
   };
 
