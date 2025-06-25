@@ -179,7 +179,7 @@ export default function DashboardPage() {
   // --- End profile logic ---
 
   return (
-    <div className="mx-auto px-0 sm:px-4 lg:px-6" style={{ maxWidth: '80rem', padding: '1.5rem 0', '@media (min-width: 640px)': { padding: '1.5rem 1rem' } }}>
+    <div className="mx-auto px-0 sm:px-4 lg:px-6" style={{ maxWidth: '80rem', padding: '1.5rem 0', padding: '1.5rem 1rem'}}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 sm:gap-4 mb-4 sm:mb-10 px-2 sm:px-0">
         <StatsCard
           title="Total Requests"
