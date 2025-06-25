@@ -49,23 +49,21 @@ const AdminRequestViewContent = () => {
 
 
   useEffect(() => {
-  if (issueError) {
-    const timer = setTimeout(() => setIssueError(""), 3000);
-    return () => clearTimeout(timer);
-  }
-}, [issueError]);
+    if (issueError) {
+      const timer = setTimeout(() => setIssueError(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [issueError]);
 
-
-useEffect(() => {
-  if (action === 'accept') {
-    setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
-  } else if (action === 'decline') {
-    setResponseMessage('Your request has been declined due to unavailability.');
-  } else {
-    setResponseMessage('');
-  }
-}, [action]);
-
+  useEffect(() => {
+    if (action === 'accept') {
+      setResponseMessage('Your request has been approved. Please collect the items at the scheduled time.');
+    } else if (action === 'decline') {
+      setResponseMessage('Your request has been declined due to unavailability.');
+    } else {
+      setResponseMessage('');
+    }
+  }, [action]);
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
@@ -114,19 +112,14 @@ useEffect(() => {
     }
   }
 
-
-verifyadmin();
-
-  }, [searchParams, router]);
-
-
-  useEffect(() => {
-    if (requestData?.reIssueRequest?.requestedDays) {
-      setIssuableDays(requestData.reIssueRequest.requestedDays);
-    }
-  // ...existing logic for other cases...
-}, [requestData]);
-
+  verifyadmin();
+    }, [searchParams, router]);
+    useEffect(() => {
+      if (requestData?.reIssueRequest?.requestedDays) {
+        setIssuableDays(requestData.reIssueRequest.requestedDays);
+      }
+    // ...existing logic for other cases...
+  }, [requestData]);
 
     const fetchRequestData = async () => {
       try {
@@ -159,21 +152,21 @@ verifyadmin();
     const data = apiResponse.request; 
 
     // If returned/closed/collected, redirect
-if (
-  data.requestStatus === 'returned' ||
-  data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
-  (
-    data.requestStatus === 'approved' &&
-    data.collectedDate &&
-    (
-      !Array.isArray(data.reIssued) ||
-      data.reIssued.length === 0
-    )
-  )
-) {
-  router.push('/admin/request');
-  return;
-}
+    if (
+      data.requestStatus === 'returned' ||
+      data.requestStatus === 'closed' || data.requestStatus === 'reIssued' || data.requestStatus === 'rejected' ||
+      (
+        data.requestStatus === 'approved' &&
+        data.collectedDate &&
+        (
+          !Array.isArray(data.reIssued) ||
+          data.reIssued.length === 0
+        )
+      )
+    ) {
+      router.push('/admin/request');
+      return;
+    }
 
     // --- Check for re-issue ---
     let isExtended = false;
@@ -191,24 +184,22 @@ if (
           }
         }
       );
-  if (reissueRes.ok) {
-    const reissueData = await reissueRes.json();
-    if (reissueData.reIssued) {
-      if (reissueData.reIssued.status === 'pending') {
-        isExtended = true;
-        reIssueRequest = { ...reissueData.reIssued };
-      } 
-      else {
-        // If re-issue status is not pending, redirect
-        router.push('/admin/request');
-        return;
+      if (reissueRes.ok) {
+        const reissueData = await reissueRes.json();
+        if (reissueData.reIssued) {
+          if (reissueData.reIssued.status === 'pending') {
+            isExtended = true;
+            reIssueRequest = { ...reissueData.reIssued };
+          } else {
+            // If re-issue status is not pending, redirect
+            router.push('/admin/request');
+            return;
+          }
+        }
       }
     }
-  }
-}
 
-
-    
+    console.log('Fetched request data:', data);
 
     const mappedData = {
       requestId: data.requestId,
@@ -255,8 +246,6 @@ if (
       isExtended,
       acceptedDate: data.issuedDate || null,
       issueDate: data.collectedDate || null,
-      
-      // Optionally add originalRequestedDays, originalRequestDate, etc.
     };
 
     setRequestData(mappedData);
@@ -281,35 +270,35 @@ if (
     router.push('/admin/request');
   }
 };
-      // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
+    // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
 
-const fetchProducts = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.products) {
+          // Transform API data to simplified format used in component
+          const simplified = data.products.map(item => ({
+            _id: item.product._id,
+            name: item.product.product_name,
+            inStock: item.product.inStock,
+            yetToGive: item.product.yetToGive || 0,
+            available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
+          }));
+          setProducts(simplified);
+        } else {
+          console.error('Failed to fetch products:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
       }
-    });
-    const data = await res.json();
-    if (res.ok && data.products) {
-      // Transform API data to simplified format used in component
-      const simplified = data.products.map(item => ({
-        _id: item.product._id,
-        name: item.product.product_name,
-        inStock: item.product.inStock,
-        yetToGive: item.product.yetToGive || 0,
-        available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
-      }));
-      setProducts(simplified);
-    } else {
-      console.error('Failed to fetch products:', data.message);
-    }
-  } catch (error) {
-    console.error('Error fetching products:', error);
-  }
-};
+    };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -323,9 +312,7 @@ const fetchProducts = async () => {
     });
   };
 
-
 const handleSave = async () => {
-  
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
@@ -348,7 +335,6 @@ const handleSave = async () => {
     return;
   }
   setIssueError("");
-
 
   console.log('Saving admin issued components:', adminIssueComponents);
     const currentstatus = requestData.status;
@@ -559,8 +545,6 @@ function formatDateShort(dateObj) {
   });
 }
 
-// 
-
   // --- Admin Issue Table Handlers ---
   const handleIncrementQuantity = (id) => {
     setAdminIssueComponents(adminIssueComponents.map(component => {
@@ -629,9 +613,6 @@ function formatDateShort(dateObj) {
     });
   }, []);
 
-  const handleSearchChange = (id, value) => {
-    setSearchTerm(prev => ({ ...prev, [id]: value }));
-  };
   const handleDeleteComponent = (id) => {
     setAdminIssueComponents(adminIssueComponents.filter (component => component.id !== id));
   };
@@ -689,23 +670,22 @@ const handleDecrementDays = () => {
 };
 
   // --- Action Handlers ---
-const handleActionClick = (actionType) => {
-  if (actionType === 'accept') {
-    setTriedAccept(true); // Mark that user tried to accept
-    if (!adminAvailableDate || !adminAvailableTime) {
-      setShowDateTimeWarning(true);
-      return;
+  const handleActionClick = (actionType) => {
+    if (actionType === 'accept') {
+      setTriedAccept(true); // Mark that user tried to accept
+      if (!adminAvailableDate || !adminAvailableTime) {
+        setShowDateTimeWarning(true);
+        return;
+      }
+      if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
+        return;
+      }
+      setShowDateTimeWarning(false);
+      setAction(actionType);
+    } else if (actionType === 'decline') {
+      setAction(actionType);
     }
-    if (!isValidDateTime(adminAvailableDate, adminAvailableTime)) {
-      return;
-    }
-    setShowDateTimeWarning(false);
-    setAction(actionType);
-  } else if (actionType === 'decline') {
-    setAction(actionType);
-  }
-};
-
+  };
 
   const handleSubmit = async () => {
     if (isSubmittingRef.current) return; // Block rapid submits
@@ -1106,7 +1086,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
   return selectedDateTime >= minAllowedTime;
 };
 
-
   // --- Re-Issue Table Config ---
   const reissueColumns = [
     { key: 'name', label: 'Component Name' },
@@ -1127,7 +1106,6 @@ const isValidDateTime = (selectedDate, selectedTime) => {
   const isRejected = requestData.status === 'rejected';
   const isAccepted = requestData.status === 'approved' || requestData.status === 'accepted';
 
-
   return (
     <div className="bg-gray-50">
       <div className="mx-auto px-4 py-8">
@@ -1145,6 +1123,26 @@ const isValidDateTime = (selectedDate, selectedTime) => {
           </div>
           <StatusBadge status={requestData.status} />
         </div>
+
+        {(requestData.status === 'accepted' || requestData.status === 'approved') && !requestData.CollectedDate && requestData.scheduledCollectionDate && (
+          <div className="mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 shadow-sm">
+            <CalendarDays className="w-5 h-5 text-blue-600" />
+            <span className="text-blue-800 font-medium">
+              Scheduled Collection:&nbsp;
+              <span className="font-semibold">
+                {(() => {
+                  const d = new Date(requestData.scheduledCollectionDate);
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const month = String(d.getMonth() + 1).padStart(2, '0');
+                  const year = d.getFullYear();
+                  const hour = String(d.getHours()).padStart(2, '0');
+                  const min = String(d.getMinutes()).padStart(2, '0');
+                  return `${day}-${month}-${year} ${hour}:${min}`;
+                })()}
+              </span>
+            </span>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* --- Common Header --- */}
