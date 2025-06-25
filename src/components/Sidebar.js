@@ -12,7 +12,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 370);
+      setIsMobile(window.innerWidth < 375);
     };
     
     checkMobile();

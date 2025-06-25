@@ -14,7 +14,7 @@ export default function DashboardPage() {
     active_requests: 34,
     pending_requests: 7
   })
-
+  
   const events = [
     {
       date: '24/06/2025',
@@ -179,8 +179,8 @@ export default function DashboardPage() {
   // --- End profile logic ---
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+    <div className="mx-auto px-0 sm:px-4 lg:px-6" style={{ maxWidth: '80rem', padding: '1.5rem 0', '@media (min-width: 640px)': { padding: '1.5rem 1rem' } }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 sm:gap-4 mb-4 sm:mb-10 px-2 sm:px-0">
         <StatsCard
           title="Total Requests"
           value={stats.total_requests}
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           color="yellow"
         />
       </div>
-
+      
       {/* Calendar Section */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="w-full lg:w-2/3 bg-white rounded-xl shadow">
