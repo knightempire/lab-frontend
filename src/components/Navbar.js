@@ -42,40 +42,41 @@ export default function Navbar({ toggleSidebar }) {
   }, [profileMenuOpen]);
 
   return (
-    <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4">
+    <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4 relative z-30">
       <div className="flex items-center">
         <button 
           onClick={toggleSidebar}
           className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
           aria-label="Toggle sidebar"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
       </div>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 md:space-x-4">
         {/* Show notifications only for admin */}
         {isAdmin && <Notifications isAdmin={isAdmin} />}
         
         <div className="relative" ref={dropdownRef}>
           <button 
-            className="flex items-center space-x-2 p-2 rounded-md text-gray-700 hover:bg-gray-100"
+            className="flex items-center space-x-1 md:space-x-2 p-2 rounded-md text-gray-700 hover:bg-gray-100"
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
           >
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <User size={16} />
+            <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center">
+              <User size={14} />
             </div>
-            <span className="hidden md:inline-block">{userName}</span>
-            <ChevronDown size={16} />
+            <span className="hidden sm:inline-block text-sm md:text-base">{userName}</span>
+            <ChevronDown size={14} />
           </button>
           
           {profileMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-60">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
               {/* Show profile option only for users (not admin) */}
               {!isAdmin && (
                 <Link
                   href="/user/profile"
                   className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={() => setProfileMenuOpen(false)}
                 >
                   Your Profile
                 </Link>
@@ -83,6 +84,7 @@ export default function Navbar({ toggleSidebar }) {
               {/* <Link 
                 href={isAdmin ? "/admin/settings" : "/user/settings"}
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                onClick={() => setProfileMenuOpen(false)}
               >
                 Settings
               </Link> */}

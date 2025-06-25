@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Package, Activity, Clock } from "lucide-react"
 import StatsCard from "../../../components/StatsCard"
 import Calendar from "../../../components/user-calander"
+
 export default function DashboardPage() {
   const [stats] = useState({
     total_requests: 120,
@@ -73,26 +74,6 @@ export default function DashboardPage() {
         id: 'req-s-20015',
       },
     ];
-  
-    // Sample overdue data
-    const overdueItems = [
-      {
-        reqid: 'req-s-20001',
-        duedate: '15/06/2025'
-      },
-      {
-        reqid: 'req-s-20005',
-        duedate: '10/06/2025'
-      },
-      {
-        reqid: 'req-s-20008',
-        duedate: '12/06/2025'
-      },
-      {
-        reqid: 'req-s-20011',
-        duedate: '13/06/2025'
-      }
-    ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -121,17 +102,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Calendar Section */}
-      <div className="flex gap-4">
-      <div className="w-2/3 bg-white rounded-xl shadow">
-        <Calendar 
-          events={events}
-          overdueItems={overdueItems}
-        />
-      </div>
-      <div className="w-1/3 bg-white rounded-xl shadow">
-        {/* Empty div - you can add content here later */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="w-full lg:w-2/3 bg-white rounded-xl shadow">
+          <Calendar 
+            events={events}
+          />
+        </div>
+        <div className="w-full lg:w-1/3 bg-white rounded-xl shadow">
+          {/* Empty div - you can add content here later */}
+        </div>
       </div>
     </div>
-   </div>
   )
 }
