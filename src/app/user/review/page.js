@@ -547,7 +547,8 @@ async function handleExtensionRequestSubmit(e) {
           userExtensionMessage: extensionMessage,
           adminExtensionMessage: "",
           extensionDays: extensionDays,
-          adminIssueComponents: []
+          adminIssueComponents: [],
+          reIssuedDate: new Date().toISOString() // <-- Add this line!
         }
       }));
       setExtensionSent(true);
