@@ -7,7 +7,6 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add Loader2 import
 import { motion } from 'framer-motion';
-import { apiRequest } from '../../../utils/apiRequest';
 
 function PasswordPageWrapper() {
   return (
@@ -60,15 +59,15 @@ const verifyToken = async () => {
 
   const endpoint =
     type === 'register'
-      ? `/verify-token-register`
-      : `/verify-token-forgot`;
+      ? `${baseUrl}/api/verify-token-register`
+      : `${baseUrl}/api/verify-token-forgot`;
 
   console.log('Verifying token:', token);
   console.log('Token type:', type);
   console.log('Endpoint:', endpoint);
 
   try {
-    const res = await apiRequest(endpoint, {
+    const res = await fetch(endpoint, {
       method: 'GET', // Method is GET
       headers: {
         'Content-Type': 'application/json', // Optional, but you can include it
@@ -144,12 +143,12 @@ const handleSubmit = async (e) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const endpoint =
     type === 'register'
-      ? `/password`
-      : `/resetpassword`;
+      ? `${baseUrl}/api/password`
+      : `${baseUrl}/api/resetpassword`;
 
       console.log('Endpoint submit:', endpoint);
   try {
-    const res = await apiRequest(endpoint, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
