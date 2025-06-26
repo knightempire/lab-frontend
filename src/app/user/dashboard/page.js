@@ -6,6 +6,7 @@ import StatsCard from "../../../components/StatsCard"
 import Calendar from "../../../components/user-calander"
 import LoadingScreen from "../../../components/loading/loadingscreen"
 import { useRouter } from "next/navigation"
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -90,7 +91,7 @@ export default function DashboardPage() {
         router.push('/auth/login');
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -116,7 +117,7 @@ export default function DashboardPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/get-user`, {
+      const res = await apiRequest(`/users/get-user`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -160,7 +161,7 @@ export default function DashboardPage() {
     if (!token) return;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update/${userDetails.id}`, {
+      await apiRequest(`/users/update/${userDetails.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

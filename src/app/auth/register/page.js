@@ -7,6 +7,7 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react'; // Add this at the top with other imports
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -65,7 +66,7 @@ const handleRegister = async (e) => {
   };
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/register`, {
+    const res = await apiRequest(`/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -8,6 +8,7 @@ import Pagination from '../../../components/pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
+import { apiRequest } from '../../../utils/apiRequest';
 import Link from 'next/link';
 
 const columns = [
@@ -81,13 +82,13 @@ const UserProfilePageView = () => {
   const fetchUserRequests = async (rollNo) => {
     const token = localStorage.getItem('token');
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    let endpoint = `${baseUrl}/api/request/user-get/${encodeURIComponent(rollNo)}`;
+    let endpoint = `/request/user-get/${encodeURIComponent(rollNo)}`;
     
     try {
       setRequestsLoading(true);
       setRequestsError('');
       
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -147,7 +148,7 @@ const UserProfilePageView = () => {
       }
       console.log('Verifying token:', token);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+        const res = await apiRequest(`/verify-token`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -181,14 +182,14 @@ const UserProfilePageView = () => {
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    let endpoint = `${baseUrl}/api/users/get/${rollNo}`;
+    let endpoint = `/users/get/${rollNo}`;
     console.log('Fetching user data from endpoint:', endpoint);
 
     try {
       setLoading(true);
       setError('');
       
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -204,7 +205,7 @@ const UserProfilePageView = () => {
         // If the first endpoint fails, try alternative approaches
         if (res.status === 404) {
           // Try getting all users and filter by rollNo
-          const allUsersRes = await fetch(`${baseUrl}/api/users/get`, {
+          const allUsersRes = await apiRequest(`/users/get`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -222,7 +223,7 @@ const UserProfilePageView = () => {
               setEditProfileData({ ...user });
               
               // Fetch user requests after successfully getting user data
-              await fetchUserRequests(rollNo);
+              await apiRequestUserRequests(rollNo);
               
               setLoading(false);
               return;
@@ -242,7 +243,7 @@ const UserProfilePageView = () => {
       setEditProfileData({ ...userData });
       
       // Fetch user requests after successfully getting user data
-      await fetchUserRequests(rollNo);
+      await apiRequestUserRequests(rollNo);
       
     } catch (err) {
       console.error('Error fetching user data:', err);
@@ -276,7 +277,7 @@ verifyToken();
     const rollNo = searchParams.get('rollNo');
     
     // Use the correct API endpoint structure from your image
-    let endpoint = `${baseUrl}/api/users/update/${rollNo}`;
+    let endpoint = `/users/update/${rollNo}`;
     
     try {
       setError('');
@@ -294,7 +295,7 @@ verifyToken();
 
       console.log('Sending update data:', updateData);
 
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -357,7 +358,7 @@ verifyToken();
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const rollNo = searchParams.get('rollNo');
-    let endpoint = `${baseUrl}/api/users/update/${rollNo}`;
+    let endpoint = `/users/update/${rollNo}`;
 
     try {
       setError('');
@@ -375,7 +376,7 @@ verifyToken();
 
       console.log('Updating status to:', newIsActive);
 
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

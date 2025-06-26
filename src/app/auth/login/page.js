@@ -6,6 +6,7 @@ import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,10 +24,10 @@ export default function LoginPage() {
 
     const verifyToken = async () => {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const endpoint = `${baseUrl}/api/verify-token`;
+      const endpoint = `/verify-token`;
 
       try {
-        const res = await fetch(endpoint, {
+        const res = await apiRequest(endpoint, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -85,11 +86,10 @@ export default function LoginPage() {
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const endpoint = `${baseUrl}/api/login`;
+    const endpoint = `/login`;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

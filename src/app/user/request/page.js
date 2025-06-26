@@ -7,6 +7,7 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import FiltersPanel from '../../../components/FiltersPanel';
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 const columns = [
   { key: 'requestId', label: 'Request ID' },
@@ -40,7 +41,7 @@ export default function UserRequestsPage() {
           router.push('/auth/login'); 
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -77,7 +78,7 @@ export default function UserRequestsPage() {
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/user`, {
+        const response = await apiRequest(`/request/user`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
