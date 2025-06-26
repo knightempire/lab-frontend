@@ -293,7 +293,8 @@ const Calendar = ({ events, overdueItems, onViewMore }) => {
                         key={index}
                         className={`
                           relative h-12 sm:h-16 p-1 sm:p-2 cursor-pointer transition-all duration-200 rounded-lg flex flex-col items-center justify-center
-                          ${isCurrentMonth ? 'hover:bg-gray-50' : 'text-gray-300 opacity-50'}
+                          ${isCurrentMonth && !isToday ? 'hover:bg-gray-50' : ''}
+                          ${!isCurrentMonth ? 'text-gray-300 opacity-50' : ''}
                           ${isSelected && isToday 
                             ? 'bg-blue-500 text-white shadow-md border-2 border-blue-600' 
                             : isSelected 
@@ -488,6 +489,8 @@ const Calendar = ({ events, overdueItems, onViewMore }) => {
               )}
             </div>
           </div>
+
+          
         </div>
       </div>
     </div>

@@ -719,11 +719,11 @@ useEffect(() => {
                                 onChange={(e) => setStaffSearchQuery(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
                                 autoComplete="off"
-                                autoFocus
                               />
                               <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
                             </div>
                           </div>
+                          
                           
                           <ul className="py-1">
                             {filteredStaffOptions.length > 0 ? (
@@ -753,6 +753,7 @@ useEffect(() => {
                             )}
                           </ul>
                           
+
                           <div className="p-2 border-t border-gray-200 bg-gray-50">
                             <button
                               type="button"
@@ -849,6 +850,12 @@ useEffect(() => {
                         </div>
                       )}
                     </div>
+                    {!isFaculty && submitted && errors.referenceStaff && (
+  <p className="mt-1 text-sm text-red-600 flex items-center">
+    <AlertCircle size={14} className="mr-1" />
+    {errors.referenceStaff}
+  </p>
+)}
                   </div>
 
                   <div className="md:w-1/3">

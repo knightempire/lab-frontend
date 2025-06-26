@@ -329,7 +329,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="bg-white rounded-xl shadow mb-10">
+      <div className="bg-white rounded-xl  mb-10">
         <Calendar
           events={events}
           overdueItems={overdueItems}
