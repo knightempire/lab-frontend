@@ -719,7 +719,6 @@ useEffect(() => {
                                 onChange={(e) => setStaffSearchQuery(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
                                 autoComplete="off"
-                                autoFocus
                               />
                               <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
                             </div>
@@ -753,6 +752,7 @@ useEffect(() => {
                             )}
                           </ul>
                           
+
                           <div className="p-2 border-t border-gray-200 bg-gray-50">
                             <button
                               type="button"
