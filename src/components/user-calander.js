@@ -151,7 +151,7 @@ const Calendar = ({ events, overdueItems }) => {
     <div className="bg-gray-50">
       <div className="max-w-4xl mx-auto">
         {/* Calendar Section */}
-        <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl lg:rounded-2xl overflow-hidden">
           {/* Calendar Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-2">
@@ -281,7 +281,8 @@ const Calendar = ({ events, overdueItems }) => {
                       key={index}
                       className={`
                         relative h-12 sm:h-16 p-1 sm:p-2 cursor-pointer transition-all duration-200 rounded-lg flex flex-col items-center justify-center
-                        ${isCurrentMonth ? 'hover:bg-gray-50' : 'text-gray-300 opacity-50'}
+                        ${isCurrentMonth && !isToday ? 'hover:bg-gray-50' : ''}
+                        ${!isCurrentMonth ? 'text-gray-300 opacity-50' : ''}
                         ${isSelected && isToday 
                           ? 'bg-blue-500 text-white shadow-md border-2 border-blue-600' 
                           : isSelected 
@@ -291,7 +292,9 @@ const Calendar = ({ events, overdueItems }) => {
                           : 'border-2 border-transparent'}
                       `}
                       onClick={() => isCurrentMonth && handleDateClick(date)}
-                      onMouseEnter={(e) => handleMouseEnter(date, e)}
+                      onMouseEnter={(e) => {
+                        if (!isToday) handleMouseEnter(date, e);
+                      }}
                       onMouseLeave={handleMouseLeave}
                     >
                       <div className={`text-xs sm:text-sm font-medium ${
