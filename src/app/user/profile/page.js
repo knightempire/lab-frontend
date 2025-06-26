@@ -5,6 +5,7 @@ import { Edit, Save, X, CheckCircle, History, AlertTriangle, BarChart2, Graduati
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 const UserProfile = () => {
   const router = useRouter();
@@ -20,7 +21,7 @@ const UserProfile = () => {
           router.push('/auth/login'); 
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -57,7 +58,7 @@ const UserProfile = () => {
       }
 
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/get-user`, {
+        const res = await apiRequest(`/users/get-user`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -101,7 +102,7 @@ const UserProfile = () => {
     if (!token) return;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update/${userDetails.id}`, {
+      await apiRequest(`/users/update/${userDetails.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

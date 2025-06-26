@@ -10,6 +10,7 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import ActiveStatus from '../../../components/ui/ActiveStatus';
 import FiltersPanel from '../../../components/FiltersPanel';
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 const columns = [
   { key: 'nameAndRoll', label: 'Name / Roll No' },
@@ -43,7 +44,7 @@ export default function UsersPage() {
         return;
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -64,7 +65,7 @@ export default function UsersPage() {
 
     const fetchUsers = async () => {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/get`, {
+      const res = await apiRequest(`/users/get`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

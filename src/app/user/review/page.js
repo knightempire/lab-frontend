@@ -8,6 +8,7 @@ import LoadingScreen from '../../../components/loading/loadingscreen';
 import Pagination from '../../../components/pagination';
 import { Suspense } from 'react';
 import RequestTimeline from '../../../components/RequestTimeline';
+import { apiRequest } from '../../../utils/apiRequest';
 
 function UserReviewContent() {
   const router = useRouter();
@@ -37,7 +38,7 @@ useEffect(() => {
     }
 
     // Step 1: Verify token & admin
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+    const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -57,12 +58,12 @@ useEffect(() => {
     console.log('User data:', user_rollno);
 
     // Step 2: Fetch request data if admin check passes
-    await fetchRequestData(token, requestId,user_rollno );
+    await apiRequestRequestData(token, requestId,user_rollno );
   };
 
   const fetchRequestData = async (token, requestId,user_rollno) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+      const response = await apiRequest(`/request/get/${requestId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +135,7 @@ useEffect(() => {
       // Fetch reIssued data if exists
       if (Array.isArray(data.reIssued) && data.reIssued.length > 0 && data.reIssued[0]) {
         const reIssuedId = data.reIssued[0];
-        const reissueRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`, {
+        const reissueRes = await apiRequest(`/reIssued/get/${reIssuedId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -521,8 +522,8 @@ async function handleExtensionRequestSubmit(e) {
   const requestId = searchParams.get('requestId');
 
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/add/${requestId}`,
+    const res = await apiRequest(
+      `/reIssued/add/${requestId}`,
       {
         method: 'POST',
         headers: {

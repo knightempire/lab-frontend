@@ -10,6 +10,7 @@ import SuccessAlert from '../../../components/SuccessAlert';
 import { useRouter } from 'next/navigation';
 import fuzzysort from 'fuzzysort'; // Install with: npm install fuzzysort
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function ProductPage() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function ProductPage() {
         return;
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -92,7 +93,7 @@ export default function ProductPage() {
     try {
       const token = localStorage.getItem('token');
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      const res = await apiRequest(`/products/get`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -194,7 +195,7 @@ export default function ProductPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/add`, {
+      const res = await apiRequest(`/products/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -263,7 +264,7 @@ export default function ProductPage() {
     try {
       console.log('Updating product with ID:', id);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/update/${id}`, {
+      const response = await apiRequest(`/products/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

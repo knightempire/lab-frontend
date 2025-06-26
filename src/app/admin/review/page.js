@@ -9,6 +9,7 @@ import SuccessAlert from '../../../components/SuccessAlert';
 import RequestTimeline from '../../../components/RequestTimeline';
 import SingleDatePicker from '../../../components/DatePicker';
 import TimePicker from '../../../components/TimePicker';
+import { apiRequest } from '../../../utils/apiRequest';
 import { CheckCircle, XCircle, PlusCircle, RefreshCw, Trash2, FileText, Plus, Minus, CalendarDays, Clock, Search, ArrowLeft, AlertTriangle, Repeat } from 'lucide-react';
 
 const AdminRequestViewContent = () => {
@@ -80,7 +81,7 @@ const AdminRequestViewContent = () => {
           router.push('/auth/login'); 
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -134,7 +135,7 @@ const AdminRequestViewContent = () => {
       router.push('/admin/request');
       return;
     }
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+    const response = await apiRequest(`/request/get/${requestId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -174,8 +175,8 @@ const AdminRequestViewContent = () => {
     if (Array.isArray(data.reIssued) && data.reIssued.length > 0) {
       // Only check the latest re-issue (or loop if you want all)
       const reIssuedId = data.reIssued[data.reIssued.length - 1];
-      const reissueRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssuedId}`,
+      const reissueRes = await apiRequest(
+        `/reIssued/get/${reIssuedId}`,
         {
           method: 'GET',
           headers: {
@@ -278,7 +279,7 @@ const AdminRequestViewContent = () => {
     const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        const res = await apiRequest(`/products/get`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -356,7 +357,7 @@ const handleSave = async () => {
 
   console.log('Payload for update:', payload);
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update-product/${requestId}`, {
+    const response = await apiRequest(`/request/update-product/${requestId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -393,7 +394,7 @@ const handleSave = async () => {
 
   console.log('Payload for update:', payload);
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/update/${requestId}`, {
+    const response = await apiRequest(`/request/update/${requestId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -430,16 +431,16 @@ const handleReIssueAction = async (action, message) => {
   };
 
   if (action === 'accept') {
-    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/approve/${reissueId}`;
+    url = `/reIssued/approve/${reissueId}`;
     payload.adminApprovedDays = issuableDays;
   } else if (action === 'decline') {
-    url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/reject/${reissueId}`;
+    url = `/reIssued/reject/${reissueId}`;
   } else {
     return;
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await apiRequest(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -718,7 +719,7 @@ const handleDecrementDays = () => {
       };
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/approve/${requestId}`, {
+        const response = await apiRequest(`/request/approve/${requestId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -754,7 +755,7 @@ const handleDecrementDays = () => {
       adminReturnMessage: responseMessage || "Insufficient amount of products" 
     };
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/reject/${requestId}`, {
+      const response = await apiRequest(`/request/reject/${requestId}`, {
         method: 'POST', // Use POST for rejecting
         headers: {
           'Content-Type': 'application/json',
@@ -796,7 +797,7 @@ const issuing = async () => {
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/collect/${requestId}`, {
+    const response = await apiRequest(`/request/collect/${requestId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
