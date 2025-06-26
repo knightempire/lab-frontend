@@ -724,6 +724,7 @@ useEffect(() => {
                             </div>
                           </div>
                           
+                          
                           <ul className="py-1">
                             {filteredStaffOptions.length > 0 ? (
                               filteredStaffOptions.map((staff) => (
@@ -849,6 +850,12 @@ useEffect(() => {
                         </div>
                       )}
                     </div>
+                    {!isFaculty && submitted && errors.referenceStaff && (
+  <p className="mt-1 text-sm text-red-600 flex items-center">
+    <AlertCircle size={14} className="mr-1" />
+    {errors.referenceStaff}
+  </p>
+)}
                   </div>
 
                   <div className="md:w-1/3">
