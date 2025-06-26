@@ -6,6 +6,7 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 const columns = [
   { key: 'name', label: 'Product Name' },
@@ -32,7 +33,7 @@ export default function ProductPage() {
           router.push('/auth/login'); 
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -75,7 +76,7 @@ export default function ProductPage() {
           return;
         }
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+        const res = await apiRequest(`/products/get`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

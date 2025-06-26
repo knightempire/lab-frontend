@@ -1,37 +1,39 @@
+// Keep your refreshAccessToken function exactly as it is. It's perfect.
 export async function refreshAccessToken() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const endpoint = `${baseUrl}/api/refresh-token`;
-
-  // Debug: log endpoint and check if running in browser
-  console.log("Calling refresh token endpoint:", endpoint);
-  console.log("Is browser:", typeof window !== "undefined");
-  console.log("Current cookies (document.cookie):", typeof document !== "undefined" ? document.cookie : "N/A");
-
+  const endpoint = `/api/refresh-token`;
+  console.log("Calling refresh token endpoint VIA PROXY:", endpoint);
+  
   const res = await fetch(endpoint, {
-  method: 'POST',
-  credentials: 'include', // REQUIRED!
-  headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
   });
-
-
-  // Debug: log response status and headers
+  
   console.log("Refresh response status:", res.status);
-  console.log("Refresh response headers:", Array.from(res.headers.entries()));
 
   if (res.ok) {
     const data = await res.json();
+    // This is important: save the new token to localStorage
     localStorage.setItem('token', data.token);
     return data.token;
   } else {
+    // If refresh fails, clear the token and trigger a logout/redirect
     localStorage.removeItem('token');
-    // window.location.href = '/auth/login';
+    // For example: window.location.href = '/auth/login';
     return null;
   }
 }
 
+
+
 export async function apiRequest(url, options = {}) {
+  const proxyUrl = `/api${url}`;
   let token = localStorage.getItem('token');
-  let res = await fetch(url, {
+
+  console.log(`1. Initial request to ${proxyUrl} with token:`, token ? 'Exists' : 'NULL');
+
+  // 1. Make the initial request
+  let res = await fetch(proxyUrl, {
     ...options,
     headers: {
       ...options.headers,
@@ -39,18 +41,31 @@ export async function apiRequest(url, options = {}) {
     },
   });
 
+
   if (res.status === 401) {
-    // Try to refresh the token
-    token = await refreshAccessToken();
-    if (!token) throw new Error('Session expired');
-    // Retry the original request with the new token
-    res = await fetch(url, {
+    console.log("2. Received 401 Unauthorized. Attempting to refresh token...");
+
+    // 3. Call the refreshAccessToken function
+    const newToken = await refreshAccessToken();
+
+    // 4. Check if the refresh was successful
+    if (!newToken) {
+      console.error("3. Token refresh failed. Session expired.");
+      throw new Error('Session expired. Could not refresh token.');
+    }
+
+    console.log("3. Token refreshed successfully. Retrying the original request...");
+
+    // 5. Retry the original request with the NEW token
+    res = await fetch(proxyUrl, {
       ...options,
       headers: {
         ...options.headers,
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${newToken}`, 
       },
     });
+    
+    console.log(`4. Retry request to ${proxyUrl} status:`, res.status);
   }
 
   return res;

@@ -20,6 +20,7 @@ import FacultyorStudentStatus from '../../../components/ui/FacultyorStudentStatu
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
+import { apiRequest } from '../../../utils/apiRequest';
 import * as XLSX from 'xlsx';
 
 export default function RequestsPage() {
@@ -42,7 +43,7 @@ export default function RequestsPage() {
         return;
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -105,7 +106,7 @@ export default function RequestsPage() {
       const token = localStorage.getItem('token');
 
       // Fetch products
-      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      const productRes = await apiRequest(`/products/get`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const productData = await productRes.json();
@@ -124,7 +125,7 @@ export default function RequestsPage() {
       }
 
       // Fetch requests
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
+      const response = await apiRequest(`/request/get`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -132,7 +133,7 @@ export default function RequestsPage() {
       const data = await response.json();
 
       // Fetch re-issued requests
-      const reIssuedRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get`, {
+      const reIssuedRes = await apiRequest(`/reIssued/get`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

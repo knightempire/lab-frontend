@@ -10,7 +10,7 @@ import FiltersPanel from '../../../components/FiltersPanel';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import * as XLSX from 'xlsx';
-
+import { apiRequest } from '../../../utils/apiRequest';
 export default function RequestsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,7 +32,7 @@ useEffect(() => {
         router.push('/auth/login'); 
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+    const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -65,7 +65,7 @@ useEffect(() => {
       const token = localStorage.getItem('token');
 
       // Fetch products
-      const productRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/products/get`, {
+      const productRes = await apiRequest(`/products/get`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const productData = await productRes.json();
@@ -86,7 +86,7 @@ useEffect(() => {
       }
 
       // Fetch requests
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get`, {
+      const res = await apiRequest(`/request/get`, {
         method: 'GET',
         headers:
          {
@@ -119,8 +119,8 @@ useEffect(() => {
             // Get the latest reIssuedId
             const latestReIssuedId = req.reIssued[req.reIssued.length - 1];
             try {
-              const reissueRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${latestReIssuedId}`,
+              const reissueRes = await apiRequest(
+                `/reIssued/get/${latestReIssuedId}`,
                 {
                   headers: {
                     'Authorization': `Bearer ${token}`,

@@ -7,6 +7,7 @@ import { CheckCircle, RefreshCw, FileText, Plus, Minus, CalendarDays, Clock, Arr
 import { Suspense } from 'react';
 import LoadingScreen from '../../../components/loading/loadingscreen';
 import RequestTimeline from '../../../components/RequestTimeline';
+import { apiRequest } from '../../../utils/apiRequest';
 import SuccessAlert from '../../../components/SuccessAlert';
 
 const AdminRetrunViewContent = () => {
@@ -71,7 +72,7 @@ useEffect(() => {
           router.push('/auth/login'); 
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+      const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -110,7 +111,7 @@ useEffect(() => {
 
     try {
       // Fetch request details
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/get/${requestId}`, {
+      const response = await apiRequest(`/request/get/${requestId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -125,7 +126,7 @@ useEffect(() => {
       const req = apiData.request;
       console.log(apiData)
       // Fetch return details
-      const returnRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestId}`, {
+      const returnRes = await apiRequest(`/request/return/${requestId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -229,7 +230,7 @@ components: (req.issued && req.issued.length > 0
       if (req.reIssued && req.reIssued.length > 0) {
   try {
     const reIssueId = req.reIssued[0]; // Assuming only one re-issue at a time
-    const reIssueRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reIssued/get/${reIssueId}`, {
+    const reIssueRes = await apiRequest(`/reIssued/get/${reIssueId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -428,8 +429,8 @@ const handleReturnSubmit = async (componentIndex) => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/return/${requestData.id}`,
+      const response = await apiRequest(
+        `/request/return/${requestData.id}`,
         {
           method: 'POST',
           headers: {

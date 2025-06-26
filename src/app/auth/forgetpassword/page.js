@@ -7,7 +7,7 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react'; // Add at the top with other imports
-
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -44,10 +44,10 @@ export default function ForgotPasswordPage() {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const endpoint = `${baseUrl}/api/forgotpassword`;
+    const endpoint = `/forgotpassword`;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

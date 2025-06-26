@@ -7,6 +7,8 @@ import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
 import DropdownPortal from '../../../components/dropDown';
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
+
 
 export default function CheckoutPage() {
   const router = useRouter(); 
@@ -23,7 +25,7 @@ useEffect(() => {
       return;
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
+    const res = await apiRequest(`/verify-token`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -112,7 +114,7 @@ useEffect(() => {
   }
   if (token) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/get`, {
+      const response = await apiRequest(`/reference/get`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -275,7 +277,7 @@ useEffect(() => {
   };
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reference/add`, {
+    const response = await apiRequest(`/reference/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -301,7 +303,7 @@ useEffect(() => {
 
     console.log('Faculty added successfully:', data);
 
-    await fetchReferenceStaff(); 
+    await apiRequestReferenceStaff(); 
     setCustomFacultyName('');
     setCustomFacultyEmail('');
     setShowCustomFacultyForm(false);
@@ -400,10 +402,10 @@ useEffect(() => {
       }))
     };
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/request/add`;
+    const apiUrl = `/request/add`;
 
     try {
-      const response = await fetch(apiUrl, {
+      const response = await apiRequest(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

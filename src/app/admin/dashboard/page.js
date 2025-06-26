@@ -50,7 +50,7 @@ export default function DashboardPage() {
       try {
 
         // 1. Verify admin
-        const verifyRes = await apiRequest(`${baseUrl}/api/verify-token`, {
+        const verifyRes = await apiRequest(`/verify-token`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -61,7 +61,7 @@ export default function DashboardPage() {
         }
 
         // 2. Fetch request stats
-        const statsRes = await apiRequest(`${baseUrl}/api/dashboard/request-stats`, {
+        const statsRes = await apiRequest(`/dashboard/request-stats`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -94,7 +94,7 @@ export default function DashboardPage() {
         }
 
         // 3. Fetch low stock and top components
-        const stockRes = await apiRequest(`${baseUrl}/api/dashboard/components-stock`, {
+        const stockRes = await apiRequest(`/dashboard/components-stock`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -110,7 +110,7 @@ export default function DashboardPage() {
         }
 
         // 4. Fetch inventory and monthly request count
-        const invRes = await apiRequest(`${baseUrl}/api/dashboard/inventory-and-request-count`, {
+        const invRes = await apiRequest(`/dashboard/inventory-and-request-count`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         }
 
         // 5. Fetch calendar data
-        const calendarRes = await apiRequest(`${baseUrl}/api/dashboard/admin-reminder`, {
+        const calendarRes = await apiRequest(`/dashboard/admin-reminder`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -266,16 +266,7 @@ export default function DashboardPage() {
     return document.cookie.split(';').some(cookie => cookie.trim().startsWith('refreshToken='));
   }
 
-  // Example usage after login or on dashboard mount
-  useEffect(() => {
-    if (!isRefreshTokenCookieSet()) {
-      alert(
-        "Warning: refreshToken cookie is NOT set!\n\n" +
-        "If you are in development, check your backend CORS and cookie settings.\n" +
-        "If you are in production, httpOnly cookies will not be visible in JS, but should still be sent to the backend."
-      );
-    }
-  }, []);
+
 
   if (loading) {
     return (
