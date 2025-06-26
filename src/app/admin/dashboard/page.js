@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Activity, Clock } from "lucide-react";
 import { useInView } from "react-intersection-observer";
-
 import StatsCard from "../../../components/StatsCard";
 import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadarChart";
 import Calendar from "../../../components/dashboard-calendar";
@@ -13,6 +12,7 @@ import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBr
 import LowStockItemsTable from "../../../components/admin_graphs/LowStockTable";
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart";
 import LoadingScreen from "../../../components/loading/loadingscreen";
+import { apiRequest } from '../../../utils/apiRequest';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -45,39 +45,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push("/auth/login");
-        return;
-      }
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
       try {
-        // Verify admin
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/verify-token`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+
+        // 1. Verify admin
+        const verifyRes = await apiRequest(`${baseUrl}/api/verify-token`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
         });
-        const data = await res.json();
-        if (!res.ok || !data.user?.isAdmin || !data.user?.isActive) {
-          router.push("/auth/login");
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok || !verifyData.user?.isAdmin || !verifyData.user?.isActive) {
+          // router.push("/auth/login");
           return;
         }
 
-        // Fetch request stats
-        const statsRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/request-stats`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // 2. Fetch request stats
+        const statsRes = await apiRequest(`${baseUrl}/api/dashboard/request-stats`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
         const statsData = await statsRes.json();
-
         if (statsRes.ok) {
           setStats({
             total_requests: statsData.totalRequests,
@@ -105,19 +93,12 @@ export default function DashboardPage() {
           setStatusBreakdown(breakdown);
         }
 
-        // Fetch low stock and top components
-        const stockRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/components-stock`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // 3. Fetch low stock and top components
+        const stockRes = await apiRequest(`${baseUrl}/api/dashboard/components-stock`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
         const stockData = await stockRes.json();
-
         if (stockRes.ok) {
           setLowStockData(
             (stockData.lowStockItems || []).map((item) => ({
@@ -125,22 +106,15 @@ export default function DashboardPage() {
               in_stock: item.inStock,
             }))
           );
-  setBarData(stockData.topComponents || []);
+          setBarData(stockData.topComponents || []);
         }
 
-        // Fetch inventory and monthly request count
-        const invRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/inventory-and-request-count`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // 4. Fetch inventory and monthly request count
+        const invRes = await apiRequest(`${baseUrl}/api/dashboard/inventory-and-request-count`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
         const invData = await invRes.json();
-
         if (invRes.ok) {
           // Map inventory distribution
           setInventoryData({
@@ -160,19 +134,12 @@ export default function DashboardPage() {
           );
         }
 
-        // Fetch calendar data
-        const calendarRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dashboard/admin-reminder`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        // 5. Fetch calendar data
+        const calendarRes = await apiRequest(`${baseUrl}/api/dashboard/admin-reminder`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
         const calendarData = await calendarRes.json();
-
         if (calendarRes.ok) {
           // Helper to compare only the date part in Asia/Kolkata timezone
           const todayIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
@@ -237,9 +204,8 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error("Error loading dashboard:", err);
-        // router.push("/auth/login");
       }
-      setLoading(false); // Set loading to false after all fetches
+      setLoading(false);
     };
 
     fetchDashboardData();
@@ -294,6 +260,22 @@ export default function DashboardPage() {
     d.setHours(0, 0, 0, 0);
     return d < todayIST;
   };
+
+  function isRefreshTokenCookieSet() {
+    // This will NOT detect httpOnly cookies, but can help in dev
+    return document.cookie.split(';').some(cookie => cookie.trim().startsWith('refreshToken='));
+  }
+
+  // Example usage after login or on dashboard mount
+  useEffect(() => {
+    if (!isRefreshTokenCookieSet()) {
+      alert(
+        "Warning: refreshToken cookie is NOT set!\n\n" +
+        "If you are in development, check your backend CORS and cookie settings.\n" +
+        "If you are in production, httpOnly cookies will not be visible in JS, but should still be sent to the backend."
+      );
+    }
+  }, []);
 
   if (loading) {
     return (
