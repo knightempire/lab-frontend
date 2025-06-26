@@ -58,7 +58,7 @@ useEffect(() => {
     console.log('User data:', user_rollno);
 
     // Step 2: Fetch request data if admin check passes
-    await apiRequestRequestData(token, requestId,user_rollno );
+    await fetchRequestData(token, requestId,user_rollno );
   };
 
   const fetchRequestData = async (token, requestId,user_rollno) => {
