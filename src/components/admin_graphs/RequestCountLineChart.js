@@ -55,6 +55,21 @@ const MonthlyRequestLineChart = ({ data }) => {
     };
   }, []);
 
+  // Close dropdown on scroll or resize
+  React.useEffect(() => {
+    const handleScrollOrResize = () => {
+      setDropdownOpen(false);
+    };
+
+    window.addEventListener('scroll', handleScrollOrResize);
+    window.addEventListener('resize', handleScrollOrResize);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, []);
+
   const options = {
     tooltip: {
       trigger: 'axis',
@@ -77,7 +92,9 @@ const MonthlyRequestLineChart = ({ data }) => {
       },
       axisLabel: {
         fontSize: 12,
-        color: '#475569', 
+        color: '#475569',
+        // Rotate labels on small screens
+        rotate: window.innerWidth < 640 ? 45 : 0,
       },
     },
     yAxis: {
@@ -100,9 +117,10 @@ const MonthlyRequestLineChart = ({ data }) => {
       },
     },
     grid: {
-      left: '3%',
-      right: '3%',
-      bottom: '10%',
+      left: window.innerWidth < 640 ? '15%' : '8%',
+      right: '4%',
+      bottom: window.innerWidth < 640 ? '20%' : '10%',
+      top: '10%',
       containLabel: true,
     },
     series: [
@@ -112,13 +130,13 @@ const MonthlyRequestLineChart = ({ data }) => {
         smooth: true,
         data: counts,
         symbol: 'circle',
-        symbolSize: 6,
+        symbolSize: window.innerWidth < 640 ? 4 : 6,
         itemStyle: {
           color: '#6366F1',
         },
         lineStyle: {
           color: '#6366F1',
-          width: 3,
+          width: window.innerWidth < 640 ? 2 : 3,
         },
         areaStyle: {
           color: 'rgba(99, 102, 241, 0.1)',
@@ -128,29 +146,39 @@ const MonthlyRequestLineChart = ({ data }) => {
   };
 
   return (
-    <div className="w-full mx-auto p-4 relative">
-      {/* Fixed positioned dropdown container */}
-      <div className="absolute right-6 top-6 z-50" ref={dropdownRef}>
-        <div className="relative">
+    <div className="w-full mx-auto p-2 sm:p-4 relative">
+      {/* Header with responsive layout */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4">
+        {/* Title and total - stack on mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+            Monthly Requests Overview
+          </h2>
+          <span className="inline-block text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg w-fit">
+            Total: {totalRequests.toLocaleString()}
+          </span>
+        </div>
+        
+        {/* Year dropdown */}
+        <div className="relative w-fit" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="border border-gray-300 rounded px-3 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1 min-w-[80px] justify-between shadow-sm"
+            className="border border-gray-300 rounded px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1 min-w-[70px] sm:min-w-[80px] justify-between shadow-sm hover:bg-gray-50 transition-colors"
           >
             {selectedYear} <span className="text-xs">▼</span>
           </button>
           
-          {/* Inline dropdown - no portal */}
+          {/* Dropdown with same width as button */}
           {dropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[100px]">
+            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 w-full">
               <ul className="py-1 max-h-48 overflow-y-auto">
                 {years.map((year) => (
                   <li
                     key={year}
-                    className={`px-4 py-2 cursor-pointer transition-colors whitespace-nowrap text-sm
+                    className={`px-3 py-2 cursor-pointer transition-colors text-xs sm:text-sm
                     ${year === selectedYear
-                      ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                      : "text-gray-700"}
-                    hover:bg-blue-50`}
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-700 hover:bg-blue-50"}`}
                     onClick={() => {
                       setSelectedYear(year);
                       setDropdownOpen(false);
@@ -164,17 +192,20 @@ const MonthlyRequestLineChart = ({ data }) => {
           )}
         </div>
       </div>
-
-      <div className="flex items-center justify-start gap-4 mb-2 mt-1 ml-2 pr-24">
-        <h2 className="text-lg md:text-xl font-bold text-gray-800">
-          Monthly Requests Overview
-        </h2>
-        <span className="mt-1 text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
-          Total: {totalRequests}
-        </span>
-      </div>
       
-      <ReactECharts option={options} style={{ height: 400 }} />
+      {/* Chart with responsive height */}
+      <div className="w-full">
+        <ReactECharts 
+          option={options} 
+          style={{ 
+            height: window.innerWidth < 640 ? 250 : window.innerWidth < 1024 ? 280 : 320,
+            width: '100%'
+          }}
+          opts={{
+            renderer: 'canvas'
+          }}
+        />
+      </div>
     </div>
   );
 };
