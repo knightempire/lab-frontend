@@ -160,7 +160,7 @@ const Calendar = ({ events, overdueItems, onViewMore }) => {
 
   return (
     <div className="bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+      <div>
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Calendar Section */}
           <div className="flex-1 bg-white rounded-xl lg:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
