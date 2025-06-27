@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [inventoryData, setInventoryData] = useState({
     in_stock: 0,
     on_hold: 0,
+    damaged: 0,
     yet_to_return: 0,
   });
   const [MonthlyData, setMonthlyData] = useState([]);
@@ -119,7 +120,8 @@ export default function DashboardPage() {
           // Map inventory distribution
           setInventoryData({
             in_stock: invData.inventoryDistribution.inStock || 0,
-            on_hold: invData.inventoryDistribution.damaged || 0,
+            on_hold: invData.inventoryDistribution.onHold || 0,
+            damaged: invData.inventoryDistribution.damaged || 0,
             yet_to_return: invData.inventoryDistribution.yetToGive || 0,
           });
 

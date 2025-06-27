@@ -4,7 +4,7 @@ import React from 'react';
 import ReactECharts from 'echarts-for-react';
 
 const InventoryRadarChart = ({ data }) => {
-  const maxValue = Math.max(data.in_stock, data.on_hold, data.yet_to_return) + 50;
+  const maxValue = Math.max(data.in_stock, data.on_hold, data.damaged, data.yet_to_return) + 50;
 
   const chartOptions = {
     backgroundColor: 'transparent',
@@ -22,21 +22,12 @@ const InventoryRadarChart = ({ data }) => {
           <div style="font-weight:600; color:#1e293b; margin-bottom:4px;">${params.name}</div>
           <div style="line-height:1.7">
             <span style="color:#6366f1;">●</span> In Stock: <b>${data.in_stock}</b><br/>
-            <span style="color:#f59e42;">●</span> On Hold: <b>${data.on_hold}</b><br/>
+            <span style="color:#22c55e;">●</span> On Hold: <b>${data.on_hold}</b><br/>      
+            <span style="color:#f59e42;">●</span> Damaged: <b>${data.damaged}</b><br/>
             <span style="color:#f43f5e;">●</span> Yet to Return: <b>${data.yet_to_return}</b>
           </div>
         `;
-      }
-    },
-    legend: {
-      bottom: 10,
-      data: ['Inventory'],
-      textStyle: {
-        color: '#374151', 
-        fontSize: 14,
-        fontWeight: 500,
-      },
-      icon: 'circle',
+      },  
     },
     radar: {
       shape: 'polygon',
@@ -46,6 +37,7 @@ const InventoryRadarChart = ({ data }) => {
       indicator: [
         { name: 'In Stock', max: maxValue },
         { name: 'On Hold', max: maxValue },
+        { name: 'Damaged', max: maxValue },
         { name: 'Yet to Return', max: maxValue },
       ],
       name: {
@@ -81,7 +73,7 @@ const InventoryRadarChart = ({ data }) => {
         type: 'radar',
         data: [
           {
-            value: [data.in_stock, data.on_hold, data.yet_to_return],
+            value: [data.in_stock, data.on_hold, data.damaged, data.yet_to_return],
             name: 'Inventory',
             areaStyle: {
               opacity: 0.3,

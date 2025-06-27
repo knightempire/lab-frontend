@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
-import DropdownPortal from '../dropDown';
 
 const getYear = (monthLabel) => {
   return monthLabel.split(' ')[1];
@@ -18,8 +17,8 @@ const monthOrder = [
 ];
 
 const MonthlyRequestLineChart = ({ data }) => {
-  const buttonRef = useRef();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef();
 
   // Extract unique years from data
   const years = useMemo(
@@ -41,6 +40,20 @@ const MonthlyRequestLineChart = ({ data }) => {
   const counts = filteredData.map(item => item.count);
 
   const totalRequests = filteredData.reduce((sum, item) => sum + item.count, 0);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const options = {
     tooltip: {
@@ -116,50 +129,51 @@ const MonthlyRequestLineChart = ({ data }) => {
 
   return (
     <div className="w-full mx-auto p-4 relative">
-      <div className="absolute right-6 top-6 z-10">
-        <button
-            ref={buttonRef}
-            onClick={() => setDropdownOpen((v) => !v)}
-            className="border border-gray-300 rounded px-3 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1"
-        >
+      {/* Fixed positioned dropdown container */}
+      <div className="absolute right-6 top-6 z-50" ref={dropdownRef}>
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="border border-gray-300 rounded px-3 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1 min-w-[80px] justify-between shadow-sm"
+          >
             {selectedYear} <span className="text-xs">▼</span>
-        </button>
-        {dropdownOpen && (
-            <DropdownPortal
-            targetRef={buttonRef}
-            onClose={() => setDropdownOpen(false)}
-            className="min-w-[100px]"
-            >
-            <ul className="bg-white border border-gray-200 rounded-md shadow-md py-1">
+          </button>
+          
+          {/* Inline dropdown - no portal */}
+          {dropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[100px]">
+              <ul className="py-1 max-h-48 overflow-y-auto">
                 {years.map((year) => (
-                <li
+                  <li
                     key={year}
-                    className={`px-4 py-2 cursor-pointer transition-colors
+                    className={`px-4 py-2 cursor-pointer transition-colors whitespace-nowrap text-sm
                     ${year === selectedYear
-                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                    : "text-gray-700"}
+                      ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
+                      : "text-gray-700"}
                     hover:bg-blue-50`}
                     onClick={() => {
                       setSelectedYear(year);
                       setDropdownOpen(false);
                     }}
-                >
+                  >
                     {year}
-                </li>
+                  </li>
                 ))}
-            </ul>
-            </DropdownPortal>
-        )}
+              </ul>
+            </div>
+          )}
         </div>
+      </div>
 
-        <div className="flex items-center justify-start gap-4 mb-2 mt-1 ml-2">
-          <h2 className="text-lg md:text-xl font-bold text-gray-800 text-center">
-            Monthly Requests Overview
-          </h2>
-          <span className="mt-1 text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
-            Total: {totalRequests}
-          </span>
-        </div>
+      <div className="flex items-center justify-start gap-4 mb-2 mt-1 ml-2 pr-24">
+        <h2 className="text-lg md:text-xl font-bold text-gray-800">
+          Monthly Requests Overview
+        </h2>
+        <span className="mt-1 text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+          Total: {totalRequests}
+        </span>
+      </div>
+      
       <ReactECharts option={options} style={{ height: 400 }} />
     </div>
   );
