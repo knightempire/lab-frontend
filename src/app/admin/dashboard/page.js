@@ -36,12 +36,25 @@ export default function DashboardPage() {
   const [inventoryData, setInventoryData] = useState({
     in_stock: 0,
     on_hold: 0,
+    damaged: 0,
     yet_to_return: 0,
   });
   const [MonthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [overdueItems, setOverdueItems] = useState([]);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 480);
+    };
+
+    checkScreenSize(); // Initial check
+
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -119,7 +132,8 @@ export default function DashboardPage() {
           // Map inventory distribution
           setInventoryData({
             in_stock: invData.inventoryDistribution.inStock || 0,
-            on_hold: invData.inventoryDistribution.damaged || 0,
+            on_hold: invData.inventoryDistribution.onHold || 0,
+            damaged: invData.inventoryDistribution.damaged || 0,
             yet_to_return: invData.inventoryDistribution.yetToGive || 0,
           });
 
@@ -277,7 +291,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className={`${isSmallScreen ? "max-w-7xl" : ""} mx-auto px-4 py-6`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <StatsCard
           title="Total Requests"

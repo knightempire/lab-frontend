@@ -149,7 +149,7 @@ const Calendar = ({ events, overdueItems }) => {
 
   return (
     <div className="bg-gray-50">
-      <div className="max-w-4xl mx-auto">
+      <div>
         {/* Calendar Section */}
         <div className="bg-white rounded-xl lg:rounded-2xl overflow-hidden">
           {/* Calendar Header */}
