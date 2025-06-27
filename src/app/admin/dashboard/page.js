@@ -43,6 +43,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [overdueItems, setOverdueItems] = useState([]);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 480);
+    };
+
+    checkScreenSize(); // Initial check
+
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -279,7 +291,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="px-4 py-6">
+    <div className={`${isSmallScreen ? "max-w-7xl" : ""} mx-auto px-4 py-6`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <StatsCard
           title="Total Requests"
