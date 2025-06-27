@@ -223,7 +223,7 @@ const UserProfilePageView = () => {
               setEditProfileData({ ...user });
               
               // Fetch user requests after successfully getting user data
-              await apiRequestUserRequests(rollNo);
+              await fetchUserRequests(rollNo);
               
               setLoading(false);
               return;
@@ -243,7 +243,7 @@ const UserProfilePageView = () => {
       setEditProfileData({ ...userData });
       
       // Fetch user requests after successfully getting user data
-      await apiRequestUserRequests(rollNo);
+      await fetchUserRequests(rollNo);
       
     } catch (err) {
       console.error('Error fetching user data:', err);
