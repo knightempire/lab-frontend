@@ -1,0 +1,19 @@
+
+
+services:
+  lab_frontend: # Define a service named 'app'
+    build: . # Build the image from the Dockerfile in the current directory
+    container_name: lab_frontend # Optional: give the container a specific name
+    ports:
+      - "8080:8080" 
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+
+    restart: unless-stopped # Optional: Restart policy
+
+   
+
+networks:
+  default:
+    driver: bridge
+
