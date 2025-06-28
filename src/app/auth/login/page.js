@@ -5,12 +5,12 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
+import { Eye, EyeOff, Loader2 } from 'lucide-react'; 
 import { apiRequest } from '../../../utils/apiRequest';
 
 export default function LoginPage() {
   const router = useRouter();
-  const isSubmitting = useRef(false); // Add this line
+  const isSubmitting = useRef(false); 
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -192,7 +192,6 @@ export default function LoginPage() {
                 Signing in...
               </span>
             ) : "Sign in"} className="w-full py-3 mt-4" disabled={loading} />
-            {/* Optionally, you can overlay a spinner here */}
           </div>
         </form>
 
