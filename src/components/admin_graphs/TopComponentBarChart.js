@@ -40,7 +40,7 @@ const TopComponentsBarChart = ({ data }) => {
       data: componentNames,
       axisLabel: {
         interval: 0,
-        rotate: 45,
+        rotate: 30,
         color: '#475569',
         fontSize: 12,
         overflow: 'truncate',
