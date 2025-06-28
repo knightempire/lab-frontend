@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // Add loading state
+  const [rememberme, setrememberme] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -87,14 +88,13 @@ export default function LoginPage() {
     }
 
     const endpoint = `/login`;
-
     try {
       const res = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberme }),
       });
 
       const data = await res.json();
@@ -171,8 +171,14 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="h-4 w-4 text-indigo-500 rounded" disabled={loading} />
-              <span className="text-gray-700">Remember me</span>
+            <input 
+              type="checkbox" 
+              className="h-4 w-4 text-indigo-500 rounded" 
+              disabled={loading}
+              checked={rememberme}
+              onChange={(e) => setrememberme(e.target.checked)}
+            /> 
+             <span className="text-gray-700">Remember me</span>
             </label>
             <Link href="/auth/forgetpassword" className="text-indigo-500 hover:underline">
               Forgot password?
