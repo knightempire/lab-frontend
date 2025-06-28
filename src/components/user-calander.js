@@ -293,7 +293,7 @@ const Calendar = ({ events, overdueItems }) => {
                       `}
                       onClick={() => isCurrentMonth && handleDateClick(date)}
                       onMouseEnter={(e) => {
-                        if (!isToday) handleMouseEnter(date, e);
+                        handleMouseEnter(date, e);
                       }}
                       onMouseLeave={handleMouseLeave}
                     >
