@@ -5,19 +5,18 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff, Loader2 } from 'lucide-react'; 
+import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
 import { apiRequest } from '../../../utils/apiRequest';
 
 export default function LoginPage() {
   const router = useRouter();
-  const isSubmitting = useRef(false); 
+  const isSubmitting = useRef(false); // Add this line
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // Add loading state
-  const [rememberme, setrememberme] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -192,6 +191,7 @@ export default function LoginPage() {
                 Signing in...
               </span>
             ) : "Sign in"} className="w-full py-3 mt-4" disabled={loading} />
+            {/* Optionally, you can overlay a spinner here */}
           </div>
         </form>
 

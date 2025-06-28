@@ -6,19 +6,19 @@ import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react'; 
+import { Loader2 } from 'lucide-react'; // Add this at the top with other imports
 import { apiRequest } from '../../../utils/apiRequest';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const isSubmitting = useRef(false); 
+  const isSubmitting = useRef(false); // Add this line at the top of your component
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false); 
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false); // Add loading state
 
   const validateEmail = (email) =>
     /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*(amrita\.edu)$/.test(email);
@@ -55,6 +55,7 @@ const handleRegister = async (e) => {
     return;
   }
 
+  // Determine if the user is faculty
   const isFaculty = !email.includes('.students.amrita.edu');
 
   const payload = {
@@ -78,6 +79,7 @@ const handleRegister = async (e) => {
     if (res.ok) {
       setShowModal(true);
       setLoading(false);
+      // isSubmitting.current stays true (block further submits)
       return;
     }
 
