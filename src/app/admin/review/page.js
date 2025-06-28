@@ -651,22 +651,23 @@ const handleResetComponents = () => {
 };
 
 const handleIssuableDaysChange = (value) => {
-  if (isCollected) {
+  // Allow changing days if re-issue is pending, even if isCollected
+  if (isCollected && !(requestData?.reIssueRequest?.status === 'pending')) {
     setCollectedError('Components already issued. You cannot change duration.');
     return;
   }
-  const newDays = Math.min(Math.max(0, parseInt(value) || 1), 30);
+  const newDays = Math.min(Math.max(1, parseInt(value) || 1), 30);
   setIssuableDays(newDays);
 };
 const handleIncrementDays = () => {
-  if (isCollected) {
+  if (isCollected && !(requestData?.reIssueRequest?.status === 'pending')) {
     setCollectedError('Components already issued. You cannot change duration.');
     return;
   }
   setIssuableDays(prev => Math.min(prev + 1, 30));
 };
 const handleDecrementDays = () => {
-  if (isCollected) {
+  if (isCollected && !(requestData?.reIssueRequest?.status === 'pending')) {
     setCollectedError('Components already issued. You cannot change duration.');
     return;
   }
@@ -1497,7 +1498,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                     </div>
                     <div className="flex items-center mt-2 gap-4">
                       <span className="text-gray-600">Requested:</span>
-                      <span className="font-medium">{requestData.requestedDays || "7"} Days</span>
+                      <span className="font-medium">{requestData.requestedDays || "N/A"} Days</span>
                     </div>
                     <div className="flex items-center mt-3">
                       <span className="text-gray-600 w-32">Issue Duration:</span>
