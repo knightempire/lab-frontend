@@ -71,23 +71,6 @@ export default function Navbar({ toggleSidebar }) {
           
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-              {/* Show profile option only for users (not admin) */}
-              {!isAdmin && (
-                <Link
-                  href="/user/profile"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                  onClick={() => setProfileMenuOpen(false)}
-                >
-                  Your Profile
-                </Link>
-              )}
-              {/* <Link 
-                href={isAdmin ? "/admin/settings" : "/user/settings"}
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                onClick={() => setProfileMenuOpen(false)}
-              >
-                Settings
-              </Link> */}
               <button
                 onClick={handleSignOut}
                 className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
