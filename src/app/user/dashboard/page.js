@@ -36,12 +36,13 @@ export default function DashboardPage() {
         // 1. Map collection events
         const mappedEvents = (data.collectionDate || []).map((item) => ({
           date: toIST(item.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }),
-          status: item.requestStatus === 'returned' ? 'Returned' : 'Issue Date',
+          status: 'Scheduled  Date', // Always show as scheduled/collection, never 'Returned'
           id: item.requestId,
           collectedDate: item.collectedDate,
           requestStatus: item.requestStatus,
           isCollected: item.isCollected,
           color: undefined,
+          badge: item.isCollected ? 'Collected' : undefined,
         }));
         // 2. Map returns (returned, overdue, upcoming)
         const isPastDayIST = (dateStr) => {
