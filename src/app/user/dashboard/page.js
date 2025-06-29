@@ -133,8 +133,8 @@ export default function DashboardPage() {
         setUserDetails({
           ...data.user,
           status: data.user.isActive ? "active" : "deactivated",
-          damageCount: 0,
-          totalHistoryCount: 0,
+          damageCount: data.stats?.damagedItemsCount ?? 0,
+          totalHistoryCount: data.stats?.requestsCount ?? 0,
           requests: [],
         });
         setEditData({ name: data.user.name, phoneNo: data.user.phoneNo });
