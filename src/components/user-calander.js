@@ -114,19 +114,26 @@ const Calendar = ({ events, overdueItems }) => {
   // Get unique event types for a date (max one dot per type)
   const getUniqueEventTypes = (date) => {
     const events = getEventsForDate(date);
-    const uniqueTypes = [...new Set(events.map(event => event.status))];
-    return uniqueTypes.map(type => ({
-      status: type,
-      count: events.filter(event => event.status === type).length
-    }));
+    // Instead of status, use color from the first event of each type
+    const uniqueTypes = [];
+    const seen = new Set();
+    for (const event of events) {
+      if (!seen.has(event.status)) {
+        uniqueTypes.push({ status: event.status, color: event.color });
+        seen.add(event.status);
+      }
+    }
+    return uniqueTypes;
   };
 
-  const getEventDotColor = (status) => {
-    const colors = {
-      'Issue Date': 'bg-green-500',
-      'Returning Date': 'bg-red-500',
-    };
-    return colors[status] || 'bg-gray-400';
+  // Use event.color if present, else fallback
+  const getEventDotColor = (status, color) => {
+    if (color) return color;
+    if (status === 'Returned') return 'bg-violet-500';
+    if (status === 'Overdue Return') return 'bg-red-500';
+    if (status === 'Upcoming Return') return 'bg-yellow-400';
+    if (status === 'Scheduled  Date') return 'bg-green-500';
+    return 'bg-gray-400';
   };
 
   const handleMouseEnter = (date, event) => {
@@ -329,7 +336,7 @@ const Calendar = ({ events, overdueItems }) => {
                           {uniqueEventTypes.map((eventType, eventIndex) => (
                             <div
                               key={eventIndex}
-                              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status)}`}
+                              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status, eventType.color)}`}
                             />
                           ))}
                         </div>
@@ -345,23 +352,37 @@ const Calendar = ({ events, overdueItems }) => {
         {/* Tooltip */}
         {hoveredDate && eventsByDate[hoveredDate] && (
           <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs pointer-events-none"
+            className="fixed z-50 bg-white border border-blue-300 rounded-2xl shadow-lg p-4 max-w-sm pointer-events-none"
             style={{
               left: `${tooltipPosition.x}px`,
               top: `${tooltipPosition.y}px`,
               transform: 'translate(-50%, -100%)',
+              borderWidth: 2,
             }}
           >
-            <div className="text-sm font-semibold text-gray-900 mb-2">
-              {formatTooltipDate(hoveredDate)}
+            <div className="mb-3">
+              <span className="text-base font-bold text-blue-700 tracking-tight">
+                {formatTooltipDate(hoveredDate)}
+              </span>
             </div>
-            <div className="space-y-2">
+            <div className="divide-y divide-blue-100">
               {eventsByDate[hoveredDate].map((event, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${getEventDotColor(event.status)}`} />
-                  <div className="text-xs text-gray-700">
-                    <div className="font-medium">{event.status}</div>
-                    <div className="text-gray-500">ID: {event.id}</div>
+                <div key={index} className="flex items-start gap-3 py-2">
+                  <div className={`w-3 h-3 mt-1 rounded-full border-2 ${getEventDotColor(event.status, event.color)} border-white`} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm text-gray-800">
+                        {event.status}
+                      </span>
+                      {event.badge && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-300">
+                          {event.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 font-mono">
+                      ID: {event.id}
+                    </div>
                   </div>
                 </div>
               ))}
