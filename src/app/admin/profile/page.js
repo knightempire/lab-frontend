@@ -27,6 +27,7 @@ const UserProfilePageView = () => {
   
   
   const [userDetails, setUserDetails] = useState({});
+  const [userStats, setUserStats] = useState({});
   const [userStatus, setUserStatus] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editProfileData, setEditProfileData] = useState({});
@@ -219,6 +220,11 @@ const UserProfilePageView = () => {
             
             if (user) {
               setUserDetails(user);
+              // Note: stats won't be available from the all users endpoint, so set defaults
+              setUserStats({ 
+                requestsCount: data.requestsCount || 0, 
+                damagedItemsCount: data.damagedItemsCount || 0 
+              });
               setUserStatus(user.isActive ? 'active' : 'deactivated');
               setEditProfileData({ ...user });
               
@@ -235,13 +241,19 @@ const UserProfilePageView = () => {
         return;
       }
 
-      // Handle the response based on your API structure
-      const userData = data.user || data; // Adjust based on your API response structure
-      
+      const userData = data.user || data;
+      const statsData = {
+        requestsCount: data.requestsCount || 0,
+        damagedItemsCount: data.damagedItemsCount || 0
+      };
+      console.log('User data:', userData);
+      console.log('Stats data:', statsData);
+
       setUserDetails(userData);
+      setUserStats(statsData);
       setUserStatus(userData.isActive ? 'active' : 'deactivated');
       setEditProfileData({ ...userData });
-      
+
       // Fetch user requests after successfully getting user data
       await fetchUserRequests(rollNo);
       
@@ -312,16 +324,16 @@ verifyToken();
         return;
       }
 
-      // Update local state with the response data
-      const updatedUser = data.user || {
+      const updatedUserData = data.user || data; // Handle nested user object
+      const updatedUser = {
         ...userDetails,
-        name: updateData.userName,
-        isAdmin: updateData.userIsAdmin,
-        email: updateData.userEmail,
-        rollNo: updateData.userRollNo,
-        phoneNo: updateData.userPhoneNo,
-        isFaculty: updateData.userIsFaculty,
-        isActive: updateData.userIsActive
+        name: updatedUserData.name || updateData.userName,
+        isAdmin: updatedUserData.isAdmin !== undefined ? updatedUserData.isAdmin : updateData.userIsAdmin,
+        email: updatedUserData.email || updateData.userEmail,
+        rollNo: updatedUserData.rollNo || updateData.userRollNo,
+        phoneNo: updatedUserData.phoneNo || updateData.userPhoneNo,
+        isFaculty: updatedUserData.isFaculty !== undefined ? updatedUserData.isFaculty : updateData.userIsFaculty,
+        isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : updateData.userIsActive,
       };
 
       setUserDetails(updatedUser);
@@ -394,10 +406,16 @@ verifyToken();
       }
 
       // Update local state
+      const updatedUserData = data.user || data; // Handle nested user object
       setUserStatus(newStatus);
-      setUserDetails(prev => ({ ...prev, isActive: newIsActive }));
-      setEditProfileData(prev => ({ ...prev, isActive: newIsActive }));
-      
+      setUserDetails(prev => ({ 
+        ...prev, 
+        isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : newIsActive 
+      }));
+      setEditProfileData(prev => ({ 
+        ...prev, 
+        isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : newIsActive 
+      }));
       console.log('Status updated successfully');
       
     } catch (err) {
@@ -677,7 +695,7 @@ verifyToken();
           <div>
             <span className="block text-xs text-gray-500">Total History</span>
             <span className="font-semibold text-sm text-blue-700">
-              {userDetails.totalHistoryCount || 0}
+              {userStats.requestsCount || 0}
             </span>
           </div>
         </div>
@@ -687,7 +705,7 @@ verifyToken();
           <div>
             <span className="block text-xs text-gray-500">Damage Count</span>
             <span className="font-semibold text-sm text-red-700">
-              {userDetails.damageCount ?? 0}
+              {userStats.damagedItemsCount ?? 0}
             </span>
           </div>
         </div>
@@ -790,17 +808,16 @@ verifyToken();
             </div>
 
             <div className="p-4 space-y-4">
-              {['name', 'email', 'rollNo', 'phoneNo', 'totalHistoryCount', 'damageCount'].map((field) => (
+              {['name', 'email', 'rollNo', 'phoneNo'].map((field) => (
                 <div key={field}>
                   <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                    {field === 'totalHistoryCount' ? 'Total History' : 
-                     field === 'damageCount' ? 'Damage Count' : 
+                    {
                      field === 'phoneNo' ? 'Phone Number' :
                      field === 'rollNo' ? 'Roll Number' : field}
                   </label>
                   <input
                     name={field}
-                    type={['totalHistoryCount', 'damageCount'].includes(field) ? 'number' : 'text'}
+                    type={'text'}
                     placeholder={`Enter ${field}`}
                     value={editProfileData[field] ?? ''}
                     onChange={handleInputChange}
