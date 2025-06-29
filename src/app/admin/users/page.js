@@ -76,7 +76,7 @@ export default function UsersPage() {
       if (res.ok) {
         const usersWithBorrowed = data.users.map((user) => ({
           ...user,
-          borrowedComponents: 0,
+          borrowedComponents: user.requestsCount ?? 0,
         }));
         setUsers(usersWithBorrowed);
       } else {
