@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Users, Edit, CheckCircle, Eye, XCircle, Clock, Save, X, GraduationCap, History, ArrowLeft, FileX, Loader2 } from 'lucide-react';
+import { Search, Users, Edit, CheckCircle, Repeat, XCircle, Clock, Save, X, GraduationCap, History, ArrowLeft, FileX, AlertTriangle } from 'lucide-react';
 import DropdownFilter from '../../../components/DropdownFilter';
 import Table from '../../../components/table';
 import Pagination from '../../../components/pagination';
@@ -15,7 +15,6 @@ const columns = [
   { key: 'requestId', label: 'Request ID' },
   { key: 'totalComponents', label: 'Total Components' },
   { key: 'status', label: 'Status' },
-  { key: 'isReturned', label: 'Returned Status' },
   { key: 'viewMore', label: 'View More' }
 ];
 
@@ -34,7 +33,6 @@ const UserProfilePageView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState('');
-  const [returnedStatusFilter, setReturnedStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   // 1. Add new state for user requests
@@ -56,28 +54,15 @@ const UserProfilePageView = () => {
         return 'rejected';
       case 'returned':
         return 'accepted'; // Returned requests were previously accepted
+      case 'closed':
+        return 'closed';
+      case 'reissued':
+        return 'reissued';
       default:
         return apiStatus?.toLowerCase() || 'pending';
     }
   };
 
-  // 4. Helper function to determine return status
-  const determineReturnStatus = (request) => {
-    if (request.requestStatus === 'returned' || request.isAllReturned) {
-      return true;
-    }
-    if (request.requestStatus === 'approved' && request.issued?.length > 0) {
-      // Check if all issued items have been returned
-      const allReturned = request.issued.every(issuedItem => 
-        issuedItem.return && issuedItem.return.length > 0
-      );
-      return allReturned;
-    }
-    if (request.requestStatus === 'rejected' || request.requestStatus === 'pending') {
-      return null; // Not applicable
-    }
-    return false;
-  };
 
   // 2. Create function to fetch user requests
   const fetchUserRequests = async (rollNo) => {
@@ -111,7 +96,6 @@ const UserProfilePageView = () => {
         requestId: request.requestId,
         totalComponents: request.requestedProducts?.length || 0,
         status: mapRequestStatus(request.requestStatus),
-        isReturned: determineReturnStatus(request),
         originalData: request // Keep original data for detailed view
       })) || [];
 
@@ -487,12 +471,8 @@ verifyToken();
       item.status?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatusFilter =
       statusFilter === '' || item.status?.toLowerCase() === statusFilter.toLowerCase();
-    const matchesReturnedStatusFilter =
-      returnedStatusFilter === '' ||
-      (returnedStatusFilter === 'returned' && item.isReturned === true) ||
-      (returnedStatusFilter === 'not returned' && item.isReturned === false);
 
-    return matchesSearchQuery && matchesStatusFilter && matchesReturnedStatusFilter;
+    return matchesSearchQuery && matchesStatusFilter;
   });
 
   const hasRequests = filteredRequests.length > 0;
@@ -511,33 +491,24 @@ verifyToken();
               ? 'bg-green-100 text-green-700'
               : item.status === 'pending'
               ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {item.status === 'accepted' && <CheckCircle size={16} />}
-          {item.status === 'pending' && <Eye size={16} />}
-          {item.status === 'rejected' && <XCircle size={16} />}
-          {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
-        </div>
-      ),
-      isReturned: (
-        <div
-          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
-            item.isReturned === true
-              ? 'bg-green-100 text-green-700'
-              : item.isReturned === false
+              : item.status === 'rejected'
               ? 'bg-red-100 text-red-700'
+              : item.status === 'returned'
+              ? 'bg-blue-100 text-blue-700'
+              : item.status === 'closed'
+              ? 'bg-amber-100 text-amber-700'
+              : item.status === 'reissued'
+              ? 'bg-indigo-100 text-indigo-700'
               : 'bg-gray-100 text-gray-700'
           }`}
         >
-          {item.isReturned === true && <CheckCircle size={16} />}
-          {item.isReturned === false && <XCircle size={16} />}
-          {item.isReturned === null && <Clock size={16} />}
-          {item.isReturned === true
-            ? 'Returned'
-            : item.isReturned === false
-            ? 'Not Returned'
-            : 'N/A'}
+          {item.status === 'accepted' && <CheckCircle size={16} />}
+          {item.status === 'pending' && <Clock size={16} />}
+          {item.status === 'rejected' && <XCircle size={16} />}
+          {item.status === 'returned' && <Undo size={16} />}
+          {item.status === 'closed' && <AlertTriangle size={16} />}
+          {item.status === 'reissued' && <Repeat size={16} />}
+          {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
         </div>
       ),
       viewMore: (
@@ -736,19 +707,9 @@ verifyToken();
             <div className="w-full sm:w-1/3">
               <DropdownFilter
                 label="Status"
-                options={['', 'Accepted', 'Pending', 'Rejected']}
+                options={['', 'Accepted', 'Pending', 'Rejected', 'Returned', 'Closed', 'Reissued']}
                 selectedValue={statusFilter}
                 onSelect={(value) => setStatusFilter(value.toLowerCase())}
-              />
-            </div>
-
-            {/* Returned Status Filter */}
-            <div className="w-full sm:w-1/3">
-              <DropdownFilter
-                label="Returned Status"
-                options={['', 'Returned', 'Not Returned']}
-                selectedValue={returnedStatusFilter}
-                onSelect={(value) => setReturnedStatusFilter(value.toLowerCase())}
               />
             </div>
           </div>
@@ -760,7 +721,7 @@ verifyToken();
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">No requests found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchQuery || statusFilter || returnedStatusFilter
+                {searchQuery || statusFilter
                   ? "Try adjusting your filters or search term"
                   : "This user hasn't made any requests yet"}
               </p>
