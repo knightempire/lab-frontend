@@ -114,19 +114,26 @@ const Calendar = ({ events, overdueItems }) => {
   // Get unique event types for a date (max one dot per type)
   const getUniqueEventTypes = (date) => {
     const events = getEventsForDate(date);
-    const uniqueTypes = [...new Set(events.map(event => event.status))];
-    return uniqueTypes.map(type => ({
-      status: type,
-      count: events.filter(event => event.status === type).length
-    }));
+    // Instead of status, use color from the first event of each type
+    const uniqueTypes = [];
+    const seen = new Set();
+    for (const event of events) {
+      if (!seen.has(event.status)) {
+        uniqueTypes.push({ status: event.status, color: event.color });
+        seen.add(event.status);
+      }
+    }
+    return uniqueTypes;
   };
 
-  const getEventDotColor = (status) => {
-    const colors = {
-      'Issue Date': 'bg-green-500',
-      'Returning Date': 'bg-red-500',
-    };
-    return colors[status] || 'bg-gray-400';
+  // Use event.color if present, else fallback
+  const getEventDotColor = (status, color) => {
+    if (color) return color;
+    if (status === 'Returned') return 'bg-violet-500';
+    if (status === 'Overdue Return') return 'bg-red-500';
+    if (status === 'Upcoming Return') return 'bg-yellow-400';
+    if (status === 'Issue Date') return 'bg-green-500';
+    return 'bg-gray-400';
   };
 
   const handleMouseEnter = (date, event) => {
@@ -329,7 +336,7 @@ const Calendar = ({ events, overdueItems }) => {
                           {uniqueEventTypes.map((eventType, eventIndex) => (
                             <div
                               key={eventIndex}
-                              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status)}`}
+                              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getEventDotColor(eventType.status, eventType.color)}`}
                             />
                           ))}
                         </div>
@@ -358,7 +365,7 @@ const Calendar = ({ events, overdueItems }) => {
             <div className="space-y-2">
               {eventsByDate[hoveredDate].map((event, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${getEventDotColor(event.status)}`} />
+                  <div className={`w-2 h-2 rounded-full ${getEventDotColor(event.status, event.color)}`} />
                   <div className="text-xs text-gray-700">
                     <div className="font-medium">{event.status}</div>
                     <div className="text-gray-500">ID: {event.id}</div>

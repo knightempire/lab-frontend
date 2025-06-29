@@ -16,69 +16,65 @@ export default function DashboardPage() {
     active_requests: 34,
     pending_requests: 7
   })
-  
-  const events = [
-    {
-      date: '24/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '24/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '24/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '25/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '28/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '1/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '4/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '14/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '15/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-    {
-      date: '20/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20012',
-    },
-    {
-      date: '6/06/2025',
-      status: 'Returning Date',
-      id: 'req-s-20014',
-    },
-    {
-      date: '9/06/2025',
-      status: 'Issue Date',
-      id: 'req-s-20015',
-    },
-  ];
+
+  // Calendar event state
+  const [events, setEvents] = useState([]);
+  const [overdueItems, setOverdueItems] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCalendarData = async () => {
+      setCalendarLoading(true);
+      const res = await apiRequest('/users/stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        // Helper for IST date
+        const toIST = (dateStr) => new Date(new Date(dateStr).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        // 1. Map collection events
+        const mappedEvents = (data.collectionDate || []).map((item) => ({
+          date: toIST(item.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }),
+          status: item.requestStatus === 'returned' ? 'Returned' : 'Issue Date',
+          id: item.requestId,
+          collectedDate: item.collectedDate,
+          requestStatus: item.requestStatus,
+          isCollected: item.isCollected,
+          color: undefined,
+        }));
+        // 2. Map returns (returned, overdue, upcoming)
+        const isPastDayIST = (dateStr) => {
+          const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+          todayIST.setHours(0, 0, 0, 0);
+          const d = toIST(dateStr);
+          d.setHours(0, 0, 0, 0);
+          return d < todayIST;
+        };
+        const allReturns = (data.returns || []).map(item => {
+          let color;
+          // Returned: violet (even if past)
+          if (item.isReturned) color = 'bg-violet-500';
+          // Overdue: not returned and past
+          else if (!item.isReturned && isPastDayIST(item.date)) color = 'bg-red-500';
+          else color = 'bg-yellow-400'; // Upcoming: yellow
+          return {
+            date: toIST(item.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }),
+            status: item.isReturned ? 'Returned' : (!item.isReturned && isPastDayIST(item.date) ? 'Overdue Return' : 'Upcoming Return'),
+            id: item.requestId,
+            returnedDate: item.returnedDate,
+            requestStatus: item.requestStatus,
+            isReturned: item.isReturned,
+            color,
+          };
+        });
+        setEvents([...mappedEvents, ...allReturns]);
+        setOverdueItems((data.returns || []).filter(item => !item.isReturned && isPastDayIST(item.date)));
+      }
+      setCalendarLoading(false);
+    };
+    fetchCalendarData();
+  }, []);
 
   // --- Profile logic from profile page ---
   const [userDetails, setUserDetails] = useState(null);
@@ -212,7 +208,6 @@ export default function DashboardPage() {
         setUserDetails({ ...userDetails, ...editData });
         setIsEditing(false);
         setValidationErrors({}); // Clear validation errors
-        
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       } else {
@@ -253,7 +248,7 @@ export default function DashboardPage() {
       {/* Calendar Section */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="w-full lg:w-2/3 bg-white rounded-xl shadow">
-          <Calendar events={events} />
+          {calendarLoading ? <LoadingScreen /> : <Calendar events={events} overdueItems={overdueItems} />}
         </div>
         <div className="w-full lg:w-1/3 flex flex-col">
           {/* Profile Card */}
