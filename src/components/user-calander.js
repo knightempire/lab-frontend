@@ -38,6 +38,18 @@ const Calendar = ({ events, overdueItems }) => {
     return grouped;
   }, [events]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setHoveredDate(null);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, []);
+
   // Get calendar days - only current month
   const getCalendarDays = () => {
     const year = currentDate.getFullYear();
@@ -293,7 +305,7 @@ const Calendar = ({ events, overdueItems }) => {
                       `}
                       onClick={() => isCurrentMonth && handleDateClick(date)}
                       onMouseEnter={(e) => {
-                        if (!isToday) handleMouseEnter(date, e);
+                        handleMouseEnter(date, e);
                       }}
                       onMouseLeave={handleMouseLeave}
                     >

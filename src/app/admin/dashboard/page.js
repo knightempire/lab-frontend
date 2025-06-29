@@ -9,7 +9,7 @@ import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadar
 import Calendar from "../../../components/dashboard-calendar";
 import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCountLineChart";
 import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown";
-import LowStockItemsTable from "../../../components/admin_graphs/LowStockTable";
+import LowStockList from "../../../components/admin_graphs/LowStockList";
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart";
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import { apiRequest } from '../../../utils/apiRequest';
@@ -280,8 +280,6 @@ export default function DashboardPage() {
     return document.cookie.split(';').some(cookie => cookie.trim().startsWith('refreshToken='));
   }
 
-
-
   if (loading) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow-inner">
@@ -347,7 +345,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white rounded-xl shadow p-6 flex flex-col" ref={lowStockRef}>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Low Stock Items</h2>
-            {lowStockInView && <LowStockItemsTable data={lowStockData} />}
+            {lowStockInView && <LowStockList data={lowStockData} />}
           </div>
         </div>
       </div>

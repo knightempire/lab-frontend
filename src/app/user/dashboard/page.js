@@ -7,6 +7,7 @@ import Calendar from "../../../components/user-calander"
 import LoadingScreen from "../../../components/loading/loadingscreen"
 import { useRouter } from "next/navigation"
 import { apiRequest } from '../../../utils/apiRequest';
+import SuccessAlert from '../../../components/SuccessAlert';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -145,23 +146,57 @@ export default function DashboardPage() {
       setUserDetails(null);
     }
   };
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const handleEdit = () => setIsEditing(true);
-  const handleCancel = () => setIsEditing(false);
+  const handleCancel = () => {
+    setIsEditing(false);
+    setValidationErrors({});
+  };
 
   const handleChange = (e) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    if (name === 'phoneNo') {
+      // Only allow digits and limit to 10 characters
+      const numericValue = value.replace(/\D/g, '').slice(0, 10);
+      setEditData({ ...editData, [name]: numericValue });
+    } else {
+      setEditData({ ...editData, [name]: value });
+    }
+  };
+
+  const validateFields = () => {
+    const errors = {};
+    
+    if (!editData.name?.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!editData.phoneNo?.trim()) {
+      errors.phoneNo = 'Phone number is required';
+    } else if (editData.phoneNo.length !== 10) {
+      errors.phoneNo = 'Phone number must be exactly 10 digits';
+    } else if (!/^\d{10}$/.test(editData.phoneNo)) {
+      errors.phoneNo = 'Phone number must contain only digits';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSave = async () => {
-    setUserDetails({ ...userDetails, ...editData });
-    setIsEditing(false);
+    // Validate fields before saving
+    if (!validateFields()) {
+      return;
+    }
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-      await apiRequest(`/users/update/${userDetails.id}`, {
+      const res = await apiRequest('/users/update', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -172,15 +207,25 @@ export default function DashboardPage() {
           userPhoneNo: editData.phoneNo,
         }),
       });
+
+      if (res.ok) {
+        setUserDetails({ ...userDetails, ...editData });
+        setIsEditing(false);
+        setValidationErrors({}); // Clear validation errors
+        
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        console.error('Failed to update user');
+      }
     } catch (error) {
       console.error('Failed to update user:', error);
     }
   };
-
   // --- End profile logic ---
 
   return (
-    <div className="mx-auto px-0 sm:px-4 lg:px-6" style={{ maxWidth: '80rem', padding: '1.5rem 0', padding: '1.5rem 1rem'}}>
+    <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 sm:gap-4 mb-4 sm:mb-10 px-2 sm:px-0">
         <StatsCard
           title="Total Requests"
@@ -341,18 +386,30 @@ export default function DashboardPage() {
                 </div>
                 <div className="p-4 space-y-4">
                   {["name", "phoneNo"].map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                        {field === "phoneNo" ? "Phone Number" : "Name"}
-                      </label>
-                      <input
-                        name={field}
-                        value={editData[field]}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  ))}
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                      {field === "phoneNo" ? "Phone Number" : "Name"}
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <input
+                      name={field}
+                      type={field === "phoneNo" ? "tel" : "text"}
+                      value={editData[field]}
+                      onChange={handleChange}
+                      required
+                      placeholder={field === "phoneNo" ? "Enter 10-digit phone number" : `Enter your ${field}`}
+                      maxLength={field === "phoneNo" ? "10" : undefined}
+                      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        validationErrors[field] 
+                          ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300'
+                      }`}
+                    />
+                    {validationErrors[field] && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors[field]}</p>
+                    )}
+                  </div>
+                ))}
                 </div>
                 <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
                   <button
@@ -374,6 +431,11 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      {showSuccess && (
+        <div className="fixed top-4 right-4 z-50">
+          <SuccessAlert message="Profile updated successfully!" />
+        </div>
+      )}
     </div>
   )
 }

@@ -125,9 +125,29 @@ export default function Notifications() {
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
   }, [isOpen]);
+
+  // Close modal on escape key
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        if (expandedNotification) {
+          setExpandedNotification(null);
+        } else if (isOpen) {
+          setIsOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, expandedNotification]);
 
   const unreadCount = notifications.length;
 
@@ -136,7 +156,7 @@ export default function Notifications() {
       <div className="notifications-container relative">
         {/* Notification Bell Button */}
         <button 
-          className="relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200"
+          className="relative p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200 touch-manipulation"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Notifications"
         >
@@ -148,9 +168,16 @@ export default function Notifications() {
           )}
         </button>
         
-        {/* Notification Dropdown */}
+        {/* Notification Dropdown - Responsive */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+          <>
+            {/* Mobile Fullscreen Overlay */}
+            <div className="fixed inset-0 bg-black/20 z-40 sm:hidden" onClick={() => setIsOpen(false)}></div>
+            
+            {/* Dropdown */}
+            <div className="absolute right-0 mt-2 w-80 sm:w-80 md:w-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50 
+                          sm:max-w-none
+                          max-sm:fixed max-sm:top-16 max-sm:left-4 max-sm:right-4 max-sm:w-auto max-sm:mt-0">
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between">
@@ -158,7 +185,7 @@ export default function Notifications() {
                 {unreadCount > 0 && (
                   <button
                     onClick={clearAllNotifications}
-                    className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                    className="text-blue-600 hover:text-blue-800 text-xs font-medium touch-manipulation"
                   >
                     Clear all
                   </button>
@@ -167,7 +194,7 @@ export default function Notifications() {
             </div>
             
             {/* Notifications List */}
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto overscroll-contain">
               {unreadCount === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <Bell size={24} className="text-gray-300 mx-auto mb-2" />
@@ -178,7 +205,7 @@ export default function Notifications() {
                   {notifications.map((notification) => (
                     <div 
                       key={notification.id} 
-                      className="px-4 py-3 hover:bg-gray-50 transition-colors duration-150 group"
+                      className="px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors duration-150 group touch-manipulation"
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getNotificationDot(notification.type)}`}></div>
@@ -194,16 +221,16 @@ export default function Notifications() {
                               {formatTime(notification.time)}
                             </span>
                             
-                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="flex items-center space-x-1 sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-opacity duration-200">
                               <button
                                 onClick={() => expandNotification(notification)}
-                                className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors duration-150"
+                                className="text-blue-600 hover:text-blue-800 active:text-blue-900 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50 active:bg-blue-100 transition-colors duration-150 touch-manipulation"
                               >
                                 View
                               </button>
                               <button
                                 onClick={() => clearNotification(notification.id)}
-                                className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors duration-150"
+                                className="text-gray-400 hover:text-red-600 active:text-red-700 p-1 rounded hover:bg-red-50 active:bg-red-100 transition-colors duration-150 touch-manipulation"
                                 title="Remove"
                               >
                                 <X size={12} />
@@ -217,32 +244,33 @@ export default function Notifications() {
                 </div>
               )}
             </div>
-          </div>
+                      </div>
+          </>
         )}
       </div>
 
-      {/* Expanded Notification Modal */}
+      {/* Expanded Notification Modal - Mobile Optimized */}
       {expandedNotification && (
-        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   {getNotificationIcon(expandedNotification.type)}
-                  <h3 className="font-semibold text-gray-900">Notification Details</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Notification Details</h3>
                 </div>
                 <button
                   onClick={() => setExpandedNotification(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100 transition-colors duration-150"
+                  className="text-gray-400 hover:text-gray-600 active:text-gray-700 p-1 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors duration-150 touch-manipulation"
                 >
                   <X size={16} />
                 </button>
               </div>
             </div>
             
-            {/* Modal Content */}
-            <div className="px-6 py-4 space-y-4">
+            {/* Modal Content - Scrollable */}
+            <div className="px-4 sm:px-6 py-4 space-y-4 overflow-y-auto max-h-[60vh]">
               <div>
                 <h4 className="font-medium text-gray-900 mb-2 text-sm">Message</h4>
                 <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-3 rounded">
@@ -253,8 +281,10 @@ export default function Notifications() {
               <div>
                 <h4 className="font-medium text-gray-900 mb-2 text-sm">Time</h4>
                 <p className="text-gray-700 text-sm bg-gray-50 p-3 rounded flex items-center">
-                  <Clock size={14} className="mr-2 text-gray-500" />
-                  {formatTime(expandedNotification.time)} • {new Date(expandedNotification.time).toLocaleString()}
+                  <Clock size={14} className="mr-2 text-gray-500 flex-shrink-0" />
+                  <span className="break-words">
+                    {formatTime(expandedNotification.time)} • {new Date(expandedNotification.time).toLocaleString()}
+                  </span>
                 </p>
               </div>
               
@@ -266,20 +296,20 @@ export default function Notifications() {
               </div>
             </div>
             
-            {/* Modal Footer */}
-            <div className="flex justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+            {/* Modal Footer - Responsive buttons */}
+            <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3 px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={() => {
                   clearNotification(expandedNotification.id);
                   setExpandedNotification(null);
                 }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors duration-150"
+                className="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-medium rounded transition-colors duration-150 touch-manipulation"
               >
                 Remove
               </button>
               <button
                 onClick={() => setExpandedNotification(null)}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition-colors duration-150"
+                className="w-full sm:w-auto px-4 py-2 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-700 text-sm font-medium rounded transition-colors duration-150 touch-manipulation"
               >
                 Close
               </button>
