@@ -41,7 +41,9 @@ const UserProfilePageView = () => {
   const [requestsError, setRequestsError] = useState('');
   const itemsPerPage = 7;
 
+  const [validationErrors, setValidationErrors] = useState({});
 
+  console.log('UserProfilePage rendered');
 
   // 3. Helper function to map request status
   const mapRequestStatus = (apiStatus) => {
@@ -254,9 +256,15 @@ verifyToken();
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditProfileData({ ...userDetails });
+    setValidationErrors({}); // Clear validation errors when canceling
   };
 
   const handleSaveProfile = async () => {
+    // Validate form before saving
+    if (!validateForm()) {
+      return;
+    }
+
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/auth/login');
@@ -266,21 +274,19 @@ verifyToken();
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     const rollNo = searchParams.get('rollNo');
     
-    // Use the correct API endpoint structure from your image
     let endpoint = `/users/update/${rollNo}`;
     
     try {
       setError('');
       
-      // Prepare the data to match your API structure (from the image)
       const updateData = {
-        userName: editProfileData.name,
+        userName: editProfileData.name.trim(),
         userIsAdmin: editProfileData.isAdmin || false,
-        userEmail: editProfileData.email,
-        userRollNo: editProfileData.rollNo,
-        userPhoneNo: editProfileData.phoneNo,
+        userEmail: editProfileData.email.trim(),
+        userRollNo: editProfileData.rollNo.trim(),
+        userPhoneNo: editProfileData.phoneNo.trim(),
         userIsFaculty: editProfileData.isFaculty || false,
-        userIsActive: userDetails.isActive // Keep current status, don't change from edit modal
+        userIsActive: userDetails.isActive
       };
 
 
@@ -301,7 +307,7 @@ verifyToken();
         return;
       }
 
-      const updatedUserData = data.user || data; // Handle nested user object
+      const updatedUserData = data.user || data;
       const updatedUser = {
         ...userDetails,
         name: updatedUserData.name || updateData.userName,
@@ -316,7 +322,9 @@ verifyToken();
       setUserDetails(updatedUser);
       setUserStatus(updatedUser.isActive ? 'active' : 'deactivated');
       setIsEditing(false);
-
+      setValidationErrors({}); // Clear validation errors on successful save
+      
+      console.log('Profile updated successfully');
       
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -326,12 +334,31 @@ verifyToken();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : value;
+    let newValue = type === 'checkbox' ? checked : value;
+    
+    // Special handling for phone number - restrict to 10 digits only
+    if (name === 'phoneNo') {
+      newValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    
+    // Special handling for name - remove numbers and special characters as user types
+    if (name === 'name') {
+      newValue = value.replace(/[^a-zA-Z\s]/g, '');
+    }
     
     setEditProfileData((prev) => ({ 
       ...prev, 
       [name]: newValue
     }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleStatusToggle = async () => {
@@ -433,6 +460,70 @@ verifyToken();
       </div>
     );
   }
+
+  const validateName = (name) => {
+    if (!name || name.trim() === '') {
+      return 'Name is required';
+    }
+    if (!/^[a-zA-Z\s]+$/.test(name.trim())) {
+      return 'Name should only contain letters and spaces';
+    }
+    if (name.trim().length < 2) {
+      return 'Name should be at least 2 characters long';
+    }
+    return '';
+  };
+
+  const validateEmail = (email) => {
+    if (!email || email.trim() === '') {
+      return 'Email is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return 'Please enter a valid email address';
+    }
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.endsWith('@cb.students.amrita.edu') && !trimmedEmail.endsWith('@cb.amrita.edu')) {
+      return 'Email must be from @cb.students.amrita.edu or @cb.amrita.edu domain';
+    }
+    return '';
+  };
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone || phone.trim() === '') {
+      return 'Phone number is required';
+    }
+    if (!/^\d{10}$/.test(phone.trim())) {
+      return 'Phone number must be exactly 10 digits';
+    }
+    return '';
+  };
+
+  const validateRollNo = (rollNo) => {
+    if (!rollNo || rollNo.trim() === '') {
+      return 'Roll number is required';
+    }
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    errors.name = validateName(editProfileData.name);
+    errors.email = validateEmail(editProfileData.email);
+    errors.phoneNo = validatePhoneNumber(editProfileData.phoneNo);
+    errors.rollNo = validateRollNo(editProfileData.rollNo);
+    
+    // Remove empty error messages
+    Object.keys(errors).forEach(key => {
+      if (!errors[key]) {
+        delete errors[key];
+      }
+    });
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   // No user data
   if (!userDetails || Object.keys(userDetails).length === 0) {
@@ -776,45 +867,108 @@ verifyToken();
             </div>
 
             <div className="p-4 space-y-4">
-              {['name', 'email', 'rollNo', 'phoneNo'].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                    {
-                     field === 'phoneNo' ? 'Phone Number' :
-                     field === 'rollNo' ? 'Roll Number' : field}
-                  </label>
-                  <input
-                    name={field}
-                    type={'text'}
-                    placeholder={`Enter ${field}`}
-                    value={editProfileData[field] ?? ''}
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              ))}
-              
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="isFaculty"
-                    checked={editProfileData.isFaculty || false}
-                    onChange={handleInputChange}
-                  />
-                  Faculty
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="isAdmin"
-                    checked={editProfileData.isAdmin || false}
-                    onChange={handleInputChange}
-                  />
-                  Admin
-                </label>
-              </div>
-            </div>
+  {/* Name Field */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Name <span className="text-red-500">*</span>
+    </label>
+    <input
+      name="name"
+      type="text"
+      placeholder="Enter name"
+      value={editProfileData.name ?? ''}
+      onChange={handleInputChange}
+      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+      }`}
+    />
+    {validationErrors.name && (
+      <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
+    )}
+  </div>
+
+  {/* Email Field */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Email <span className="text-red-500">*</span>
+    </label>
+    <input
+      name="email"
+      type="email"
+      placeholder="Enter email (@cb.students.amrita.edu or @cb.amrita.edu)"
+      value={editProfileData.email ?? ''}
+      onChange={handleInputChange}
+      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+      }`}
+    />
+    {validationErrors.email && (
+      <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
+    )}
+  </div>
+
+  {/* Roll Number Field */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Roll Number <span className="text-red-500">*</span>
+    </label>
+    <input
+      name="rollNo"
+      type="text"
+      placeholder="Enter roll number"
+      value={editProfileData.rollNo ?? ''}
+      onChange={handleInputChange}
+      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        validationErrors.rollNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
+      }`}
+    />
+    {validationErrors.rollNo && (
+      <p className="mt-1 text-xs text-red-600">{validationErrors.rollNo}</p>
+    )}
+  </div>
+
+  {/* Phone Number Field */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Phone Number <span className="text-red-500">*</span>
+    </label>
+    <input
+      name="phoneNo"
+      type="tel"
+      placeholder="Enter 10-digit phone number"
+      value={editProfileData.phoneNo ?? ''}
+      onChange={handleInputChange}
+      maxLength="10"
+      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+        validationErrors.phoneNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
+      }`}
+    />
+    {validationErrors.phoneNo && (
+      <p className="mt-1 text-xs text-red-600">{validationErrors.phoneNo}</p>
+    )}
+  </div>
+  
+  <div className="flex items-center gap-4">
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        name="isFaculty"
+        checked={editProfileData.isFaculty || false}
+        onChange={handleInputChange}
+      />
+      Faculty
+    </label>
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        name="isAdmin"
+        checked={editProfileData.isAdmin || false}
+        onChange={handleInputChange}
+      />
+      Admin
+    </label>
+  </div>
+</div>
 
             <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
               <button
