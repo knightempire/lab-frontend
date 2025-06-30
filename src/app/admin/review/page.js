@@ -68,7 +68,7 @@ const AdminRequestViewContent = () => {
 
   useEffect(() => {
     const requestId = searchParams.get('requestId');
-    console.log('requestId:', requestId);
+  
 
     if (!requestId) {
       console.error('No requestId found in search params');
@@ -93,8 +93,7 @@ const AdminRequestViewContent = () => {
       router.push('/auth/login'); 
     } else {
       const user = data.user;
-      console.log('User data:', user);
-      console.log('Is admin:', user.isAdmin);
+
       if (!user.isAdmin ) {
         router.push('/auth/login'); 
       }
@@ -102,7 +101,7 @@ const AdminRequestViewContent = () => {
           router.push('/auth/login'); 
       }
 
-      console.log('User is admin, proceeding with request data fetch');
+
     if (requestId) {
       fetchRequestData();
     } else {
@@ -200,7 +199,6 @@ const AdminRequestViewContent = () => {
       }
     }
 
-    console.log('Fetched request data:', data);
 
     const mappedData = {
       requestId: data.requestId,
@@ -340,12 +338,12 @@ const handleSave = async () => {
   }
   setIssueError("");
 
-  console.log('Saving admin issued components:', adminIssueComponents);
+
     const currentstatus = requestData.status;
     const iscollected = requestData.collectedDate;
-    console.log('Current request status:', currentstatus);
+
   if (currentstatus === 'pending') {
-    console.log("Request is pending, proceeding to save.");
+
 
       const payload = {
         adminApprovedDays: issuableDays, 
@@ -355,7 +353,7 @@ const handleSave = async () => {
     }))
   };
 
-  console.log('Payload for update:', payload);
+
   try {
     const response = await apiRequest(`/request/update-product/${requestId}`, {
       method: 'PUT',
@@ -367,11 +365,11 @@ const handleSave = async () => {
     });
 
     const data = await response.json();
-    console.log('API Response:', data);
+
     if (!response.ok) {
       console.error('Failed:', data.message || 'Unknown error');
     } else {
-      console.log('Success:', data);
+
       
       setShowSuccess(true);
       fetchRequestData(); 
@@ -382,7 +380,7 @@ const handleSave = async () => {
   }
   }
   else if ((currentstatus === 'approved' || currentstatus === 'accepted' ) && !iscollected) {
-    console.log("Request is approved, proceeding to save.");
+
 
       const payload = {
         adminApprovedDays: issuableDays, 
@@ -392,7 +390,7 @@ const handleSave = async () => {
     }))
   };
 
-  console.log('Payload for update:', payload);
+
   try {
     const response = await apiRequest(`/request/update/${requestId}`, {
       method: 'PUT',
@@ -404,11 +402,11 @@ const handleSave = async () => {
     });
 
     const data = await response.json();
-    console.log('API Response:', data);
+
     if (!response.ok) {
       console.error('Failed:', data.message || 'Unknown error');
     } else {
-      console.log('Success:', data);
+    
       
       setShowSuccess(true);
       fetchRequestData(); 
@@ -502,9 +500,7 @@ const handleReIssueAction = async (action, message) => {
 };
 // Helper to get not returned components for re-issue
 function getNotReturnedComponents(issued, returned) {
-  console.log('Calculating not returned components...');
-  console.log('Issued components:', issued);
-  console.log('Returned components:', returned);
+
   return issued.map(issuedItem => {
     const totalIssued = issuedItem.quantity || issuedItem.issuedQuantity || 0;
     const name = issuedItem.name || issuedItem.issuedProductId?.product_name;
@@ -513,8 +509,7 @@ function getNotReturnedComponents(issued, returned) {
     const totalReturned = relatedReturns.reduce((sum, ret) => sum + (ret.returnedQuantity || 0), 0);
     const totalReplaced = relatedReturns.reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0);
     const notReturned = totalIssued - totalReturned + totalReplaced;
-    // Debug print
-    console.log(`[DEBUG] ${name}: issued=${totalIssued}, returned=${totalReturned}, replaced=${totalReplaced}, notReturned=${notReturned}`);
+
     return {
       name,
       quantity: notReturned
@@ -523,8 +518,7 @@ function getNotReturnedComponents(issued, returned) {
 }
 
 function getInitialReturnDate(collectedDate, adminApprovedDays) {
-  console.log('Collected Date:', collectedDate);
-  console.log('Admin Approved Days:', adminApprovedDays);
+
   if (!collectedDate || !adminApprovedDays) return "-";
   const date = new Date(collectedDate);
   date.setDate(date.getDate() + Number(adminApprovedDays));
@@ -736,8 +730,7 @@ const handleDecrementDays = () => {
         }
 
         const data = await response.json();
-        console.log('Request approved successfully:', data);
-        // Update the request data state or perform any other actions needed
+     
         setRequestData(prev => ({ ...prev, status: 'accepted' }));
          setSuccessMessage('Request approved successfully!');
       setShowSuccess(true);
@@ -770,7 +763,7 @@ const handleDecrementDays = () => {
         return;
       }
       const data = await response.json();
-      console.log('Request rejected successfully:', data);
+
       // Update the request data state or perform any other actions needed
       setRequestData(prev => ({ ...prev, status: 'rejected' }));
       setSuccessMessage('Request rejected successfully!');
@@ -1002,7 +995,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
     { key: 'actions', label: 'Actions' }
   ];
   const isCollected = !!(requestData.CollectedDate || requestData.collectedDate);
-  console.log('Is collected:', isCollected);
+
   const adminComponentsRows = adminIssueComponents.map(component => {
     const product = products.find(p => p.name === component.name);
     const maxStock = product ? product.available : 0;
@@ -1324,8 +1317,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                                 .filter(ret => ret.issuedProductId === id)
                                 .reduce((sum, ret) => sum + (ret.replacedQuantity || 0), 0)
                               : 0;
-                            // DEBUG LOG
-                            console.log(`[DEBUG] AdminIssuedTable: name=${name}, issued=${quantity}, replaced=${replaced}`);
+          
 
                             return {
                               name,

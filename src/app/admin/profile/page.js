@@ -41,7 +41,7 @@ const UserProfilePageView = () => {
   const [requestsError, setRequestsError] = useState('');
   const itemsPerPage = 7;
 
-  console.log('UserProfilePage rendered');
+
 
   // 3. Helper function to map request status
   const mapRequestStatus = (apiStatus) => {
@@ -82,9 +82,7 @@ const UserProfilePageView = () => {
         },
       });
 
-      console.log('User requests response status:', res.status);
       const data = await res.json();
-      console.log('User requests data:', data);
 
       if (!res.ok) {
         setRequestsError(data.message || `Failed to fetch user requests. Status: ${res.status}`);
@@ -110,10 +108,8 @@ const UserProfilePageView = () => {
   };
 
   useEffect(() => {
-    console.log('UserProfilePage useEffect triggered');
     const rollNo = searchParams.get('rollNo');
-    console.log('UserProfilePage useEffect triggered');
-    console.log('rollNo from URL:', rollNo);
+
     
     // If no rollNo is provided, show error
     if (!rollNo) {
@@ -131,7 +127,7 @@ const UserProfilePageView = () => {
         router.push('/auth/login');
         return false;
       }
-      console.log('Verifying token:', token);
+
       try {
         const res = await apiRequest(`/verify-token`, {
           headers: {
@@ -141,7 +137,7 @@ const UserProfilePageView = () => {
         });
         
         const data = await res.json();
-        console.log('Token verification response:', data);
+
         if (!res.ok) {
           console.error('Token verification failed:', data.message);
           router.push('/auth/login');
@@ -154,7 +150,7 @@ const UserProfilePageView = () => {
           return false;
         }
         fetchUserData(); // Fetch user data after successful token verification
-        console.log('Token verified successfully');
+
         return true;
       } catch (err) {
         console.error('Token verification error:', err);
@@ -168,7 +164,7 @@ const UserProfilePageView = () => {
     const token = localStorage.getItem('token');
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     let endpoint = `/users/get/${rollNo}`;
-    console.log('Fetching user data from endpoint:', endpoint);
+
 
     try {
       setLoading(true);
@@ -182,9 +178,9 @@ const UserProfilePageView = () => {
         },
       });
 
-      console.log('Response status:', res.status);
+
       const data = await res.json();
-      console.log('User data response:', data);
+  
 
       if (!res.ok) {
         // If the first endpoint fails, try alternative approaches
@@ -230,8 +226,6 @@ const UserProfilePageView = () => {
         requestsCount: data.requestsCount || 0,
         damagedItemsCount: data.damagedItemsCount || 0
       };
-      console.log('User data:', userData);
-      console.log('Stats data:', statsData);
 
       setUserDetails(userData);
       setUserStats(statsData);
@@ -289,7 +283,6 @@ verifyToken();
         userIsActive: userDetails.isActive // Keep current status, don't change from edit modal
       };
 
-      console.log('Sending update data:', updateData);
 
       const res = await apiRequest(endpoint, {
         method: 'PUT',
@@ -301,7 +294,7 @@ verifyToken();
       });
 
       const data = await res.json();
-      console.log('Update response:', data);
+  
 
       if (!res.ok) {
         setError(data.message || 'Failed to update profile.');
@@ -323,8 +316,7 @@ verifyToken();
       setUserDetails(updatedUser);
       setUserStatus(updatedUser.isActive ? 'active' : 'deactivated');
       setIsEditing(false);
-      
-      console.log('Profile updated successfully');
+
       
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -370,7 +362,7 @@ verifyToken();
         userIsActive: newIsActive
       };
 
-      console.log('Updating status to:', newIsActive);
+  
 
       const res = await apiRequest(endpoint, {
         method: 'PUT',
@@ -382,7 +374,7 @@ verifyToken();
       });
 
       const data = await res.json();
-      console.log('Status update response:', data);
+
 
       if (!res.ok) {
         setError(data.message || 'Failed to update status.');
@@ -400,7 +392,7 @@ verifyToken();
         ...prev, 
         isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : newIsActive 
       }));
-      console.log('Status updated successfully');
+  
       
     } catch (err) {
       console.error('Error updating status:', err);

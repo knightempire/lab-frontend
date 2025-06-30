@@ -75,8 +75,6 @@ export default function ProductPage() {
         router.push('/auth/login');
       } else {
         const user = data.user;
-        console.log('User data:', user);
-        console.log('Is admin:', user.isAdmin);
         if (!user.isAdmin) {
           router.push('/auth/login');
         }
@@ -101,7 +99,6 @@ export default function ProductPage() {
       });
 
       const data = await res.json();
-      console.log('Fetched products:', data);
 
       if (res.ok && data.products) {
         const flattened = data.products.map(p => p.product || p); // <-- FIX HERE
@@ -173,7 +170,6 @@ export default function ProductPage() {
       errors.inStock = 'In Stock must be a non-negative number.';
     }
 
-    console.log('Validation errors:', errors);  
     return errors;
   };
 
@@ -236,10 +232,7 @@ export default function ProductPage() {
   };
 
   const updateProduct = async (id) => {
-    console.log('Updating product at index:', id);
-    console.log('newProduct:', newProduct);
     const errors = validateProduct(newProduct);
-    console.log('Validation errors:', errors); 
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -262,8 +255,6 @@ export default function ProductPage() {
     };
 
     try {
-      console.log('Updating product with ID:', id);
-
       const response = await apiRequest(`/products/update/${id}`, {
         method: 'PUT',
         headers: {
