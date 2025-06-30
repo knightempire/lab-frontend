@@ -130,7 +130,7 @@ export default function DashboardPage() {
             in_stock: invData.inventoryDistribution.inStock || 0,
             on_hold: invData.inventoryDistribution.onHold || 0,
             damaged: invData.inventoryDistribution.damaged || 0,
-            yet_to_return: invData.inventoryDistribution.yetToGive || 0,
+            yet_to_return: invData.inventoryDistribution.yetToReturn || 0,
           });
 
           setMonthlyData(
