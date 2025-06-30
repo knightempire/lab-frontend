@@ -58,10 +58,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
       try {
-
         // 1. Verify admin
         const verifyRes = await apiRequest(`/verify-token`, {
           method: "GET",
@@ -129,7 +126,6 @@ export default function DashboardPage() {
         });
         const invData = await invRes.json();
         if (invRes.ok) {
-          // Map inventory distribution
           setInventoryData({
             in_stock: invData.inventoryDistribution.inStock || 0,
             on_hold: invData.inventoryDistribution.onHold || 0,
@@ -137,7 +133,6 @@ export default function DashboardPage() {
             yet_to_return: invData.inventoryDistribution.yetToGive || 0,
           });
 
-          // Map monthly request count
           setMonthlyData(
             (invData.requestCountByMonth || []).map((item) => ({
               month: `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
@@ -155,7 +150,6 @@ export default function DashboardPage() {
         });
         const calendarData = await calendarRes.json();
         if (calendarRes.ok) {
-          // Helper to compare only the date part in Asia/Kolkata timezone
           const todayIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
           todayIST.setHours(0, 0, 0, 0);
 
@@ -165,7 +159,6 @@ export default function DashboardPage() {
             return d <= todayIST;
           };
 
-          // 1. Map collection events
           const mappedEvents = (calendarData.collectionDate || []).map((item) => ({
             date: new Date(item.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }),
             status:
@@ -176,17 +169,15 @@ export default function DashboardPage() {
             collectedDate: item.collectedDate,
             requestStatus: item.requestStatus,
             isCollected: item.isCollected,
-            // Always green for Issue Date, no color override needed
             color: undefined,
           }));
 
-          // 2. Map ALL returns (returned, overdue, upcoming)
           const allReturns = (calendarData.returns || []).map(item => {
             let color;
             if (item.isReturned) {
-              color = "bg-violet-500"; // Tailwind violet for returned
+              color = "bg-violet-500";
             } else if (isPastDayIST(item.date)) {
-              color = "bg-red-500"; // Tailwind red for overdue return
+              color = "bg-red-500";
             }
             return {
               date: new Date(item.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }),
@@ -197,14 +188,12 @@ export default function DashboardPage() {
               returnedDate: item.returnedDate,
               requestStatus: item.requestStatus,
               isReturned: item.isReturned,
-              color: color, // Tailwind class or undefined
+              color: color,
             };
           });
 
-          // 3. Combine both for the calendar
           setEvents([...mappedEvents, ...allReturns]);
 
-          // 4. Overdue items (past, not returned) for overdueItems section
           setOverdueItems(
             (calendarData.returns || [])
               .filter(item => !item.isReturned && isPastDayIST(item.date))
@@ -221,29 +210,24 @@ export default function DashboardPage() {
       }
       setLoading(false);
     };
-
     fetchDashboardData();
   }, [router]);
 
-  // Intersection observers for each chart
   const { ref: statusChartRef, inView: statusChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: radarChartRef, inView: radarChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: lineChartRef, inView: lineChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: barChartRef, inView: barChartInView } = useInView({ triggerOnce: true, threshold: 0.2 });
   const { ref: lowStockRef, inView: lowStockInView } = useInView({ triggerOnce: true, threshold: 0.2 });
 
-  // Handler for "View More" click
   const handleCalendarViewMore = (item, type) => {
     if (type === "collection") {
-      // Always redirect overdue (date in past and not collected) to return page
       if (
         (!item.collectedDate || item.collectedDate === null) &&
         isPastDayIST(item.date)
       ) {
         router.push(`/admin/return?requestId=${item.id || item.requestId}`);
-        return; // Stop further checks
+        return;
       }
-      // If approved/accepted and not collected, go to review page
       if (
         (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
         (!item.collectedDate || item.collectedDate === null)
@@ -253,7 +237,6 @@ export default function DashboardPage() {
         router.push(`/admin/return?requestId=${item.id || item.requestId}`);
       }
     }
-    // For return events
     else if (type === "return") {
       if (
         (item.requestStatus?.toLowerCase() === "approved" || item.requestStatus?.toLowerCase() === "accepted") &&
@@ -266,7 +249,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Helper to check if a date is before today in Asia/Kolkata timezone
   const isPastDayIST = (dateStr) => {
     const todayIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
     todayIST.setHours(0, 0, 0, 0);
@@ -274,11 +256,6 @@ export default function DashboardPage() {
     d.setHours(0, 0, 0, 0);
     return d < todayIST;
   };
-
-  function isRefreshTokenCookieSet() {
-    // This will NOT detect httpOnly cookies, but can help in dev
-    return document.cookie.split(';').some(cookie => cookie.trim().startsWith('refreshToken='));
-  }
 
   if (loading) {
     return (
@@ -318,7 +295,7 @@ export default function DashboardPage() {
         <Calendar
           events={events}
           overdueItems={overdueItems}
-          onViewMore={handleCalendarViewMore} // Pass handler
+          onViewMore={handleCalendarViewMore}
         />
       </div>
 
