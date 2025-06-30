@@ -68,26 +68,30 @@ export default function ProductPage() {
      const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found in localStorage');
+      router.push('/auth/login');
+      return;
+    }
 
-        if (!token) {
-          console.error('No token found in localStorage');
-          router.push('/auth/login');
-          return;
-        }
+    const res = await apiRequest(`/products/get`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-        const res = await apiRequest(`/products/get`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+    if (!res.ok) {
+      // If 404, treat as no products
+      if (res.status === 404) {
+        setProducts([]);
+      }
+      console.error('Failed to fetch products:', res.statusText);
+      setLoading(false);
+      return;
+    }
 
-        if (!res.ok){
-          console.error('Failed to fetch products:', res.statusText);
-          return;
-        } 
-
-        const data = await res.json();
+    const data = await res.json();
 
 
         const fetchedProducts = data.products.map(p => {
@@ -137,11 +141,14 @@ export default function ProductPage() {
           }));
         localStorage.setItem('selectedProducts', JSON.stringify(cleanedSelected));
         } else {
+          
           setProducts(fetchedProducts);
+          
         }
 
       } catch (err) {
         console.error('Failed to fetch or restore products:', err);
+        setProducts([]); // treat as no products
         setLoading(false);
       }
       setLoading(false); // Set loading to false after fetch
