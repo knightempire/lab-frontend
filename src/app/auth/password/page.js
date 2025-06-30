@@ -62,9 +62,7 @@ const verifyToken = async () => {
       ? `${baseUrl}/api/verify-token-register`
       : `${baseUrl}/api/verify-token-forgot`;
 
-  console.log('Verifying token:', token);
-  console.log('Token type:', type);
-  console.log('Endpoint:', endpoint);
+
 
   try {
     const res = await fetch(endpoint, {
@@ -89,7 +87,7 @@ const verifyToken = async () => {
 
     // If response is OK, process the data
     const data = await res.json();
-    console.log('Token verification response:', data);
+
   
     if (data?.user.name) {
       setUserName(data.user.name);
@@ -112,7 +110,7 @@ const verifyToken = async () => {
   };
 
     const handleModalClose = () => {
-    console.log('Modal closed');
+
     setShowModal(false); 
     router.push('/auth/login'); 
   };
@@ -137,8 +135,7 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  console.log('Submitting with token:', token);
-  console.log('Type:', type);
+
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const endpoint =
@@ -146,7 +143,6 @@ const handleSubmit = async (e) => {
       ? `${baseUrl}/api/password`
       : `${baseUrl}/api/resetpassword`;
 
-      console.log('Endpoint submit:', endpoint);
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -158,10 +154,10 @@ const handleSubmit = async (e) => {
     });
 
     const data = await res.json();
-    console.log('Password update response:', data);
+
 
     if (res.ok) {
-      console.log('Password set successfully:', data);
+
       setShowModal(true);
       setLoading(false); // Stop loading on success (modal will show)
       return;

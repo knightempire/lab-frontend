@@ -97,7 +97,7 @@ const handleRegister = async (e) => {
 
 
   const handleModalClose = () => {
-    console.log('Modal closed');
+
     setShowModal(false); 
     router.push('/auth/login'); 
   };

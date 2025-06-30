@@ -125,7 +125,7 @@ useEffect(() => {
 
   if (response.ok) {
     const data = await response.json();
-    console.log('Reference staff data:', data);
+
       if (data.references && Array.isArray(data.references)) {
         setReferenceStaffOptions(data.references); 
       } else {
@@ -249,10 +249,7 @@ useEffect(() => {
     return;
   }
 
-  console.log('New Faculty Added:', {
-    name: customFacultyName,
-    email: customFacultyEmail
-  });
+
 
   setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
   
@@ -287,9 +284,9 @@ useEffect(() => {
     });
 
     const data = await response.json();
-    console.log('Response:', data);
+
     if (!response.ok) {
-      console.log('Server error:', data);
+  
       if (response.status === 400 && data?.message === "Reference already exists") {
         setErrors({
           ...errors,
@@ -301,7 +298,7 @@ useEffect(() => {
       throw new Error(data?.message || 'Something went wrong.');
     }
 
-    console.log('Faculty added successfully:', data);
+
 
     await apiRequestReferenceStaff(); 
     setCustomFacultyName('');

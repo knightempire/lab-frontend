@@ -55,7 +55,7 @@ useEffect(() => {
     }
 
     const user_rollno = data.user.rollNo;
-    console.log('User data:', user_rollno);
+
 
     // Step 2: Fetch request data if admin check passes
     await fetchRequestData(token, requestId,user_rollno );
@@ -538,7 +538,7 @@ async function handleExtensionRequestSubmit(e) {
     );
 
     const data = await res.json(); 
-    console.log('Response data:', data); 
+
 
     if (res.ok) { 
       setRequestData(prev => ({

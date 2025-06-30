@@ -53,13 +53,11 @@ export default function UserRequestsPage() {
       router.push('/auth/login'); 
     } else {
       const user = data.user;
-      console.log('User data:', user);
-      console.log('Is admin:', user.isAdmin);
+
       if (!user.isActive) {
           router.push('/auth/login'); 
       }
 
-      console.log('User is admin, proceeding with request data fetch');
         fetchRequests();
   
     }

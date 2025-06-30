@@ -44,8 +44,6 @@ useEffect(() => {
       router.push('/auth/login'); 
     } else {
       const user = data.user;
-      console.log('User data:', user);
-      console.log('Is admin:', user.isAdmin);
       if (!user.isAdmin ) {
         router.push('/auth/login'); 
       }
@@ -288,9 +286,6 @@ useEffect(() => {
   const handleViewRequest = (request) => {
     // Using requestId instead of id for the route parameter
     router.push(`/admin/return?requestId=${encodeURIComponent(request.requestId)}`);
-    
-    // For debugging - log what we're trying to navigate to
-    console.log(`Navigating to: /admin/return?requestId=${encodeURIComponent(request.requestId)}`);
   };
 
   const filteredRequests = getFilteredResults();
