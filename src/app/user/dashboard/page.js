@@ -249,7 +249,7 @@ export default function DashboardPage() {
         <StatsCard
           title="Total Components"
           value={stats.totalComponents}
-          tooltip="Total components issued to you"
+          tooltip="Total components Requested by you"
           icon={Package}
           color="yellow"
         />

@@ -198,10 +198,10 @@ export default function RequestsPage() {
 
         setRequests(transformedRequests);
       } else {
-        setError(data.message || 'Failed to fetch requests.');
+        console.error('Failed to fetch requests:', data.message || 'Unknown error');
       }
     } catch (err) {
-      setError('Something went wrong while fetching requests.');
+      console.error('Something went wrong while fetching requests:', err);
     } finally {
       setLoading(false);
     }
