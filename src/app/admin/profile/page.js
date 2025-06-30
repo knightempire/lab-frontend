@@ -53,7 +53,7 @@ const UserProfilePageView = () => {
       case 'rejected':
         return 'rejected';
       case 'returned':
-        return 'accepted'; // Returned requests were previously accepted
+        return 'returned'; // Fix: show returned tag
       case 'closed':
         return 'closed';
       case 'reissued':
@@ -481,45 +481,60 @@ verifyToken();
   // 8. Update the paginatedRows mapping to handle the new data structure
   const paginatedRows = filteredRequests
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-    .map((item) => ({
-      requestId: item.requestId,
-      totalComponents: item.totalComponents,
-      status: (
-        <div
-          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
-            item.status === 'accepted'
-              ? 'bg-green-100 text-green-700'
-              : item.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-700'
-              : item.status === 'rejected'
-              ? 'bg-red-100 text-red-700'
-              : item.status === 'returned'
-              ? 'bg-blue-100 text-blue-700'
-              : item.status === 'closed'
-              ? 'bg-amber-100 text-amber-700'
-              : item.status === 'reissued'
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'bg-gray-100 text-gray-700'
-          }`}
-        >
-          {item.status === 'accepted' && <CheckCircle size={16} />}
-          {item.status === 'pending' && <Clock size={16} />}
-          {item.status === 'rejected' && <XCircle size={16} />}
-          {item.status === 'returned' && <Undo size={16} />}
-          {item.status === 'closed' && <AlertTriangle size={16} />}
-          {item.status === 'reissued' && <Repeat size={16} />}
-          {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
-        </div>
-      ),
-      viewMore: (
-        <Link
-          href={`/request-details/${item.requestId}`}
-          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1 whitespace-nowrap"
-        >
-          View More
-        </Link>
-      ),
-    }));
+    .map((item) => {
+      // Determine redirect URL based on status and other fields
+      let redirectUrl = `/admin/return?requestId=${item.requestId}`;
+      const status = item.originalData?.requestStatus?.toLowerCase();
+      const collectedDate = item.originalData?.collectedDate;
+      const latestReIssue = item.originalData?.latestReIssue;
+      // If status is accepted and collectedDate is null, go to review
+      if (status === 'approved' && !collectedDate) {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      } else if (latestReIssue && latestReIssue.status?.toLowerCase() === 'pending') {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      } else if (status === 'pending') {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      }
+      return {
+        requestId: item.requestId,
+        totalComponents: item.totalComponents,
+        status: (
+          <div
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
+              item.status === 'accepted'
+                ? 'bg-green-100 text-green-700'
+                : item.status === 'pending'
+                ? 'bg-yellow-100 text-yellow-700'
+                : item.status === 'rejected'
+                ? 'bg-red-100 text-red-700'
+                : item.status === 'returned'
+                ? 'bg-blue-100 text-blue-700'
+                : item.status === 'closed'
+                ? 'bg-amber-100 text-amber-700'
+                : item.status === 'reissued'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            {item.status === 'accepted' && <CheckCircle size={16} />}
+            {item.status === 'pending' && <Clock size={16} />}
+            {item.status === 'rejected' && <XCircle size={16} />}
+            {item.status === 'returned' && <Undo size={16} />}
+            {item.status === 'closed' && <AlertTriangle size={16} />}
+            {item.status === 'reissued' && <Repeat size={16} />}
+            {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
+          </div>
+        ),
+        viewMore: (
+          <Link
+            href={redirectUrl}
+            className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1 whitespace-nowrap"
+          >
+            View More
+          </Link>
+        ),
+      };
+    });
 
   if (loading) {
     return (
