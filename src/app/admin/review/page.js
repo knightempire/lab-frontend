@@ -108,7 +108,7 @@ const AdminRequestViewContent = () => {
       router.push('/admin/request');
     }
 
-    fetchProducts();
+    
     }
   }
 
@@ -267,6 +267,8 @@ const AdminRequestViewContent = () => {
           }))
         : mappedData.adminIssueComponents;
     });
+
+    fetchProducts(mappedData.status); // Pass request status to fetchProducts
   } catch (error) {
     console.error('Error fetching request data:', error);
     router.push('/admin/request');
@@ -274,8 +276,9 @@ const AdminRequestViewContent = () => {
 };
     // --- Update fetchProducts to include yetToGive and use (inStock - yetToGive) as available ---
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (status) => {
       try {
+      
         const token = localStorage.getItem('token');
         const res = await apiRequest(`/products/get`, {
           headers: {
@@ -285,14 +288,29 @@ const AdminRequestViewContent = () => {
         });
         const data = await res.json();
         if (res.ok && data.products) {
-          // Transform API data to simplified format used in component
-          const simplified = data.products.map(item => ({
-            _id: item.product._id,
-            name: item.product.product_name,
-            inStock: item.product.inStock,
-            yetToGive: item.product.yetToGive || 0,
-            available: (item.product.inStock || 0) - (item.product.yetToGive || 0)
-          }));
+          // Determine available logic based on request status
+  
+          const simplified = data.products.map(item => {
+            const inStock = item.product.inStock || 0;
+            const yetToGiveRaw = item.product.yetToGive || 0;
+            const yetToGive = Math.max(0, yetToGiveRaw); // Clamp to zero
+            let available = inStock;
+            console.log('Product:', item.product.product_name, 'In Stock:', inStock, 'Yet to Give:', yetToGive, 'Status:', status);
+            if (status === 'pending') {
+              available = inStock - yetToGive;
+               
+
+            } else {
+               available = inStock;
+            }
+            return {
+              _id: item.product._id,
+              name: item.product.product_name,
+              inStock,
+              yetToGive,
+              available
+            };
+          });
           setProducts(simplified);
         } else {
           console.error('Failed to fetch products:', data.message);
@@ -779,15 +797,27 @@ const handleDecrementDays = () => {
 };
 
 const issuing = async () => {
-    if (isSubmittingRef.current) return;
+  if (isSubmittingRef.current) return false;
   isSubmittingRef.current = true;
   setIsSubmitting(true);
   const requestId = searchParams.get('requestId');
   const token = localStorage.getItem('token');
 
   if (!requestId || !token) {
-    console.error('Missing requestId or token');
-    return;
+    // ...existing error handling...
+    return false;
+  }
+
+  const overIssued = adminIssueComponents.find(component => {
+    const product = products.find(p => p.name === component.name);
+    return product && component.quantity > product.available;
+  });
+  if (overIssued) {
+    setIssueError(`Cannot issue more than available for ${overIssued.name}.`);
+    setIsSubmitting(false);
+    isSubmittingRef.current = false;
+    setShowSuccess(false);
+    return false;
   }
 
   try {
@@ -800,25 +830,31 @@ const issuing = async () => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('API Error:', errorData);
+      // ...existing error handling...
+      setShowSuccess(false);
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
+      return false;
     } else {
       setSuccessMessage('Component issued successfully!');
       setShowSuccess(true);
       setSuccessMessage('');
-      // Set CollectedDate in state to disable UI
       setRequestData(prev => ({
         ...prev,
-        CollectedDate: new Date().toISOString(), // (optional, for your own use)
-        issueDate: new Date().toISOString()      // <-- This is what the timeline uses!
+        CollectedDate: new Date().toISOString(),
+        issueDate: new Date().toISOString()
       }));
+      setIsSubmitting(false);
+      isSubmittingRef.current = false;
+      return true;
     }
   } catch (error) {
-    console.error('Network error:', error);
+    // ...existing error handling...
+    setShowSuccess(false);
+    setIsSubmitting(false);
+    isSubmittingRef.current = false;
+    return false;
   }
-
-   setIsSubmitting(false);
-  isSubmittingRef.current = false;
 };
 
   // --- Status Badge ---
@@ -1040,7 +1076,7 @@ const ComponentDropdown = ({ id, selectedValue }) => {
           </button>
           <span className="text-xs text-gray-500 ml-1 flex items-center relative group">
             Available: {component.name ? maxStock : 'N/A'}
-            {showWarning && (
+            {(component.quantity > maxStock) && (
               <span className="ml-1 relative flex items-center group">
                 <AlertTriangle className="w-4 h-4 text-amber-500 cursor-pointer" />
                 <span className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-64 rounded bg-gray-900 text-white text-xs px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
@@ -1571,19 +1607,14 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       className="w-full inline-flex justify-center items-center px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
-                      onClick={async () => {
-                        issuing();
-                        setIsSubmitting(true);
-                        setTimeout(() => {
-                          setRequestData({
-                            ...requestData,
-                            CollectedDate: new Date().toISOString(),
-                            ResponseMessage: responseMessage
-                          });
-                          setAction(null);
-                          setIsSubmitting(false);
-                        }, 1000);
-                      }}
+                        onClick={async () => {
+                              const success = await issuing();
+                              if (success) {
+                                setTimeout(() => {
+                                  setAction(null);
+                                }, 1000);
+                              }
+                            }}
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
@@ -1719,15 +1750,16 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                           </>
                         ) : (
                           <>
-                            <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                                                       <CheckCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                             Accept
                           </>
                         )}
                       </button>
 
                       <button
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent textBase font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition-colors duration-150 group"
                         onClick={() => handleActionClick('decline')}
+
                         aria-label="Decline Request"
                         title="Decline this request"
                       >
@@ -1753,9 +1785,9 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                 // --- FIXED SECTION ---
                 <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
                   <div className="mb-4">
-                    <div className="mb-2 flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 ${action === 'accept' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                        {action === 'accept' ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                    <div className="flex items-center mb-4">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center mr-3">
+                        {action === 'accept' ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
                       </div>
                       <h4 className="text-lg font-semibold text-gray-800">
                         {action === 'accept' ? 'Confirm Acceptance' : 'Confirm Rejection'}
@@ -1801,7 +1833,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                       )}
                     </button>
                     <button
-                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                       onClick={() => setAction(null)}
                       disabled={isSubmitting}
                     >
@@ -2079,7 +2111,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                   />
                   <div className="flex space-x-4">
                     <button
-                      className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${reissueAction === 'accept'
+                      className={`flex-1 inline-flex justify-center items-center px-6 py-3 border border-transparent textBase font-medium rounded-lg shadow-sm text-white ${reissueAction === 'accept'
                           ? 'bg-green-600 hover:bg-green-700'
                           : 'bg-red-600 hover:bg-red-700'
                         } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
@@ -2107,7 +2139,7 @@ const isValidDateTime = (selectedDate, selectedTime) => {
                       )}
                     </button>
                     <button
-                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      className="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 shadow-sm textBase font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                       onClick={() => {
                         setReissueAction(null);
                         setReissueMessage('');
