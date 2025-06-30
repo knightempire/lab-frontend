@@ -75,8 +75,6 @@ export default function ProductPage() {
         router.push('/auth/login');
       } else {
         const user = data.user;
-        console.log('User data:', user);
-        console.log('Is admin:', user.isAdmin);
         if (!user.isAdmin) {
           router.push('/auth/login');
         }
@@ -101,7 +99,6 @@ export default function ProductPage() {
       });
 
       const data = await res.json();
-      console.log('Fetched products:', data);
 
       if (res.ok && data.products) {
         const flattened = data.products.map(p => p.product || p); // <-- FIX HERE
@@ -173,7 +170,6 @@ export default function ProductPage() {
       errors.inStock = 'In Stock must be a non-negative number.';
     }
 
-    console.log('Validation errors:', errors);  
     return errors;
   };
 
@@ -236,10 +232,7 @@ export default function ProductPage() {
   };
 
   const updateProduct = async (id) => {
-    console.log('Updating product at index:', id);
-    console.log('newProduct:', newProduct);
     const errors = validateProduct(newProduct);
-    console.log('Validation errors:', errors); 
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -262,8 +255,6 @@ export default function ProductPage() {
     };
 
     try {
-      console.log('Updating product with ID:', id);
-
       const response = await apiRequest(`/products/update/${id}`, {
         method: 'PUT',
         headers: {
@@ -392,7 +383,7 @@ export default function ProductPage() {
     const formatted = rows.map((row) => ({
       product_name: row[headerIndex.product_name] || '',
       quantity: parseInt(row[headerIndex.quantity]) || 0,
-      damagedQuantity: parseInt(row[headerIndex.damagedQuantity]) || 0,
+      damagedQuantity: headerIndex.damagedQuantity !== -1 && colMapping.damagedQuantity ? (parseInt(row[headerIndex.damagedQuantity]) || 0) : 0,
       inStock: parseInt(row[headerIndex.inStock]) || 0
     })).filter(item => item.product_name);
 
@@ -777,7 +768,7 @@ export default function ProductPage() {
               <div>
                 <h3 className="font-semibold mb-4 text-gray-800 text-lg">Map Excel Columns</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {['product_name', 'quantity', 'damagedQuantity', 'inStock'].map((field) => (
+                  {["product_name", "quantity", "damagedQuantity", "inStock"].map((field) => (
                     <div key={field}>
                       <label className="block text-sm font-semibold mb-2 capitalize text-gray-700">
                         {field === 'product_name' ? 'Product Name' : field.replace(/([A-Z])/g, ' $1')}
@@ -787,7 +778,7 @@ export default function ProductPage() {
                         value={colMapping[field]}
                         onChange={e => setColMapping({ ...colMapping, [field]: e.target.value })}
                       >
-                        <option value="">-- Select Column --</option>
+                        <option value="">{field === 'damagedQuantity' ? '-- None --' : '-- Select Column --'}</option>
                         {excelHeaders.map((h, i) => (
                           <option key={i} value={h}>{h}</option>
                         ))}
@@ -811,7 +802,7 @@ export default function ProductPage() {
                     className={`px-5 py-2 rounded-lg font-semibold shadow transition text-white ${
                       (!colMapping.product_name ||
                         !colMapping.quantity ||
-                        !colMapping.damagedQuantity ||
+                        //!colMapping.damagedQuantity || // allow damagedQuantity to be optional
                         !colMapping.inStock)
                         ? 'bg-blue-300 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700'
@@ -819,7 +810,7 @@ export default function ProductPage() {
                     disabled={
                       !colMapping.product_name ||
                       !colMapping.quantity ||
-                      !colMapping.damagedQuantity ||
+                      //!colMapping.damagedQuantity || // allow damagedQuantity to be optional
                       !colMapping.inStock
                     }
                   >

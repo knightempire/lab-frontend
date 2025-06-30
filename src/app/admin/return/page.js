@@ -84,8 +84,7 @@ useEffect(() => {
       router.push('/auth/login'); 
     } else {
       const user = data.user;
-      console.log('User data:', user);
-      console.log('Is admin:', user.isAdmin);
+      
       if (!user.isAdmin ) {
         router.push('/auth/login'); 
       }
@@ -93,7 +92,6 @@ useEffect(() => {
           router.push('/auth/login'); 
       }
 
-      console.log('User is admin, proceeding with request data fetch');
        fetchAllData();
   
     }
@@ -124,15 +122,7 @@ useEffect(() => {
         return;
       }
       const req = apiData.request;
-      console.log(apiData)
-      // Fetch return details
-      const returnRes = await apiRequest(`/request/return/${requestId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+
       const returnData = await returnRes.json();
 
       // Map issued components for return tracking
@@ -240,7 +230,6 @@ components: (req.issued && req.issued.length > 0
     const reIssueData = await reIssueRes.json();
     if (reIssueRes.ok && reIssueData.reIssued) {
   mappedRequest.reIssueRequest = { ...reIssueData.reIssued };
-  console.log('Reissue data:', mappedRequest.reIssueRequest);
     }
   } catch (err) {
     // Optionally handle error

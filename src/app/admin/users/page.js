@@ -17,7 +17,7 @@ const columns = [
   { key: 'emailAndPhone', label: 'Email / Phone' },
   { key: 'isFaculty', label: 'Role' },
   { key: 'isActive', label: 'Status' },
-  { key: 'borrowedComponents', label: 'Borrowed' },
+  { key: 'borrowedComponents', label: 'History' },
   { key: 'actions', label: 'Actions' }
 ];
 

@@ -11,11 +11,12 @@ import SuccessAlert from '../../../components/SuccessAlert';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [stats] = useState({
-    total_requests: 120,
-    active_requests: 34,
-    pending_requests: 7
-  })
+  // Stats state from API
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    totalActiveRequests: 0,
+    totalComponents: 0,
+  });
 
   // Calendar event state
   const [events, setEvents] = useState([]);
@@ -31,6 +32,14 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (res.ok && data) {
+        // Set stats from API
+        if (data.stats) {
+          setStats({
+            totalRequests: data.stats.totalRequests || 0,
+            totalActiveRequests: data.stats.totalActiveRequests || 0,
+            totalComponents: data.stats.totalComponents || 0,
+          });
+        }
         // Helper for IST date
         const toIST = (dateStr) => new Date(new Date(dateStr).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         // 1. Map collection events
@@ -225,23 +234,23 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1 sm:gap-4 mb-4 sm:mb-10 px-2 sm:px-0">
         <StatsCard
           title="Total Requests"
-          value={stats.total_requests}
+          value={stats.totalRequests}
           tooltip="All requests ever made"
           icon={Package}
           color="blue"
         />
         <StatsCard
           title="Active Requests"
-          value={stats.active_requests}
+          value={stats.totalActiveRequests}
           tooltip="Issued items not yet returned"
           icon={Activity}
           color="green"
         />
         <StatsCard
-          title="Returned Requests"
-          value={stats.pending_requests}
-          tooltip="Requests not yet accepted or processed"
-          icon={Clock}
+          title="Total Components"
+          value={stats.totalComponents}
+          tooltip="Total components issued to you"
+          icon={Package}
           color="yellow"
         />
       </div>
