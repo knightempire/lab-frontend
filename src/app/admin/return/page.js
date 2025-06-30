@@ -84,7 +84,6 @@ useEffect(() => {
       router.push('/auth/login'); 
     } else {
       const user = data.user;
-      
       if (!user.isAdmin ) {
         router.push('/auth/login'); 
       }
@@ -122,7 +121,15 @@ useEffect(() => {
         return;
       }
       const req = apiData.request;
-
+  
+      // Fetch return details
+      const returnRes = await apiRequest(`/request/return/${requestId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const returnData = await returnRes.json();
 
       // Map issued components for return tracking
