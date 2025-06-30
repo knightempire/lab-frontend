@@ -40,10 +40,7 @@ const UserProfilePageView = () => {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
   const itemsPerPage = 7;
-
   const [validationErrors, setValidationErrors] = useState({});
-
-  console.log('UserProfilePage rendered');
 
   // 3. Helper function to map request status
   const mapRequestStatus = (apiStatus) => {
@@ -55,7 +52,7 @@ const UserProfilePageView = () => {
       case 'rejected':
         return 'rejected';
       case 'returned':
-        return 'accepted'; // Returned requests were previously accepted
+        return 'returned'; // Fix: show returned tag
       case 'closed':
         return 'closed';
       case 'reissued':
@@ -84,9 +81,7 @@ const UserProfilePageView = () => {
         },
       });
 
-      console.log('User requests response status:', res.status);
       const data = await res.json();
-      console.log('User requests data:', data);
 
       if (!res.ok) {
         setRequestsError(data.message || `Failed to fetch user requests. Status: ${res.status}`);
@@ -112,10 +107,8 @@ const UserProfilePageView = () => {
   };
 
   useEffect(() => {
-    console.log('UserProfilePage useEffect triggered');
     const rollNo = searchParams.get('rollNo');
-    console.log('UserProfilePage useEffect triggered');
-    console.log('rollNo from URL:', rollNo);
+
     
     // If no rollNo is provided, show error
     if (!rollNo) {
@@ -133,7 +126,7 @@ const UserProfilePageView = () => {
         router.push('/auth/login');
         return false;
       }
-      console.log('Verifying token:', token);
+
       try {
         const res = await apiRequest(`/verify-token`, {
           headers: {
@@ -143,7 +136,7 @@ const UserProfilePageView = () => {
         });
         
         const data = await res.json();
-        console.log('Token verification response:', data);
+
         if (!res.ok) {
           console.error('Token verification failed:', data.message);
           router.push('/auth/login');
@@ -156,7 +149,7 @@ const UserProfilePageView = () => {
           return false;
         }
         fetchUserData(); // Fetch user data after successful token verification
-        console.log('Token verified successfully');
+
         return true;
       } catch (err) {
         console.error('Token verification error:', err);
@@ -170,7 +163,7 @@ const UserProfilePageView = () => {
     const token = localStorage.getItem('token');
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     let endpoint = `/users/get/${rollNo}`;
-    console.log('Fetching user data from endpoint:', endpoint);
+
 
     try {
       setLoading(true);
@@ -184,9 +177,9 @@ const UserProfilePageView = () => {
         },
       });
 
-      console.log('Response status:', res.status);
+
       const data = await res.json();
-      console.log('User data response:', data);
+  
 
       if (!res.ok) {
         // If the first endpoint fails, try alternative approaches
@@ -232,8 +225,6 @@ const UserProfilePageView = () => {
         requestsCount: data.requestsCount || 0,
         damagedItemsCount: data.damagedItemsCount || 0
       };
-      console.log('User data:', userData);
-      console.log('Stats data:', statsData);
 
       setUserDetails(userData);
       setUserStats(statsData);
@@ -266,78 +257,79 @@ verifyToken();
   };
 
   const handleSaveProfile = async () => {
-    // Validate form before saving
-    if (!validateForm()) {
+  // Validate form before saving
+  if (!validateForm()) {
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    router.push('/auth/login');
+    return;
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const rollNo = searchParams.get('rollNo');
+  
+  let endpoint = `/users/update/${rollNo}`;
+  
+  try {
+    setError('');
+    
+    const updateData = {
+      userName: editProfileData.name.trim(),
+      userIsAdmin: editProfileData.isAdmin || false,
+      userEmail: editProfileData.email.trim(),
+      userRollNo: editProfileData.rollNo.trim(),
+      userPhoneNo: editProfileData.phoneNo.trim(),
+      userIsFaculty: editProfileData.isFaculty || false,
+      userIsActive: userDetails.isActive
+    };
+
+    console.log('Sending update data:', updateData);
+
+    const res = await apiRequest(endpoint, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    const data = await res.json();
+    console.log('Update response:', data);
+
+    if (!res.ok) {
+      setError(data.message || 'Failed to update profile.');
       return;
     }
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/auth/login');
-      return;
-    }
+    const updatedUserData = data.user || data;
+    const updatedUser = {
+      ...userDetails,
+      name: updatedUserData.name || updateData.userName,
+      isAdmin: updatedUserData.isAdmin !== undefined ? updatedUserData.isAdmin : updateData.userIsAdmin,
+      email: updatedUserData.email || updateData.userEmail,
+      rollNo: updatedUserData.rollNo || updateData.userRollNo,
+      phoneNo: updatedUserData.phoneNo || updateData.userPhoneNo,
+      isFaculty: updatedUserData.isFaculty !== undefined ? updatedUserData.isFaculty : updateData.userIsFaculty,
+      isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : updateData.userIsActive,
+    };
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const rollNo = searchParams.get('rollNo');
+    setUserDetails(updatedUser);
+    setUserStatus(updatedUser.isActive ? 'active' : 'deactivated');
+    setIsEditing(false);
+    setValidationErrors({}); // Clear validation errors on successful save
     
-    let endpoint = `/users/update/${rollNo}`;
+    console.log('Profile updated successfully');
     
-    try {
-      setError('');
-      
-      const updateData = {
-        userName: editProfileData.name.trim(),
-        userIsAdmin: editProfileData.isAdmin || false,
-        userEmail: editProfileData.email.trim(),
-        userRollNo: editProfileData.rollNo.trim(),
-        userPhoneNo: editProfileData.phoneNo.trim(),
-        userIsFaculty: editProfileData.isFaculty || false,
-        userIsActive: userDetails.isActive
-      };
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    setError('Network error. Please try again.');
+  }
+};
 
-      console.log('Sending update data:', updateData);
-
-      const res = await apiRequest(endpoint, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      const data = await res.json();
-      console.log('Update response:', data);
-
-      if (!res.ok) {
-        setError(data.message || 'Failed to update profile.');
-        return;
-      }
-
-      const updatedUserData = data.user || data;
-      const updatedUser = {
-        ...userDetails,
-        name: updatedUserData.name || updateData.userName,
-        isAdmin: updatedUserData.isAdmin !== undefined ? updatedUserData.isAdmin : updateData.userIsAdmin,
-        email: updatedUserData.email || updateData.userEmail,
-        rollNo: updatedUserData.rollNo || updateData.userRollNo,
-        phoneNo: updatedUserData.phoneNo || updateData.userPhoneNo,
-        isFaculty: updatedUserData.isFaculty !== undefined ? updatedUserData.isFaculty : updateData.userIsFaculty,
-        isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : updateData.userIsActive,
-      };
-
-      setUserDetails(updatedUser);
-      setUserStatus(updatedUser.isActive ? 'active' : 'deactivated');
-      setIsEditing(false);
-      setValidationErrors({}); // Clear validation errors on successful save
-      
-      console.log('Profile updated successfully');
-      
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Network error. Please try again.');
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -396,7 +388,7 @@ verifyToken();
         userIsActive: newIsActive
       };
 
-      console.log('Updating status to:', newIsActive);
+  
 
       const res = await apiRequest(endpoint, {
         method: 'PUT',
@@ -408,7 +400,7 @@ verifyToken();
       });
 
       const data = await res.json();
-      console.log('Status update response:', data);
+
 
       if (!res.ok) {
         setError(data.message || 'Failed to update status.');
@@ -426,7 +418,7 @@ verifyToken();
         ...prev, 
         isActive: updatedUserData.isActive !== undefined ? updatedUserData.isActive : newIsActive 
       }));
-      console.log('Status updated successfully');
+  
       
     } catch (err) {
       console.error('Error updating status:', err);
@@ -463,6 +455,24 @@ verifyToken();
               Go Back
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No user data
+  if (!userDetails || Object.keys(userDetails).length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-4">User not found</p>
+          <button
+            onClick={() => router.back()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -532,24 +542,6 @@ verifyToken();
     return Object.keys(errors).length === 0;
   };
 
-  // No user data
-  if (!userDetails || Object.keys(userDetails).length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg mb-4">User not found</p>
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // 6. Update the requests variable to use the new state
   const requests = userRequests || [];
   const totalPages = Math.ceil(requests.length / itemsPerPage);
@@ -571,45 +563,60 @@ verifyToken();
   // 8. Update the paginatedRows mapping to handle the new data structure
   const paginatedRows = filteredRequests
     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-    .map((item) => ({
-      requestId: item.requestId,
-      totalComponents: item.totalComponents,
-      status: (
-        <div
-          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
-            item.status === 'accepted'
-              ? 'bg-green-100 text-green-700'
-              : item.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-700'
-              : item.status === 'rejected'
-              ? 'bg-red-100 text-red-700'
-              : item.status === 'returned'
-              ? 'bg-blue-100 text-blue-700'
-              : item.status === 'closed'
-              ? 'bg-amber-100 text-amber-700'
-              : item.status === 'reissued'
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'bg-gray-100 text-gray-700'
-          }`}
-        >
-          {item.status === 'accepted' && <CheckCircle size={16} />}
-          {item.status === 'pending' && <Clock size={16} />}
-          {item.status === 'rejected' && <XCircle size={16} />}
-          {item.status === 'returned' && <Undo size={16} />}
-          {item.status === 'closed' && <AlertTriangle size={16} />}
-          {item.status === 'reissued' && <Repeat size={16} />}
-          {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
-        </div>
-      ),
-      viewMore: (
-        <Link
-          href={`/request-details/${item.requestId}`}
-          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1 whitespace-nowrap"
-        >
-          View More
-        </Link>
-      ),
-    }));
+    .map((item) => {
+      // Determine redirect URL based on status and other fields
+      let redirectUrl = `/admin/return?requestId=${item.requestId}`;
+      const status = item.originalData?.requestStatus?.toLowerCase();
+      const collectedDate = item.originalData?.collectedDate;
+      const latestReIssue = item.originalData?.latestReIssue;
+      // If status is accepted and collectedDate is null, go to review
+      if (status === 'approved' && !collectedDate) {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      } else if (latestReIssue && latestReIssue.status?.toLowerCase() === 'pending') {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      } else if (status === 'pending') {
+        redirectUrl = `/admin/review?requestId=${item.requestId}`;
+      }
+      return {
+        requestId: item.requestId,
+        totalComponents: item.totalComponents,
+        status: (
+          <div
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium text-sm ${
+              item.status === 'accepted'
+                ? 'bg-green-100 text-green-700'
+                : item.status === 'pending'
+                ? 'bg-yellow-100 text-yellow-700'
+                : item.status === 'rejected'
+                ? 'bg-red-100 text-red-700'
+                : item.status === 'returned'
+                ? 'bg-blue-100 text-blue-700'
+                : item.status === 'closed'
+                ? 'bg-amber-100 text-amber-700'
+                : item.status === 'reissued'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            {item.status === 'accepted' && <CheckCircle size={16} />}
+            {item.status === 'pending' && <Clock size={16} />}
+            {item.status === 'rejected' && <XCircle size={16} />}
+            {item.status === 'returned' && <Undo size={16} />}
+            {item.status === 'closed' && <AlertTriangle size={16} />}
+            {item.status === 'reissued' && <Repeat size={16} />}
+            {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
+          </div>
+        ),
+        viewMore: (
+          <Link
+            href={redirectUrl}
+            className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1 whitespace-nowrap"
+          >
+            View More
+          </Link>
+        ),
+      };
+    });
 
   if (loading) {
     return (
@@ -859,108 +866,108 @@ verifyToken();
             </div>
 
             <div className="p-4 space-y-4">
-  {/* Name Field */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Name <span className="text-red-500">*</span>
-    </label>
-    <input
-      name="name"
-      type="text"
-      placeholder="Enter name"
-      value={editProfileData.name ?? ''}
-      onChange={handleInputChange}
-      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-        validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
-      }`}
-    />
-    {validationErrors.name && (
-      <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
-    )}
-  </div>
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  placeholder="Enter name"
+                  value={editProfileData.name ?? ''}
+                  onChange={handleInputChange}
+                  className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    validationErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {validationErrors.name && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>
+                )}
+              </div>
 
-  {/* Email Field */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Email <span className="text-red-500">*</span>
-    </label>
-    <input
-      name="email"
-      type="email"
-      placeholder="Enter email (@cb.students.amrita.edu or @cb.amrita.edu)"
-      value={editProfileData.email ?? ''}
-      onChange={handleInputChange}
-      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-        validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
-      }`}
-    />
-    {validationErrors.email && (
-      <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
-    )}
-  </div>
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Enter email (@cb.students.amrita.edu or @cb.amrita.edu)"
+                  value={editProfileData.email ?? ''}
+                  onChange={handleInputChange}
+                  className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {validationErrors.email && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.email}</p>
+                )}
+              </div>
 
-  {/* Roll Number Field */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Roll Number <span className="text-red-500">*</span>
-    </label>
-    <input
-      name="rollNo"
-      type="text"
-      placeholder="Enter roll number"
-      value={editProfileData.rollNo ?? ''}
-      onChange={handleInputChange}
-      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-        validationErrors.rollNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
-      }`}
-    />
-    {validationErrors.rollNo && (
-      <p className="mt-1 text-xs text-red-600">{validationErrors.rollNo}</p>
-    )}
-  </div>
+              {/* Roll Number Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Roll Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="rollNo"
+                  type="text"
+                  placeholder="Enter roll number"
+                  value={editProfileData.rollNo ?? ''}
+                  onChange={handleInputChange}
+                  className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    validationErrors.rollNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {validationErrors.rollNo && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.rollNo}</p>
+                )}
+              </div>
 
-  {/* Phone Number Field */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Phone Number <span className="text-red-500">*</span>
-    </label>
-    <input
-      name="phoneNo"
-      type="tel"
-      placeholder="Enter 10-digit phone number"
-      value={editProfileData.phoneNo ?? ''}
-      onChange={handleInputChange}
-      maxLength="10"
-      className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-        validationErrors.phoneNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
-      }`}
-    />
-    {validationErrors.phoneNo && (
-      <p className="mt-1 text-xs text-red-600">{validationErrors.phoneNo}</p>
-    )}
-  </div>
-  
-  <div className="flex items-center gap-4">
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        name="isFaculty"
-        checked={editProfileData.isFaculty || false}
-        onChange={handleInputChange}
-      />
-      Faculty
-    </label>
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        name="isAdmin"
-        checked={editProfileData.isAdmin || false}
-        onChange={handleInputChange}
-      />
-      Admin
-    </label>
-  </div>
-</div>
+              {/* Phone Number Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="phoneNo"
+                  type="tel"
+                  placeholder="Enter 10-digit phone number"
+                  value={editProfileData.phoneNo ?? ''}
+                  onChange={handleInputChange}
+                  maxLength="10"
+                  className={`w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    validationErrors.phoneNo ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {validationErrors.phoneNo && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.phoneNo}</p>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="isFaculty"
+                    checked={editProfileData.isFaculty || false}
+                    onChange={handleInputChange}
+                  />
+                  Faculty
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="isAdmin"
+                    checked={editProfileData.isAdmin || false}
+                    onChange={handleInputChange}
+                  />
+                  Admin
+                </label>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-xl">
               <button
