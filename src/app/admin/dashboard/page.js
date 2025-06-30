@@ -69,7 +69,7 @@ export default function DashboardPage() {
         });
         const verifyData = await verifyRes.json();
         if (!verifyRes.ok || !verifyData.user?.isAdmin || !verifyData.user?.isActive) {
-          // router.push("/auth/login");
+          router.push("/auth/login");
           return;
         }
 
