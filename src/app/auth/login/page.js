@@ -7,6 +7,7 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
 import { apiRequest } from '../../../utils/apiRequest';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,12 +19,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // Add loading state
+  const [checkingToken, setCheckingToken] = useState(true); // <-- New state for token check
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setCheckingToken(false);
+      return;
+    }
 
     const verifyToken = async () => {
+      setCheckingToken(true); // Show loading while checking
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const endpoint = `/verify-token`;
 
@@ -38,6 +44,7 @@ export default function LoginPage() {
         if (!res.ok) {
           localStorage.removeItem('token');
           localStorage.removeItem('selectedProducts');
+          setCheckingToken(false);
           return;
         }
 
@@ -46,6 +53,7 @@ export default function LoginPage() {
 
         if (!user?.isActive) {
           setError('Your account is deactivated. Please contact the administrator.');
+          setCheckingToken(false);
           return;
         }
 
@@ -54,8 +62,10 @@ export default function LoginPage() {
         } else {
           router.push('/user/dashboard');
         }
+        // Don't setCheckingToken(false) here, since we redirect
       } catch (err) {
         localStorage.removeItem('token');
+        setCheckingToken(false);
       }
     };
 
@@ -130,6 +140,10 @@ export default function LoginPage() {
       isSubmitting.current = false; // Allow retry
     }
   };
+
+  if (checkingToken) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
