@@ -415,12 +415,41 @@ export default function ProductPage() {
     XLSX.writeFile(wb, filename);
   };
 
-  const submitExcelData = () => {
-    setProducts([...products, ...excelData]);
-    setExcelData([]);
-    setShowUploadModal(false);
-    toast.success('Products imported successfully!');
-  };
+const submitExcelData = async () => {
+  setShowUploadModal(false);
+  setIsLoading(true); // Start loading
+
+  // Call API to insert products in bulk
+  const token = localStorage.getItem('token');
+  try {
+    const res = await apiRequest('/products/bulkupdate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ products: excelData })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setSuccessMessage(data.message || 'Products imported successfully!');
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 3000);
+      setExcelData([]);
+      fetchProducts(); // Refresh product list
+    } else {
+      toast.error(data.message || 'Failed to import products');
+    }
+  } catch (error) {
+    toast.error('Something went wrong while importing products');
+    console.error('Bulk import error:', error);
+  } finally {
+    setIsLoading(false); // End loading
+  }
+};
+
 
   useEffect(() => {
     if (Array.isArray(excelData) && excelData.length > 0) {

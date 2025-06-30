@@ -84,8 +84,6 @@ export default function ProductPage() {
 
         if (!res.ok){
           console.error('Failed to fetch products:', res.statusText);
-          localStorage.removeItem('token');
-          router.push('/auth/login');
           return;
         } 
 
