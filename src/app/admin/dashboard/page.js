@@ -9,10 +9,10 @@ import InventoryRadarChart from "../../../components/admin_graphs/InventoryRadar
 import Calendar from "../../../components/dashboard-calendar";
 import MonthlyRequestLineChart from "../../../components/admin_graphs/RequestCountLineChart";
 import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBreakdown";
-import LowStockList from "../../../components/admin_graphs/LowStockList";
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart";
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import { apiRequest } from '../../../utils/apiRequest';
+import LowStockItemsTable from "../../../components/admin_graphs/LowStockTable";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -321,8 +321,8 @@ export default function DashboardPage() {
             {barChartInView && <TopComponentsBarChart data={barData} />}
           </div>
           <div className="bg-white rounded-xl shadow p-6 flex flex-col" ref={lowStockRef}>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Low Stock Items</h2>
-            {lowStockInView && <LowStockList data={lowStockData} />}
+            <h2 className="text-xl font-semibold text-gray-800 ">Low Stock Items</h2>
+            {lowStockInView && <LowStockItemsTable data={lowStockData} />}
           </div>
         </div>
       </div>
