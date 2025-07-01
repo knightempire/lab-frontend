@@ -55,7 +55,7 @@ export default function Navbar({ toggleSidebar }) {
       
       <div className="flex items-center space-x-2 md:space-x-4">
         {/* Show notifications only for admin */}
-        {isAdmin && <Notifications isAdmin={isAdmin} />}
+        {/* {isAdmin && <Notifications isAdmin={isAdmin} />} */}
         
         <div className="relative" ref={dropdownRef}>
           <button 
