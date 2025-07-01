@@ -295,7 +295,7 @@ const AdminRequestViewContent = () => {
             const yetToGiveRaw = item.product.yetToGive || 0;
             const yetToGive = Math.max(0, yetToGiveRaw); // Clamp to zero
             let available = inStock;
-            console.log('Product:', item.product.product_name, 'In Stock:', inStock, 'Yet to Give:', yetToGive, 'Status:', status);
+          
             if (status === 'pending') {
               available = inStock - yetToGive;
                
