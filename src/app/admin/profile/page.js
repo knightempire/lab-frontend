@@ -286,7 +286,6 @@ verifyToken();
       userIsActive: userDetails.isActive
     };
 
-    console.log('Sending update data:', updateData);
 
     const res = await apiRequest(endpoint, {
       method: 'PUT',
@@ -298,7 +297,7 @@ verifyToken();
     });
 
     const data = await res.json();
-    console.log('Update response:', data);
+  
 
     if (!res.ok) {
       setError(data.message || 'Failed to update profile.');
@@ -322,7 +321,7 @@ verifyToken();
     setIsEditing(false);
     setValidationErrors({}); // Clear validation errors on successful save
     
-    console.log('Profile updated successfully');
+
     
   } catch (err) {
     console.error('Error updating profile:', err);
