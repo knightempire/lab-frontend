@@ -1,28 +1,21 @@
 /** @type {import('next').NextConfig} */
-import withPWAInit from 'next-pwa';
-
-// Initialize `next-pwa` with PWA-specific options
-const withPWA = withPWAInit({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-});
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ;
-
-// Your regular Next.js config
 const nextConfig = {
   reactStrictMode: true,
+
+  // This is the proxy configuration
   async rewrites() {
     return [
       {
+        // Source path: all requests starting with /api/ are matched
         source: '/api/:path*',
-        destination: `${apiBaseUrl}/api/:path*`,
+        
+        // Destination: read from the .env.local file
+        // The browser never sees this URL. This is a server-to-server rewrite.
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/:path*`,
       },
     ];
   },
 };
 
-// Wrap the Next.js config with the PWA-configured function
-export default withPWA(nextConfig);
+// FIX IS HERE: Use 'export default' instead of 'module.exports'
+export default nextConfig;
