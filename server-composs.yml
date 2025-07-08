@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  lab_frontend:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://amuda_lab_backend:3002
+    container_name: lab_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://amuda_lab_backend:3002
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+    restart: unless-stopped
+    depends_on:
+      - amuda_lab_backend
+
+  amuda_lab_backend:
+    build:
+      context: ../backend - lab compo  # <-- path to your backend code
+    container_name: amuda_lab_backend
+    ports:
+      - "3002:3002"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/labdb
+      PORT: ${PORT:-3002}
+      SECRET_KEY: ${SECRET_KEY}
+      EXPIRES_IN: ${EXPIRES_IN}
+      MAIL_EXPIRES_IN: ${MAIL_EXPIRES_IN}
+      MAIL_SECRET_KEY: ${MAIL_SECRET_KEY}
+      FORGOT_SECRET_KEY: ${FORGOT_SECRET_KEY}
+      STATIC_URL: ${STATIC_URL}
+      BREVO_USER: ${BREVO_USER}
+      BREVO_PASS: ${BREVO_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
+      GOOGLE_PRIVATE_KEY_ID: ${GOOGLE_PRIVATE_KEY_ID}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY}
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_AUTH_URI: ${GOOGLE_AUTH_URI}
+      GOOGLE_TOKEN_URI: ${GOOGLE_TOKEN_URI}
+      GOOGLE_AUTH_PROVIDER_CERT_URL: ${GOOGLE_AUTH_PROVIDER_CERT_URL}
+      GOOGLE_CLIENT_CERT_URL: ${GOOGLE_CLIENT_CERT_URL}
+      SPREADSHEET_ID: ${SPREADSHEET_ID}
+      SHEET_RANGE: ${SHEET_RANGE}
+      REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY}
+      REFRESH_EXPIRES_IN: ${REFRESH_EXPIRES_IN}
+      NODE_ENV: ${NODE_ENV}
+    restart: unless-stopped
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: labdb
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+
+networks:
+  default:
+    driver: bridge
