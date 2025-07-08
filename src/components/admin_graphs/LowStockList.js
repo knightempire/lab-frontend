@@ -1,8 +1,16 @@
 'use client';
 
-import { Package, AlertTriangle, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Package } from "lucide-react";
+import Pagination from "../pagination";
 
 export default function StockAlertsList({ data = [] }) {
+  const itemsPerPage = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const currentData = data.slice(startIdx, startIdx + itemsPerPage);
+
   if (!data.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center min-h-[320px] py-10 bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-xl border border-blue-100 shadow-inner">
@@ -15,37 +23,34 @@ export default function StockAlertsList({ data = [] }) {
   }
 
   return (
-    <div className="w-full h-full max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-blue-50 flex flex-col gap-3 py-2">
-      {data.map((item, idx) => {
-        let color =
-          item.in_stock <= 2
-            ? "bg-red-50 border-red-200 text-red-700"
-            : item.in_stock <= 4
-            ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-            : "bg-blue-50 border-blue-200 text-blue-800";
-        let icon =
-          item.in_stock <= 2 ? (
-            <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-          ) : item.in_stock <= 4 ? (
-            <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
-          ) : (
-            <CheckCircle className="w-5 h-5 text-blue-500 mr-2" />
-          );
-        return (
-          <div
-            key={idx}
-            className={`border rounded-xl shadow-sm transition flex items-center justify-between px-5 py-3 ${color}`}
+    <div className="w-full h-full flex flex-col py-2">
+      <ol className="flex-1 flex flex-col">
+        {currentData.map((item, idx) => (
+          <li
+            key={startIdx + idx}
+            className={`
+              group flex items-center gap-3 px-6 py-4 border-b last:border-b-0
+              bg-gray-50 hover:bg-blue-50 transition cursor-pointer
+            `}
+            style={{ position: "relative" }}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              {icon}
-              <span className="font-semibold truncate">{item.product_name}</span>
-            </div>
-            <span className="ml-4 text-xs font-bold bg-white/80 px-3 py-1 rounded-full border border-gray-200">
-              {item.in_stock} in stock
+            <span className="flex items-center justify-center w-7 h-7 rounded-full font-bold text-base mr-2 bg-gray-200 text-gray-500 group-hover:bg-blue-200 group-hover:text-blue-700 transition">
+              {startIdx + idx + 1}
             </span>
-          </div>
-        );
-      })}
+            <span className="flex-1 truncate font-medium text-gray-800 group-hover:text-blue-800 transition">
+              {item.product_name}
+            </span>
+            <span className="ml-4 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 bg-white/80 text-gray-700 group-hover:border-blue-200 group-hover:text-blue-700 transition">
+              {item.inStock} in stock
+            </span>
+          </li>
+        ))}
+      </ol>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+      />
     </div>
   );
 }

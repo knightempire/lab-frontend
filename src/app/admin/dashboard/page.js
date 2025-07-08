@@ -12,7 +12,7 @@ import RequestStatusChart from "../../../components/admin_graphs/RequestStatusBr
 import TopComponentsBarChart from "../../../components/admin_graphs/TopComponentBarChart";
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import { apiRequest } from '../../../utils/apiRequest';
-import LowStockItemsTable from "../../../components/admin_graphs/LowStockTable";
+import StockAlertsList from "../../../components/admin_graphs/LowStockList";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -321,8 +321,13 @@ export default function DashboardPage() {
             {barChartInView && <TopComponentsBarChart data={barData} />}
           </div>
           <div className="bg-white rounded-xl shadow p-6 flex flex-col" ref={lowStockRef}>
-            <h2 className="text-xl font-semibold text-gray-800 ">Low Stock Items</h2>
-            {lowStockInView && <LowStockItemsTable data={lowStockData} />}
+            <div className="flex items-center gap-4 m-2">
+              <h2 className="text-xl font-semibold text-gray-800">Low Stock Items</h2>
+              <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-lg mt-1">
+                {lowStockData.length} item{lowStockData.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {lowStockData && <StockAlertsList data={lowStockData} />}
           </div>
         </div>
       </div>
