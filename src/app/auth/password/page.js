@@ -79,8 +79,7 @@ const verifyToken = async () => {
         }
         if (!res.ok) {
           const errorData = await res.json();
-          console.error(`Error verifying token at ${endpoint}`);
-          console.error('Error response:', errorData);
+
           setError(errorData.message || 'Something went wrong.');
           setExpiredSession(true);
           setTimeout(() => router.push('/auth/login'), 3000);
@@ -91,7 +90,7 @@ const verifyToken = async () => {
           setUserName(data.user.name);
         }
       } catch (err) {
-        console.error('Error during token verification:', err);
+
         setError('Failed to connect to server.');
         setExpiredSession(true);
         setTimeout(() => router.push('/auth/login'), 3000);
@@ -157,15 +156,14 @@ const handleSubmit = async (e) => {
         setLoading(false);
         return;
       }
-      console.error(`Error verifying token at ${endpoint}`);
-      console.error('Failed to set password:', data);
+   
       setError(data.message || 'Something went wrong.');
       setExpiredSession(true);
       setLoading(false);
       setTimeout(() => router.push('/auth/login'), 3000);
       return;
     } catch (err) {
-      console.error('Error during token verification:', err);
+
       setError('Failed to connect to server.');
       setExpiredSession(true);
       setLoading(false);
