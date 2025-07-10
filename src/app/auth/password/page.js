@@ -62,13 +62,21 @@ const verifyToken = async () => {
           ? `/verify-token-register`
           : `/verify-token-forgot`;
       try {
+        // Save current token and set the one from URL
+        const prevToken = localStorage.getItem('token');
+        localStorage.setItem('token', token);
         const res = await apiRequest(endpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
         });
+        // Restore previous token
+        if (prevToken) {
+          localStorage.setItem('token', prevToken);
+        } else {
+          localStorage.removeItem('token');
+        }
         if (!res.ok) {
           const errorData = await res.json();
           console.error(`Error verifying token at ${endpoint}`);
@@ -126,17 +134,26 @@ const handleSubmit = async (e) => {
         ? `/password`
         : `/resetpassword`;
     try {
+      // Save current token and set the one from URL
+      const prevToken = localStorage.getItem('token');
+      localStorage.setItem('token', token);
       const res = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ password }),
       });
+      // Restore previous token
+      if (prevToken) {
+        localStorage.setItem('token', prevToken);
+      } else {
+        localStorage.removeItem('token');
+      }
       const data = await res.json();
       if (res.ok) {
         setShowModal(true);
+        localStorage.removeItem('token');
         setLoading(false);
         return;
       }
