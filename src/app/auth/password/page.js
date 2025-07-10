@@ -7,6 +7,7 @@ import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
 import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add Loader2 import
 import { motion } from 'framer-motion';
+import { apiRequest } from '../../../utils/apiRequest';
 
 function PasswordPageWrapper() {
   return (
@@ -55,52 +56,39 @@ const [expiredSession, setExpiredSession] = useState(false);
     setType(type);
 
 const verifyToken = async () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  const endpoint =
-    type === 'register'
-      ? `${baseUrl}/api/verify-token-register`
-      : `${baseUrl}/api/verify-token-forgot`;
-
-
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'GET', // Method is GET
-      headers: {
-        'Content-Type': 'application/json', // Optional, but you can include it
-        'Authorization': `Bearer ${token}`, // Send token in Authorization header
-      },
-    });
-
-
-    if (!res.ok) {
-      const errorData = await res.json(); // Wait for error response data
-      console.error(`Error verifying token at ${endpoint}`);
-      console.error('Error response:', errorData); // Log the actual error response
-
-      setError(errorData.message || 'Something went wrong.');
-      setExpiredSession(true);
-      setTimeout(() => router.push('/auth/login'), 3000);
-      return;
-    }
-
-    // If response is OK, process the data
-    const data = await res.json();
-
-  
-    if (data?.user.name) {
-      setUserName(data.user.name);
-    }
-  } catch (err) {
-    console.error('Error during token verification:', err);
-    console.error('Error while setting password:', err);
-    setError('Failed to connect to server.');
-    setExpiredSession(true);
-    setTimeout(() => router.push('/auth/login'), 3000);
-  }
-};
-
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const endpoint =
+        type === 'register'
+          ? `/verify-token-register`
+          : `/verify-token-forgot`;
+      try {
+        const res = await apiRequest(endpoint, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error(`Error verifying token at ${endpoint}`);
+          console.error('Error response:', errorData);
+          setError(errorData.message || 'Something went wrong.');
+          setExpiredSession(true);
+          setTimeout(() => router.push('/auth/login'), 3000);
+          return;
+        }
+        const data = await res.json();
+        if (data?.user.name) {
+          setUserName(data.user.name);
+        }
+      } catch (err) {
+        console.error('Error during token verification:', err);
+        setError('Failed to connect to server.');
+        setExpiredSession(true);
+        setTimeout(() => router.push('/auth/login'), 3000);
+      }
+    };
     verifyToken();
   }, [searchParams, router]);
 
@@ -117,68 +105,56 @@ const verifyToken = async () => {
 
 
 const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true); // Start loading
-
-  if (!isPasswordValid(password)) {
-    setError(
-      'Password must be at least 8 characters long and include letters, numbers, and a special character.'
-    );
-    setLoading(false);
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    setError('Passwords do not match.');
-    setLoading(false);
-    return;
-  }
-
-
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const endpoint =
-    type === 'register'
-      ? `${baseUrl}/api/password`
-      : `${baseUrl}/api/resetpassword`;
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ password }),
-    });
-
-    const data = await res.json();
-
-
-    if (res.ok) {
-
-      setShowModal(true);
-      setLoading(false); // Stop loading on success (modal will show)
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    if (!isPasswordValid(password)) {
+      setError(
+        'Password must be at least 8 characters long and include letters, numbers, and a special character.'
+      );
+      setLoading(false);
       return;
     }
-
-    console.error(`Error verifying token at ${endpoint}`);
-    console.error('Failed to set password:', data);
-    setError(data.message || 'Something went wrong.');
-    setExpiredSession(true);
-    setLoading(false); // Stop loading on error
-    setTimeout(() => router.push('/auth/login'), 3000);
-    return;
-  } catch (err) {
-    console.error('Error during token verification:', err);
-    console.error('Error while setting password:', err);
-    setError('Failed to connect to server.');
-    setExpiredSession(true);
-    setLoading(false); // Stop loading on error
-    setTimeout(() => router.push('/auth/login'), 3000); 
-  }
-};
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const endpoint =
+      type === 'register'
+        ? `/password`
+        : `/resetpassword`;
+    try {
+      const res = await apiRequest(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowModal(true);
+        setLoading(false);
+        return;
+      }
+      console.error(`Error verifying token at ${endpoint}`);
+      console.error('Failed to set password:', data);
+      setError(data.message || 'Something went wrong.');
+      setExpiredSession(true);
+      setLoading(false);
+      setTimeout(() => router.push('/auth/login'), 3000);
+      return;
+    } catch (err) {
+      console.error('Error during token verification:', err);
+      setError('Failed to connect to server.');
+      setExpiredSession(true);
+      setLoading(false);
+      setTimeout(() => router.push('/auth/login'), 3000);
+    }
+  };
 
 
   return (
