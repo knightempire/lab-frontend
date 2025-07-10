@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   lab_frontend:
     build:
@@ -16,10 +14,12 @@ services:
     restart: unless-stopped
     depends_on:
       - amuda_lab_backend
+    networks:
+      - lab_network
 
   amuda_lab_backend:
     build:
-      context: ../backend - lab compo  # <-- path to your backend code
+      context: ../lab-backend-1    # <-- path to your backend code
     container_name: amuda_lab_backend
     ports:
       - "3002:3002"
@@ -55,6 +55,8 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
+    networks:
+      - lab_network
 
   mongo:
     image: mongo:7
@@ -66,10 +68,12 @@ services:
       MONGO_INITDB_DATABASE: labdb
     volumes:
       - mongo_data:/data/db
+    networks:
+      - lab_network
 
 volumes:
   mongo_data:
 
 networks:
-  default:
+  lab_network:
     driver: bridge
