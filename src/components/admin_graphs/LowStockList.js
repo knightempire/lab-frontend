@@ -5,7 +5,7 @@ import { Package } from "lucide-react";
 import Pagination from "../pagination";
 
 export default function StockAlertsList({ data = [] }) {
-  const itemsPerPage = 6;
+  const itemsPerPage = 7;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
   const startIdx = (currentPage - 1) * itemsPerPage;
