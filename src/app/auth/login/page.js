@@ -1,191 +1,172 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import TextField from '../../../components/auth/TextField';
 import PrimaryButton from '../../../components/auth/PrimaryButton';
-import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add Loader2 import
-import { motion } from 'framer-motion';
+import { Eye, EyeOff, Loader2 } from 'lucide-react'; // Add this import for loading spinner
 import { apiRequest } from '../../../utils/apiRequest';
+import LoadingScreen from '../../../components/loading/loadingscreen';
 
-function PasswordPageWrapper() {
-  return (
-<Suspense
-  fallback={
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  }
->
-  <PasswordPage />
-</Suspense>
+export default function LoginPage() {
+  const router = useRouter();
+  const isSubmitting = useRef(false); // Add this line
 
-  );
-}
-
-export default function Page() {
-  return <PasswordPageWrapper />;
-}
-
-function PasswordPage() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberme, setrememberme] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [token, setToken] = useState(null);
-  const [type, setType] = useState(null);
-  const [userName, setUserName] = useState('User'); 
   const [loading, setLoading] = useState(false); // Add loading state
-  const router = useRouter();
-  const searchParams = useSearchParams();
-    const [showModal, setShowModal] = useState(false); 
-const [expiredSession, setExpiredSession] = useState(false);
-
+  const [checkingToken, setCheckingToken] = useState(true); // <-- New state for token check
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const type = searchParams.get('type');
-
-    if (!token || !type) {
-      router.push('/auth/login');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setCheckingToken(false);
       return;
     }
 
-    setToken(token);
-    setType(type);
-
-const verifyToken = async () => {
+    const verifyToken = async () => {
+      setCheckingToken(true); // Show loading while checking
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const endpoint =
-        type === 'register'
-          ? `/verify-token-register`
-          : `/verify-token-forgot`;
+      const endpoint = `/verify-token`;
+
       try {
-        // Save current token and set the one from URL
-        const prevToken = localStorage.getItem('token');
-        localStorage.setItem('token', token);
         const res = await apiRequest(endpoint, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
         });
-        // Restore previous token
-        if (prevToken) {
-          localStorage.setItem('token', prevToken);
-        } else {
-          localStorage.removeItem('token');
-        }
-        if (!res.ok) {
-          const errorData = await res.json();
 
-          setError(errorData.message || 'Something went wrong.');
-          setExpiredSession(true);
-          setTimeout(() => router.push('/auth/login'), 3000);
+        if (!res.ok) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('selectedProducts');
+          setCheckingToken(false);
           return;
         }
-        const data = await res.json();
-        if (data?.user.name) {
-          setUserName(data.user.name);
-        }
-      } catch (err) {
 
-        setError('Failed to connect to server.');
-        setExpiredSession(true);
-        setTimeout(() => router.push('/auth/login'), 3000);
+        const data = await res.json();
+        const { user } = data;
+
+        if (!user?.isActive) {
+          setError('Your account is deactivated. Please contact the administrator.');
+          setCheckingToken(false);
+          return;
+        }
+
+        if (user?.isAdmin) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/user/dashboard');
+        }
+        // Don't setCheckingToken(false) here, since we redirect
+      } catch (err) {
+        localStorage.removeItem('token');
+        setCheckingToken(false);
       }
     };
+
     verifyToken();
-  }, [searchParams, router]);
+  }, [router]);
 
-  const isPasswordValid = (pwd) => {
-    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+])[A-Za-z\d!@#$%^&*()_\-+]{8,}$/;
-    return pattern.test(pwd);
-  };
+  const validateEmail = (email) =>
+    /^[^\s@]+@(?:[a-zA-Z0-9-]+\.)*amrita\.edu$/.test(email);
 
-    const handleModalClose = () => {
-
-    setShowModal(false); 
-    router.push('/auth/login'); 
-  };
-
-
-const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading || isSubmitting.current) return; // Block all rapid submits
+    isSubmitting.current = true; // Set immediately
+
     setError('');
-    setLoading(true);
-    if (!isPasswordValid(password)) {
-      setError(
-        'Password must be at least 8 characters long and include letters, numbers, and a special character.'
-      );
+    setLoading(true); // Start loading
+
+    if (!validateEmail(email)) {
+      setError('Only University email addresses are allowed.');
       setLoading(false);
+      isSubmitting.current = false; // Allow retry
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+
+    if (!password.trim()) {
+      setError('Password cannot be empty.');
       setLoading(false);
+      isSubmitting.current = false; // Allow retry
       return;
     }
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const endpoint =
-      type === 'register'
-        ? `/password`
-        : `/resetpassword`;
+
+    const endpoint = `/login`;
     try {
-      // Save current token and set the one from URL
-      const prevToken = localStorage.getItem('token');
-      localStorage.setItem('token', token);
       const res = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password, rememberme }),
       });
-      // Restore previous token
-      if (prevToken) {
-        localStorage.setItem('token', prevToken);
-      } else {
-        localStorage.removeItem('token');
-      }
+
       const data = await res.json();
-      if (res.ok) {
-        setShowModal(true);
-        localStorage.removeItem('token');
+
+      if (!res.ok) {
+        setError(data.message || 'Login failed. Please try again.');
         setLoading(false);
+        isSubmitting.current = false; // Allow retry
         return;
       }
-   
-      setError(data.message || 'Something went wrong.');
-      setExpiredSession(true);
-      setLoading(false);
-      setTimeout(() => router.push('/auth/login'), 3000);
-      return;
-    } catch (err) {
 
-      setError('Failed to connect to server.');
-      setExpiredSession(true);
+      const { token, user } = data;
+
+      if (!user.isActive) {
+        setError('Your account is deactivated. Please contact the administrator.');
+        setLoading(false);
+        isSubmitting.current = false; // Allow retry
+        return;
+      }
+
+      localStorage.setItem('token', token);
+
+      // Keep loading until router.push finishes
+      if (user.isAdmin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/user/dashboard');
+      }
+      // isSubmitting.current stays true (block further submits)
+    } catch (err) {
+      setError('Something went wrong. Please try again later.');
       setLoading(false);
-      setTimeout(() => router.push('/auth/login'), 3000);
+      isSubmitting.current = false; // Allow retry
     }
   };
 
+  if (checkingToken) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6">
-        <h2 className="text-3xl font-semibold text-center text-gray-800">Set Your Password</h2>
-        <p className="text-sm text-center text-gray-600">Hi {userName}, set your password here.</p>
+        <h2 className="text-3xl font-semibold text-center text-gray-800">Sign in to your account</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
+          <TextField
+            label="Your email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your University email"
+            className="w-full"
+            disabled={loading}
+          />
           <div className="relative">
             <TextField
-              label="Enter Password"
+              label="Password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               className="w-full pr-10"
               disabled={loading}
             />
@@ -193,142 +174,49 @@ const handleSubmit = async (e) => {
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3 top-9 text-gray-500 hover:text-gray-800"
+              tabIndex={-1}
               disabled={loading}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
 
-          <div className="relative">
-            <TextField
-              label="Confirm Password"
-              type={showPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full pr-10"
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              className="h-4 w-4 text-indigo-500 rounded" 
               disabled={loading}
-            />
+              checked={rememberme}
+              onChange={(e) => setrememberme(e.target.checked)}
+            /> 
+             <span className="text-gray-700">Remember me</span>
+            </label>
+            <Link href="/auth/forgetpassword" className="text-indigo-500 hover:underline">
+              Forgot password?
+            </Link>
           </div>
 
-          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-
-          <PrimaryButton
-            text={
-              loading ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="animate-spin mr-2" size={18} />
-                  Setting password...
-                </span>
-              ) : "Set Password"
-            }
-            className="w-full py-3 mt-4"
-            disabled={loading}
-          />
+          <div className="relative">
+            <PrimaryButton text={loading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="animate-spin mr-2" size={18} />
+                Signing in...
+              </span>
+            ) : "Sign in"} className="w-full py-3 mt-4" disabled={loading} />
+            {/* Optionally, you can overlay a spinner here */}
+          </div>
         </form>
 
         <p className="text-center text-sm text-gray-600">
-          Already updated it?{' '}
-          <Link href="/auth/login" className="text-indigo-500 font-medium hover:underline">
-            Sign in
+          Don&apos;t have an account yet?{' '}
+          <Link href="/auth/register" className="text-indigo-500 font-medium hover:underline">
+            Sign up
           </Link>
         </p>
       </div>
-      {showModal && (
-  <motion.div
-    className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.3 }}
-  >
-    <motion.div
-      className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center"
-      initial={{ scale: 0.8 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.8 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Dynamic Tick Animation */}
-      <div className="mb-4 flex justify-center">
-        <svg width="60" height="60" viewBox="0 0 52 52" className="text-green-600">
-          <motion.path
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14 27l10 10 20-20"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-          />
-          <circle
-            cx="26"
-            cy="26"
-            r="25"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="opacity-30"
-          />
-        </svg>
-      </div>
-
-      <h3 className="text-xl font-semibold">Password Updated</h3>
-      <p className="text-sm mt-2">Dear {userName} your password is updated successfully continue to login </p>
-
-
-      <div className="mt-4">
-        <button
-          onClick={handleModalClose}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md text-sm font-medium transition"
-        >
-          continue
-        </button>
-      </div>
-    </motion.div>
-  </motion.div>
-)}
-{expiredSession && (
-  <motion.div
-    className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.3 }}
-  >
-    <motion.div
-      className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center"
-      initial={{ scale: 0.8 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.8 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="mb-4">
-        <svg className="w-12 h-12 mx-auto text-red-600" fill="none" stroke="currentColor" strokeWidth="2"
-             viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </div>
-
-      <h3 className="text-xl font-semibold text-red-700">Session Expired</h3>
-      <p className="text-sm mt-2">Hello user , This session has expired. Please generate a new link.</p>
-      <p className="text-xs text-gray-500 mt-1">Redirecting to login...</p>
-
-      <div className="mt-4">
-        <button
-          onClick={() => router.push('/auth/login')}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md text-sm font-medium transition"
-        >
-          OK
-        </button>
-      </div>
-    </motion.div>
-  </motion.div>
-)}
-
     </div>
   );
 }
