@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation';
 import LoadingScreen from "../../../components/loading/loadingscreen";
 import { apiRequest } from '../../../utils/apiRequest';
 
+// Fixed columns array - always includes quantity column
 const columns = [
   { key: 'name', label: 'Product Name' },
   { key: 'inStock', label: 'In Stock' },
+  { key: 'quantity', label: 'Quantity' },
   { key: 'selected', label: 'Selected' },
 ];
 
@@ -236,12 +238,16 @@ export default function ProductPage() {
   // Check if any products are selected
   const hasSelectedProducts = products.some(p => p.selected);
 
-  // Reordered columns
-  const reorderedColumns = [
-    ...columns.filter(col => col.key !== 'selected'),
-    ...(hasSelectedProducts ? [{ key: 'quantity', label: 'Quantity' }] : []),
-    ...columns.filter(col => col.key === 'selected'),
-  ];
+  // Dynamic columns based on selection state
+  const dynamicColumns = columns.map(col => {
+    if (col.key === 'quantity') {
+      return {
+        ...col,
+        label: hasSelectedProducts ? 'Quantity' : '', // Hide label when nothing selected
+      };
+    }
+    return col;
+  });
 
   if (loading) {
     return (
@@ -283,7 +289,7 @@ export default function ProductPage() {
         {filteredProducts.length > 0 ? (
           <div className="px-0 md:px-0">
             <Table
-              columns={reorderedColumns}
+              columns={dynamicColumns}
               rows={paginatedProducts}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}
@@ -331,52 +337,60 @@ export default function ProductPage() {
               }}
               renderCell={(colKey, row) => {
                 if (colKey === 'quantity') {
+                  // Always render the quantity column but show content only when selected
                   return row.selected ? (
-                    <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
-                      {/* Minus Button */}
-                      <button
-                        className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
-                        style={{ width: '2rem', height: '2rem' }}
-                        onClick={() => updateQuantity(row.id, -1)}
-                      >
-                        -
-                      </button>
+                    <div className="flex justify-center">
+                      <div className="inline-flex items-center border border-gray-300 rounded-md bg-white overflow-hidden">
+                        {/* Minus Button */}
+                        <button
+                          className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
+                          style={{ width: '2rem', height: '2rem' }}
+                          onClick={() => updateQuantity(row.id, -1)}
+                        >
+                          -
+                        </button>
 
-                      {/* Editable Quantity */}
-                      <input
-                        type="text"
-                        value={row.selectedQuantity}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          const newQuantity = Math.max(0, Math.min(value, row.inStock));
-                          const updated = products.map(product => {
-                            if (product.id !== row.id) return product;
-                            if (newQuantity === 0) {
-                              return { ...product, selected: false, selectedQuantity: 0 };
-                            } else {
-                              return { ...product, selected: true, selectedQuantity: newQuantity };
-                            }
-                          });
-                          setProducts(updated);
-                          saveSelectionsToLocalStorage(updated);
-                        }}
-                        className="text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
-                        style={{ width: '2.5rem' }}
-                        min="0"
-                        max={row.inStock}
-                      />
+                        {/* Editable Quantity */}
+                        <input
+                          type="text"
+                          value={row.selectedQuantity}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            const newQuantity = Math.max(0, Math.min(value, row.inStock));
+                            const updated = products.map(product => {
+                              if (product.id !== row.id) return product;
+                              if (newQuantity === 0) {
+                                return { ...product, selected: false, selectedQuantity: 0 };
+                              } else {
+                                return { ...product, selected: true, selectedQuantity: newQuantity };
+                              }
+                            });
+                            setProducts(updated);
+                            saveSelectionsToLocalStorage(updated);
+                          }}
+                          className="text-center bg-transparent border-x border-gray-300 focus:outline-none text-gray-700"
+                          style={{ width: '2.5rem' }}
+                          min="0"
+                          max={row.inStock}
+                        />
 
-                      {/* Plus Button */}
-                      <button
-                        className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
-                        style={{ width: '2rem', height: '2rem' }}
-                        onClick={() => updateQuantity(row.id, 1)}
-                        disabled={row.selectedQuantity >= row.inStock}
-                      >
-                        +
-                      </button>
+                        {/* Plus Button */}
+                        <button
+                          className="text-gray-500 hover:text-gray-700 flex items-center justify-center"
+                          style={{ width: '2rem', height: '2rem' }}
+                          onClick={() => updateQuantity(row.id, 1)}
+                          disabled={row.selectedQuantity >= row.inStock}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  ) : null;
+                  ) : (
+                    // Empty cell when not selected - maintains column width with consistent spacing
+                    <div className="flex justify-center">
+                      <div style={{ width: '6.5rem', height: '2rem' }}></div>
+                    </div>
+                  );
                 } 
                 else if (colKey === 'selected') {
                   return (
