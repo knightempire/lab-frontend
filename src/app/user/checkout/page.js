@@ -300,7 +300,7 @@ useEffect(() => {
 
 
 
-    await apiRequestReferenceStaff(); 
+
     setCustomFacultyName('');
     setCustomFacultyEmail('');
     setShowCustomFacultyForm(false);
