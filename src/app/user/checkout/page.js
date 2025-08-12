@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -50,32 +51,32 @@ useEffect(() => {
     if (storedProducts) {
       try {
         const parsedProducts = JSON.parse(storedProducts);
-        
+
         // Filter out products with zero or negative stock
         const validProducts = parsedProducts.filter(product => {
           return product.inStock > 0;
         });
-        
+
         // Update quantities if they exceed available stock
         const correctedProducts = validProducts.map(product => ({
           ...product,
           selectedQuantity: Math.min(product.selectedQuantity, product.inStock)
         }));
-        
+
         setSelectedProducts(correctedProducts);
-        
+
         // Update localStorage with corrected products
         if (correctedProducts.length !== parsedProducts.length || 
             correctedProducts.some((p, i) => p.selectedQuantity !== parsedProducts[i]?.selectedQuantity)) {
           localStorage.setItem('selectedProducts', JSON.stringify(correctedProducts));
         }
-        
+
       } catch (error) {
         console.error('Failed to parse selected products:', error);
       }
     }
   }, []);
-  
+
   // Form state
   const [purpose, setPurpose] = useState('');
   const [returnDays, setReturnDays] = useState(7);
@@ -84,24 +85,24 @@ useEffect(() => {
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [referenceStaffId, setReferenceStaffId] = useState('')
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
-  
+
   // Custom faculty state
   const [showCustomFacultyForm, setShowCustomFacultyForm] = useState(false);
   const [customFacultyName, setCustomFacultyName] = useState('');
   const [customFacultyEmail, setCustomFacultyEmail] = useState('');
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  
+
   // Confirmation popup state
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  
+
   // Pagination (if needed)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3; // Changed to match your slice logic
-  
+
   // Staff options state
   const [referenceStaffOptions, setReferenceStaffOptions] = useState([]);
 
@@ -162,14 +163,14 @@ useEffect(() => {
     const actualIndex = getActualIndex(pageIndex);
     const updated = [...selectedProducts];
     const product = updated[actualIndex];
-    
+
     // Ensure we have current stock information
     if (product.inStock <= 0) {
       // Remove product if out of stock
       const filteredProducts = updated.filter((_, i) => i !== actualIndex);
       setSelectedProducts(filteredProducts);
       localStorage.setItem('selectedProducts', JSON.stringify(filteredProducts));
-      
+
       // Fix pagination after removal
       const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / itemsPerPage);
       if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
@@ -179,16 +180,16 @@ useEffect(() => {
       }
       return;
     }
-    
+
     // Allow quantity to go to 0, but not below 0, and not above inStock
     const quantity = Math.max(0, Math.min(parseInt(newQuantity) || 0, product.inStock));
-    
+
     // If quantity is 0, remove the product
     if (quantity === 0) {
       const filteredProducts = updated.filter((_, i) => i !== actualIndex);
       setSelectedProducts(filteredProducts);
       localStorage.setItem('selectedProducts', JSON.stringify(filteredProducts));
-      
+
       // Fix pagination after removal
       const totalPagesAfterRemoval = Math.ceil(filteredProducts.length / itemsPerPage);
       if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
@@ -198,7 +199,7 @@ useEffect(() => {
       }
       return;
     }
-    
+
     product.selectedQuantity = quantity;
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
@@ -209,7 +210,7 @@ useEffect(() => {
     const updated = selectedProducts.filter((_, i) => i !== actualIndex);
     setSelectedProducts(updated);
     localStorage.setItem('selectedProducts', JSON.stringify(updated));
-    
+
     // Fix pagination after removal
     const totalPagesAfterRemoval = Math.ceil(updated.length / itemsPerPage);
     if (currentPage > totalPagesAfterRemoval && totalPagesAfterRemoval > 0) {
@@ -231,7 +232,7 @@ useEffect(() => {
 
   const handleCustomFacultySubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!customFacultyName.trim() || !customFacultyEmail.trim()) {
       setErrors({
         ...errors,
@@ -252,7 +253,7 @@ useEffect(() => {
 
 
   setReferenceStaff(`${customFacultyName} (${customFacultyEmail})`);
-  
+
   const updatedErrors = {...errors};
   delete updatedErrors.customFaculty;
   delete updatedErrors.referenceStaff;
@@ -286,7 +287,7 @@ useEffect(() => {
     const data = await response.json();
 
     if (!response.ok) {
-  
+
       if (response.status === 400 && data?.message === "Reference already exists") {
         setErrors({
           ...errors,
@@ -300,15 +301,15 @@ useEffect(() => {
 
 
 
-
+    await fetchReferenceStaff (); 
     setCustomFacultyName('');
     setCustomFacultyEmail('');
     setShowCustomFacultyForm(false);
     setShowStaffDropdown(false);
-    
+
   } 
   catch (error) {
-    
+
     setErrors({
       ...errors,
       customFaculty: `Error: ${error.message}`
@@ -320,37 +321,37 @@ useEffect(() => {
     // Validate form data
     const validateForm = () => {
       const validationErrors = {};
-      
+
       if (!purpose.trim()) {
         validationErrors.purpose = 'Purpose is required';
       }
-      
+
       // Only validate reference staff if not faculty
       if (!isFaculty && !referenceStaff) {
         validationErrors.referenceStaff = 'Reference staff is required';
       }
-      
+
       if (!returnDays || returnDays < 1 || returnDays > 30) {
         validationErrors.returnDays = 'Return days must be between 1 and 30';
       }
-      
+
       if (!acknowledged) {
         validationErrors.acknowledged = 'You must acknowledge the terms';
       }
-      
+
       if (selectedProducts.length === 0) {
         validationErrors.products = 'At least one product must be selected';
       }
-      
+
       // Check for stock availability issues
       const stockIssues = selectedProducts.filter(product => {
         return product.inStock <= 0 || product.selectedQuantity > product.inStock;
       });
-      
+
       if (stockIssues.length > 0) {
         const outOfStockProducts = stockIssues.filter(p => p.inStock <= 0);
         const insufficientStockProducts = stockIssues.filter(p => p.inStock > 0 && p.selectedQuantity > p.inStock);
-        
+
         let stockErrorMessage = '';
         if (outOfStockProducts.length > 0) {
           stockErrorMessage += `Out of stock: ${outOfStockProducts.map(p => p.name).join(', ')}. `;
@@ -358,17 +359,17 @@ useEffect(() => {
         if (insufficientStockProducts.length > 0) {
           stockErrorMessage += `Insufficient stock: ${insufficientStockProducts.map(p => `${p.name} (requested: ${p.selectedQuantity}, available: ${p.inStock})`).join(', ')}.`;
         }
-        
+
         validationErrors.stockAvailability = stockErrorMessage.trim();
       }
-      
+
       return validationErrors;
     };
 
 
     const handleSubmitRequest = () => {
       setSubmitted(true);
-      
+
       const validationErrors = validateForm();
       setErrors(validationErrors);
 
@@ -376,7 +377,7 @@ useEffect(() => {
         setShowConfirmDialog(true);
       }
     };
-    
+
 
   const handleConfirmSubmit = async () => {
     setConfirmLoading(true);
@@ -432,7 +433,7 @@ useEffect(() => {
       setShowConfirmDialog(false);
     }
   };
-    
+
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
   };
@@ -446,7 +447,7 @@ useEffect(() => {
   const closeSuccessAlert = () => {
     setSubmitSuccess(false);
   };
-    
+
 
   const columns = [
     { key: 'name', label: 'Component' },
@@ -454,12 +455,12 @@ useEffect(() => {
     { key: 'inStock', label: 'InStock' },
     { key: 'action', label: 'Action' },
   ];
-  
+
   const renderCell = (key, product, pageIndex) => { // Using pageIndex instead of index
     switch (key) {
       case 'name':
         return <div className="font-medium text-gray-900">{product.name}</div>;
-      
+
       case 'selectedQuantity':
         return (
           <div className="flex items-center justify-center">
@@ -490,14 +491,14 @@ useEffect(() => {
             </div>
           </div>
         );
-      
+
       case 'inStock':
         return (
           <span className={`inline-flex text-sm ${product.inStock < 5 ? 'text-amber-600' : 'text-gray-600'}`}>
             {product.inStock} available
           </span>
         );
-      
+
       case 'action':
         return (
           <div className="flex justify-center">
@@ -511,7 +512,7 @@ useEffect(() => {
             </button>
           </div>
         );
-        
+
       default:
         return product[key];
     }
@@ -722,8 +723,8 @@ useEffect(() => {
                               <Search size={16} className="absolute left-2.5 top-3 text-gray-400" />
                             </div>
                           </div>
-                          
-                          
+
+
                           <ul className="py-1">
                             {filteredStaffOptions.length > 0 ? (
                               filteredStaffOptions.map((staff) => (
@@ -751,7 +752,7 @@ useEffect(() => {
                               </li>
                             )}
                           </ul>
-                          
+
 
                           <div className="p-2 border-t border-gray-200 bg-gray-50">
                             <button
@@ -786,7 +787,7 @@ useEffect(() => {
                                 <X size={20} />
                               </button>
                             </div>
-                            
+
                             <form onSubmit={handleCustomFacultySubmit} className="p-6">
                               <div className="space-y-4">
                                 <div>
@@ -804,7 +805,7 @@ useEffect(() => {
                                     required
                                   />
                                 </div>
-                                
+
                                 <div>
                                   <label htmlFor="facultyEmail" className="block text-sm font-medium text-gray-700 mb-1">
                                     Email Address <span className="text-red-500">*</span>
@@ -819,14 +820,14 @@ useEffect(() => {
                                     required
                                   />
                                 </div>
-                                
+
                                 {errors.customFaculty && (
                                   <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700 flex items-center">
                                     <AlertCircle size={16} className="mr-2 flex-shrink-0" />
                                     {errors.customFaculty}
                                   </div>
                                 )}
-                                
+
                                 <div className="pt-4 flex justify-end space-x-3">
                                   <button
                                     type="button"
@@ -892,7 +893,7 @@ useEffect(() => {
               </div>
             </section>
           </div>
- 
+
           <div className="md:w-1/3 w-full space-y-8">
             <div className="bg-white/90 rounded-2xl shadow-lg border border-blue-100">
               <div className="px-8 py-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-100">
@@ -1008,8 +1009,7 @@ useEffect(() => {
             </div>
           </div>
         )}
-        
+
       </div>
     </div>
   );
-}
