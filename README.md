@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000) to view.
 - Santhosh A S – Frontend Developer (@Santhosh292K)  
 - Sharan K – QA / Testing / Maintainer (@Sharan450522)
 
-**Special Thanks:** Shibi S. Kumar (@shibi1306) – Client, continuous guidance and support
+**Special Thanks:** Shibi S. Kumar (@shibi1306) –  continuous guidance and support
 
 ## 📝 Contributing
 1. Fork the repo  
