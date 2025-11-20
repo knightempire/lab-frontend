@@ -29,13 +29,14 @@ Open [http://localhost:3000](http://localhost:3000) to view.
 **Build for Production:** `npm run build && npm start`
 
 ## 🧑‍💻 Core Development Team
-- Abinesh – Lead Developer / Full-stack / Maintainer (@knightempire)  
-- Raam Prathap R V – Backend Developer (@Raamprathap)  
-- Akshay K S – Frontend Developer (@akshayks13)  
-- Santhosh A S – Frontend Developer (@Santhosh292K)  
-- Sharan K – QA / Testing / Maintainer (@Sharan450522)
+- Abinesh – Lead Developer / Full-stack / Maintainer [@knightempire](https://github.com/knightempire)  
+- Raam Prathap R V – Backend Developer [@Raamprathap](https://github.com/Raamprathap)  
+- Akshay K S – Frontend Developer [@akshayks13](https://github.com/akshayks13)  
+- Santhosh A S – Frontend Developer [@Santhosh292K](https://github.com/Santhosh292K)  
+- Sharan K – QA / Testing / Maintainer [@Sharan450522](https://github.com/Sharan450522)
 
-**Special Thanks:** Shibi S. Kumar (@shibi1306) –  continuous guidance and support
+**Special Thanks:** Shibi S. Kumar [@shibi1306](https://github.com/shibi1306) – continuous guidance and support
+
 
 ## 📝 Contributing
 1. Fork the repo  
