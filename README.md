@@ -1,56 +1,28 @@
-# Components Tracker for Amuda Lab
+4. Run development server: `npm run dev` or `yarn dev`  
+Open [http://localhost:3000](http://localhost:3000) to view.
 
-This is the **Components Tracker** application for **Amuda Lab**. The app is built using the **Next.js** framework and helps in managing and tracking various components related to the lab.
+**Build for Production:** `npm run build && npm start`
 
-## Prerequisites
+## 🧑‍💻 Core Development Team
+- Abinesh – Lead Developer / Full-stack / Maintainer (@knightempire)  
+- Raam Prathap R V – Backend Developer (@Raamprathap)  
+- Akshay K S – Frontend Developer (@akshayks13)  
+- Santhosh A S – Frontend Developer (@Santhosh292K)  
+- Sharan K – QA / Testing / Maintainer (@Sharan450522)
 
-Ensure you have the following installed:
+**Special Thanks:** Shibi S. Kumar (@shibi1306) – Client, continuous guidance and support
 
-* **Node.js** (preferably the latest LTS version)
-* **npm** (installed with Node.js)
+## 📝 Contributing
+1. Fork the repo  
+2. Create a branch: `git checkout -b feature/my-feature`  
+3. Commit changes: `git commit -m "Add my feature"`  
+4. Push branch: `git push origin feature/my-feature`  
+5. Open Pull Request
 
-You can verify Node.js installation by running:
+## 📦 License
+MIT License. See [LICENSE](LICENSE)
 
-```bash
-node -v
-```
-
-## Installation
-
-1. **Clone the repository** to your local machine:
-
-2. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-## Running the App
-
-To run the app in **development mode**, use the following command:
-
-```bash
-npm run dev
-```
-
-The app will be accessible at `http://localhost:3000` in your browser.
-
-## Build for Production
-
-To create a production build, run:
-
-```bash
-npm run build
-```
-
-After building, you can run the app in production mode with:
-
-```bash
-npm start
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
+## 🔗 Links
+- Frontend Repository: [https://github.com/knightempire/lab-frontend](https://github.com/knightempire/lab-frontend)  
+- Backend Repository: [https://github.com/knightempire/lab-backend](https://github.com/knightempire/lab-backend)  
+- Full Release Changelog: [v1.0.0 Release](https://github.com/knightempire/lab-frontend/commits/v1-release)
